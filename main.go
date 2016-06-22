@@ -26,7 +26,7 @@ const (
 	activePath        = "/etc/kubernetes/manifests"
 	manifestFilename  = "apiserver.json"
 	kubeconfigPath    = "/etc/kubernetes/kubeconfig"
-	secretsPath       = "/var/run/secrets/coreos.com/checkpoints/"
+	secretsPath       = "/etc/kubernetes/checkpoint-secrets"
 )
 
 var (
