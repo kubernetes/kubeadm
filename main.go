@@ -69,7 +69,7 @@ func run() {
 			if err := os.Remove(activeManifest); err != nil {
 				glog.Error(err)
 			}
-		case kubeSystemAPIServerRunning(podList):
+		case kubeSystemAPIServerRunning(podList, client):
 			glog.Info("kube-apiserver found, creating temp-apiserver manifest")
 			// The self-hosted API Server is running. Let's snapshot the pod,
 			// clean it up a bit, and then save it to the ignore path for
@@ -121,10 +121,13 @@ func bothAPIServersRunning(pods v1.PodList) bool {
 	return false
 }
 
-func kubeSystemAPIServerRunning(pods v1.PodList) bool {
+func kubeSystemAPIServerRunning(pods v1.PodList, client clientset.Interface) bool {
 	for _, p := range pods.Items {
 		if isKubeAPI(p) {
-			return true
+			// Make sure it's actually running. Sometimes we get that
+			// pod manifest back, but the server is not actually running.
+			_, err := client.Discovery().ServerVersion()
+			return err == nil
 		}
 	}
 	return false
