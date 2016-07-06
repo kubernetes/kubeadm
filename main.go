@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	kubeletAPIPodsURL = "http://localhost:10255/pods"
+	kubeletAPIPodsURL = "http://127.0.0.1:10255/pods"
 	ignorePath        = "/srv/kubernetes/manifests"
 	activePath        = "/etc/kubernetes/manifests"
 	manifestFilename  = "apiserver.json"
