@@ -163,22 +163,6 @@ func cleanVolumes(p *v1.Pod) {
 	}
 }
 
-// We need to ensure that the temp apiserver is not binding
-// on the same insecure port as our self-hosted apiserver, otherwise
-// it will exit immediately instead of waiting to bind.
-func modifyInsecurePort(p *v1.Pod) {
-	for i := range p.Spec.Containers {
-		c := &p.Spec.Containers[i]
-		cmds := c.Command
-		for i, cmd := range cmds {
-			if strings.Contains(cmd, "insecure-port") {
-				cmds[i] = strings.Replace(cmd, "8080", "8081", 1)
-				break
-			}
-		}
-	}
-}
-
 // writeManifest will write the manifest to the ignore path.
 // It first writes the file to a temp file, and then atomically moves it into
 // the actual ignore path and correct file name.
@@ -199,7 +183,6 @@ func parseAPIPodSpec(podList v1.PodList) v1.PodSpec {
 		}
 	}
 	cleanVolumes(&apiPod)
-	modifyInsecurePort(&apiPod)
 	return apiPod.Spec
 }
 
