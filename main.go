@@ -209,7 +209,6 @@ func convertSecretsToVolumeMounts(client clientset.Interface, pod *v1.Pod) {
 			}
 			copySecretsToDisk(client, secretName, basePath)
 			v.Secret = nil
-			break
 		}
 	}
 }
