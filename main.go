@@ -90,8 +90,14 @@ func run() {
 				}
 			}
 		}
-		time.Sleep(60 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
+}
+
+func stripNonessentialInfo(p *v1.Pod) {
+	p.Spec.ServiceAccountName = ""
+	p.Spec.DeprecatedServiceAccount = ""
+	p.Status.Reset()
 }
 
 func getPodsFromKubeletAPI() []byte {
@@ -183,6 +189,7 @@ func parseAPIPodSpec(podList v1.PodList) v1.PodSpec {
 		}
 	}
 	cleanVolumes(&apiPod)
+	stripNonessentialInfo(&apiPod)
 	return apiPod.Spec
 }
 
