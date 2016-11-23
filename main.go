@@ -24,17 +24,15 @@ const (
 	kubeletAPIPodsURL = "http://127.0.0.1:10255/pods"
 	ignorePath        = "/srv/kubernetes/manifests"
 	activePath        = "/etc/kubernetes/manifests"
-	manifestFilename  = "apiserver.json"
 	kubeconfigPath    = "/etc/kubernetes/kubeconfig"
 	secretsPath       = "/etc/kubernetes/checkpoint-secrets"
+
+	tempAPIServer = "temp-apiserver"
+	kubeAPIServer = "kube-apiserver"
 )
 
 var (
-	tempAPIServer      = []byte("temp-apiserver")
-	kubeAPIServer      = []byte("kube-apiserver")
-	activeManifest     = filepath.Join(activePath, manifestFilename)
-	checkpointManifest = filepath.Join(ignorePath, manifestFilename)
-	secureAPIAddr      = fmt.Sprintf("https://%s:%s", os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT_HTTPS"))
+	secureAPIAddr = fmt.Sprintf("https://%s:%s", os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT_HTTPS"))
 )
 
 var tempAPIServerManifest = v1.Pod{
@@ -44,16 +42,20 @@ var tempAPIServerManifest = v1.Pod{
 	},
 	ObjectMeta: v1.ObjectMeta{
 		Name:      "temp-apiserver",
-		Namespace: "kube-system",
+		Namespace: api.NamespaceSystem,
 	},
 }
 
-func main() {
-	glog.Info("begin apiserver checkpointing...")
-	run()
+var tempPodSpecMap = map[string]v1.Pod{
+	tempAPIServer: tempAPIServerManifest,
 }
 
-func run() {
+func main() {
+	glog.Info("begin pods checkpointing...")
+	run(kubeAPIServer, tempAPIServer, api.NamespaceSystem)
+}
+
+func run(actualPodName, tempPodName, namespace string) {
 	client := newAPIClient()
 	for {
 		var podList v1.PodList
@@ -61,31 +63,35 @@ func run() {
 			glog.Fatal(err)
 		}
 		switch {
-		case bothAPIServersRunning(podList):
-			glog.Info("both temp and kube apiserver running, removing temp apiserver")
-			// Both the self-hosted API Server and the temp API Server are running.
-			// Remove the temp API Server manifest from the config dir so that the
+		case bothRunning(podList, actualPodName, tempPodName, namespace):
+			glog.Infof("both temp %v and actual %v pods running, removing temp pod", actualPodName, tempPodName)
+			// Both the temp and actual pods are running.
+			// Remove the temp manifest from the config dir so that the
 			// kubelet will stop it.
-			if err := os.Remove(activeManifest); err != nil {
+			if err := os.Remove(activeManifest(tempPodName)); err != nil {
 				glog.Error(err)
 			}
-		case kubeSystemAPIServerRunning(podList, client):
-			glog.Info("kube-apiserver found, creating temp-apiserver manifest")
-			// The self-hosted API Server is running. Let's snapshot the pod,
+		case isPodRunning(podList, client, actualPodName, namespace):
+			glog.Infof("actual pod %v found, creating temp pod manifest", actualPodName)
+			// The actual is running. Let's snapshot the pod,
 			// clean it up a bit, and then save it to the ignore path for
 			// later use.
-			tempAPIServerManifest.Spec = parseAPIPodSpec(podList)
-			convertSecretsToVolumeMounts(client, &tempAPIServerManifest)
-			writeManifest(tempAPIServerManifest)
-			glog.Infof("finished creating temp-apiserver manifest at %s\n", checkpointManifest)
+			tempSpec, ok := tempPodSpecMap[tempPodName]
+			if !ok {
+				glog.Fatalf("cannot find pod spec for %v", tempPodName)
+			}
+			tempSpec.Spec = parseAPIPodSpec(podList, actualPodName, namespace)
+			convertSecretsToVolumeMounts(client, &tempSpec)
+			writeManifest(tempSpec, tempPodName)
+			glog.Infof("finished creating temp pod %v manifest at %s\n", tempPodName, checkpointManifest(tempPodName))
 
 		default:
-			glog.Info("no apiserver running, installing temp apiserver static manifest")
-			b, err := ioutil.ReadFile(checkpointManifest)
+			glog.Info("no actual pod running, installing temp pod static manifest")
+			b, err := ioutil.ReadFile(checkpointManifest(tempPodName))
 			if err != nil {
 				glog.Error(err)
 			} else {
-				if err := ioutil.WriteFile(activeManifest, b, 0644); err != nil {
+				if err := ioutil.WriteFile(activeManifest(tempPodName), b, 0644); err != nil {
 					glog.Error(err)
 				}
 			}
@@ -115,36 +121,35 @@ func getPodsFromKubeletAPI() []byte {
 	return pods
 }
 
-func bothAPIServersRunning(pods v1.PodList) bool {
-	var kubeAPISeen, tempAPISeen bool
+func bothRunning(pods v1.PodList, an, tn, ns string) bool {
+	var actualPodSeen, tempPodSeen bool
 	for _, p := range pods.Items {
-		kubeAPISeen = kubeAPISeen || isKubeAPI(p)
-		tempAPISeen = tempAPISeen || isTempAPI(p)
-		if kubeAPISeen && tempAPISeen {
+		actualPodSeen = actualPodSeen || isPod(p, an, ns)
+		tempPodSeen = tempPodSeen || isPod(p, tn, ns)
+		if actualPodSeen && tempPodSeen {
 			return true
 		}
 	}
 	return false
 }
 
-func kubeSystemAPIServerRunning(pods v1.PodList, client clientset.Interface) bool {
+func isPodRunning(pods v1.PodList, client clientset.Interface, n, ns string) bool {
 	for _, p := range pods.Items {
-		if isKubeAPI(p) {
-			// Make sure it's actually running. Sometimes we get that
-			// pod manifest back, but the server is not actually running.
-			_, err := client.Discovery().ServerVersion()
-			return err == nil
+		if isPod(p, n, ns) {
+			if n == kubeAPIServer {
+				// Make sure it's actually running. Sometimes we get that
+				// pod manifest back, but the server is not actually running.
+				_, err := client.Discovery().ServerVersion()
+				return err == nil
+			}
+			return true
 		}
 	}
 	return false
 }
 
-func isKubeAPI(pod v1.Pod) bool {
-	return strings.Contains(pod.Name, "kube-apiserver") && pod.Namespace == api.NamespaceSystem
-}
-
-func isTempAPI(pod v1.Pod) bool {
-	return strings.Contains(pod.Name, "temp-apiserver") && pod.Namespace == api.NamespaceSystem
+func isPod(pod v1.Pod, n, ns string) bool {
+	return strings.Contains(pod.Name, n) && pod.Namespace == ns
 }
 
 // cleanVolumes will sanitize the list of volumes and volume mounts
@@ -172,18 +177,18 @@ func cleanVolumes(p *v1.Pod) {
 // writeManifest will write the manifest to the ignore path.
 // It first writes the file to a temp file, and then atomically moves it into
 // the actual ignore path and correct file name.
-func writeManifest(manifest v1.Pod) {
+func writeManifest(manifest v1.Pod, name string) {
 	m, err := json.Marshal(manifest)
 	if err != nil {
 		glog.Fatal(err)
 	}
-	writeAndAtomicCopy(m, checkpointManifest)
+	writeAndAtomicCopy(m, checkpointManifest(name))
 }
 
-func parseAPIPodSpec(podList v1.PodList) v1.PodSpec {
+func parseAPIPodSpec(podList v1.PodList, n, ns string) v1.PodSpec {
 	var apiPod v1.Pod
 	for _, p := range podList.Items {
-		if isKubeAPI(p) {
+		if isPod(p, n, ns) {
 			apiPod = p
 			break
 		}
@@ -246,4 +251,12 @@ func writeAndAtomicCopy(data []byte, path string) {
 	if err := os.Rename(tmpfile, path); err != nil {
 		glog.Fatal(err)
 	}
+}
+
+func activeManifest(name string) string {
+	return filepath.Join(activePath, name+".json")
+}
+
+func checkpointManifest(name string) string {
+	return filepath.Join(ignorePath, name+".json")
 }
