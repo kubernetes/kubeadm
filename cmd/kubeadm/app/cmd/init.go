@@ -32,8 +32,6 @@ import (
 	"k8s.io/kubeadm/cmd/kubeadm/app/preflight"
 	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/cloudprovider"
-	_ "k8s.io/kubernetes/pkg/cloudprovider/providers"
 	"k8s.io/kubernetes/pkg/runtime"
 	netutil "k8s.io/kubernetes/pkg/util/net"
 )
@@ -193,12 +191,25 @@ func NewInit(cfgPath string, cfg *kubeadmapi.MasterConfiguration, skipPreFlight 
 		fmt.Println("Skipping pre-flight checks")
 	}
 
+	cloudproviders := map[string]bool{
+		"aws": true,
+		"azure": true,
+		"cloudstack": true,
+		"gce": true,
+		"mesos": true,
+		"openstack": true,
+		"ovirt": true,
+		"photon": true,
+		"rackspace": true,
+		"vsphere": true,
+	}
+
 	// TODO(phase1+) create a custom flag
 	if cfg.CloudProvider != "" {
-		if cloudprovider.IsCloudProvider(cfg.CloudProvider) {
+		if _, found := cloudproviders[cfg.CloudProvider]; found {
 			fmt.Printf("cloud provider %q initialized for the control plane. Remember to set the same cloud provider flag on the kubelet.\n", cfg.CloudProvider)
 		} else {
-			return nil, fmt.Errorf("cloud provider %q is not supported, you can use any of %v, or leave it unset.\n", cfg.CloudProvider, cloudprovider.CloudProviders())
+			return nil, fmt.Errorf("cloud provider %q is not supported, you can use any of %v, or leave it unset.\n", cfg.CloudProvider, cloudproviders)
 		}
 	}
 	return &Init{cfg: cfg}, nil
