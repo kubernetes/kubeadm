@@ -25,8 +25,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/kubernetes/cmd/kubeadm/app/preflight"
-	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	"k8s.io/kubeadm/cmd/kubeadm/app/preflight"
+	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 	"k8s.io/kubernetes/pkg/util/initsystem"
 )
 

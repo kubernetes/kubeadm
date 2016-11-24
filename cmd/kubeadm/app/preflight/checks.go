@@ -25,7 +25,7 @@ import (
 	"os"
 	"os/exec"
 
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
 	"k8s.io/kubernetes/pkg/api/validation"
 	"k8s.io/kubernetes/pkg/util/initsystem"
 	"k8s.io/kubernetes/pkg/util/node"

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/kubernetes/cmd/kubeadm/app/preflight"
+	"k8s.io/kubeadm/cmd/kubeadm/app/preflight"
 )
 
 func TestCheckErr(t *testing.T) {

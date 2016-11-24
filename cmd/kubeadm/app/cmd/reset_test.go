@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"k8s.io/kubernetes/cmd/kubeadm/app/preflight"
+	"k8s.io/kubeadm/cmd/kubeadm/app/preflight"
 )
 
 func assertExists(t *testing.T, path string) {

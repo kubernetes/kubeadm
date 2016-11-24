@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
 )
 
 func TestUsingEmptyTokenFails(t *testing.T) {

@@ -24,9 +24,9 @@ import (
 	"github.com/renstrom/dedent"
 	"github.com/spf13/cobra"
 
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util"
-	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
+	"k8s.io/kubeadm/cmd/kubeadm/app/util"
+	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 )
 
 func NewCmdToken(out io.Writer) *cobra.Command {

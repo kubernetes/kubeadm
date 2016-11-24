@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 	"k8s.io/kubernetes/pkg/version"
 )
 

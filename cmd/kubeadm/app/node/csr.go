@@ -19,7 +19,7 @@ package node
 import (
 	"fmt"
 
-	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 	clientcmdapi "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/kubernetes/pkg/kubelet/util/csr"
 	certutil "k8s.io/kubernetes/pkg/util/cert"

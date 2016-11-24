@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/kubernetes/cmd/kubeadm/app"
-	"k8s.io/kubernetes/cmd/kubeadm/app/util"
+	"k8s.io/kubeadm/cmd/kubeadm/app"
+	"k8s.io/kubeadm/cmd/kubeadm/app/util"
 )
 
 func main() {

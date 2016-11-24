@@ -17,8 +17,8 @@ limitations under the License.
 package install
 
 import (
-	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
-	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	"k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
+	"k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
 	"k8s.io/kubernetes/pkg/apimachinery/announced"
 )
 
@@ -27,7 +27,7 @@ func init() {
 		&announced.GroupMetaFactoryArgs{
 			GroupName:                  kubeadm.GroupName,
 			VersionPreferenceOrder:     []string{v1alpha1.SchemeGroupVersion.Version},
-			ImportPrefix:               "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm",
+			ImportPrefix:               "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm",
 			AddInternalObjectsToScheme: kubeadm.AddToScheme,
 		},
 		announced.VersionToSchemeFunc{

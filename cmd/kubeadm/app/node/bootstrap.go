@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
-	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 	"k8s.io/kubernetes/pkg/apis/certificates"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/release_1_5"
 	certclient "k8s.io/kubernetes/pkg/client/clientset_generated/release_1_5/typed/certificates/v1alpha1"

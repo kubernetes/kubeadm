@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	// TODO: "k8s.io/client-go/client/tools/clientcmd/api"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
-	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 	clientcmdapi "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	certutil "k8s.io/kubernetes/pkg/util/cert"
 )

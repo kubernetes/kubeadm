@@ -22,7 +22,7 @@ import (
 	"runtime"
 	"time"
 
-	"k8s.io/kubernetes/cmd/kubeadm/app/images"
+	"k8s.io/kubeadm/cmd/kubeadm/app/images"
 	"k8s.io/kubernetes/pkg/api"
 	apierrs "k8s.io/kubernetes/pkg/api/errors"
 	unversionedapi "k8s.io/kubernetes/pkg/api/unversioned"

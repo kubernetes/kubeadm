@@ -25,7 +25,7 @@ import (
 	"time"
 
 	jose "github.com/square/go-jose"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
 	"k8s.io/kubernetes/pkg/util/wait"
 )
 

@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"k8s.io/kubernetes/cmd/kubeadm/app/preflight"
+	"k8s.io/kubeadm/cmd/kubeadm/app/preflight"
 
 	"github.com/golang/glog"
 	"github.com/renstrom/dedent"

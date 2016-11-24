@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"testing"
 
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
 )
 
 type getCoreImageTest struct {

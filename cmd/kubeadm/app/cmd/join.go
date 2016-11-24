@@ -24,11 +24,11 @@ import (
 	"github.com/renstrom/dedent"
 	"github.com/spf13/cobra"
 
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
-	kubeadmapiext "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
-	kubenode "k8s.io/kubernetes/cmd/kubeadm/app/node"
-	"k8s.io/kubernetes/cmd/kubeadm/app/preflight"
-	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
+	kubeadmapi "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm"
+	kubeadmapiext "k8s.io/kubeadm/cmd/kubeadm/app/apis/kubeadm/v1alpha1"
+	kubenode "k8s.io/kubeadm/cmd/kubeadm/app/node"
+	"k8s.io/kubeadm/cmd/kubeadm/app/preflight"
+	kubeadmutil "k8s.io/kubeadm/cmd/kubeadm/app/util"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/runtime"
 )
