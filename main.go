@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -41,13 +42,19 @@ var (
 )
 
 func main() {
+	checkpoints, err := getCheckpointManifests()
+	if err != nil {
+		glog.Fatalf("failed to load existing checkpoint manifests: %v", err)
+	}
 	glog.Info("begin pods checkpointing...")
-	run(kubeAPIServer, tempAPIServer, api.NamespaceSystem)
+	run(kubeAPIServer, tempAPIServer, api.NamespaceSystem, checkpoints)
 }
 
-func run(actualPodName, tempPodName, namespace string) {
+func run(actualPodName, tempPodName, namespace string, checkpoints map[string]struct{}) {
 	client := newAPIClient()
 	for {
+		_, checkpointed := checkpoints[checkpointManifest(tempPodName)]
+
 		var podList v1.PodList
 		if err := json.Unmarshal(getPodsFromKubeletAPI(), &podList); err != nil {
 			glog.Fatal(err)
@@ -62,17 +69,18 @@ func run(actualPodName, tempPodName, namespace string) {
 				glog.Error(err)
 			}
 		case isPodRunning(podList, client, actualPodName, namespace):
-			glog.Infof("actual pod %v found, creating temp pod manifest", actualPodName)
+			glog.Infof("actual pod %v found, creating checkpoint pod manifest", actualPodName)
 			// The actual is running. Let's snapshot the pod,
 			// clean it up a bit, and then save it to the ignore path for
 			// later use.
 			checkpointPod := createCheckpointPod(podList, actualPodName, namespace)
 			convertSecretsToVolumeMounts(client, &checkpointPod)
 			writeManifest(checkpointPod, tempPodName)
-			glog.Infof("finished creating temp pod %v manifest at %s\n", tempPodName, checkpointManifest(tempPodName))
+			checkpoints[checkpointManifest(tempPodName)] = struct{}{}
+			glog.Infof("finished creating checkpoint pod %v manifest at %s\n", tempPodName, checkpointManifest(tempPodName))
 
-		default:
-			glog.Info("no actual pod running, installing temp pod static manifest")
+		case checkpointed:
+			glog.Info("no actual pod running, installing checkpoint pod static manifest")
 			b, err := ioutil.ReadFile(checkpointManifest(tempPodName))
 			if err != nil {
 				glog.Error(err)
@@ -248,4 +256,21 @@ func activeManifest(name string) string {
 
 func checkpointManifest(name string) string {
 	return filepath.Join(ignorePath, name+".json")
+}
+
+func getCheckpointManifests() (map[string]struct{}, error) {
+	checkpoints := make(map[string]struct{})
+
+	fs, err := ioutil.ReadDir(ignorePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return checkpoints, nil
+		}
+		return nil, err
+	}
+	for _, f := range fs {
+		glog.Infof("found checkpoint pod manifests %v", f.Name())
+		checkpoints[path.Join(ignorePath, f.Name())] = struct{}{}
+	}
+	return checkpoints, nil
 }
