@@ -1,5 +1,24 @@
 ## CHANGELOG for kubeadm releases:
 
+#### Third release that deploys v1.5 clusters by default:
+ - Incorporated the system verification that validates the node before trying to run kubeadm check into the preflight checks [#36334](https://github.com/kubernetes/kubernetes/pull/36334)
+ - The control plane version automatically defaults to the latest stable version of kubernetes [#37222](https://github.com/kubernetes/kubernetes/pull/37222)
+ - Use `etcd-3.0.14` as the default etcd version [#35921](https://github.com/kubernetes/kubernetes/pull/35921)
+ - Added a new command: `kubeadm token generate` [#35144](https://github.com/kubernetes/kubernetes/pull/35144)
+ - `kubeadm reset` drains the node it's run on and defaults to removing the node from the API Server as well [#37831](https://github.com/kubernetes/kubernetes/pull/37831)
+ - Updated the DNS addon to the v1.5 version [#37835](https://github.com/kubernetes/kubernetes/pull/37835)
+ - `kubeadm` now auto-starts the `kubelet` systemd service if inactive [#37568](https://github.com/kubernetes/kubernetes/pull/37568)
+ - Made the console output of `kubeadm` much cleaner and user-friendly [#37568](https://github.com/kubernetes/kubernetes/pull/37568)
+ - `kubectl logs` and `kubectl exec` can now be used with `kubeadm` clusters [#37568](https://github.com/kubernetes/kubernetes/pull/37568)
+ - Changed SELinux directive from `unconfined_t` to `spc_t` on some control plane Pods [#37327](https://github.com/kubernetes/kubernetes/pull/37327)
+ - Removes the content of `/etc/cni/net.d` when running `kubeadm reset` [#37831](https://github.com/kubernetes/kubernetes/pull/37831)
+ - Mount `/etc/pki` into the control plane containers if present [#36373](https://github.com/kubernetes/kubernetes/pull/36373)
+ - The image repository prefix can be changed via the environment variable `KUBE_REPO_PREFIX` as a _temporary solution_ [#35948](https://github.com/kubernetes/kubernetes/pull/35948)
+ - The logging level for components are now `--v=2` [#35933](https://github.com/kubernetes/kubernetes/pull/35933)
+ - Better preflight checks in general [#35972](https://github.com/kubernetes/kubernetes/pull/35972), [#37084](https://github.com/kubernetes/kubernetes/pull/37084), [#37498](https://github.com/kubernetes/kubernetes/pull/37498), [#37524](https://github.com/kubernetes/kubernetes/pull/37524), [#36083](https://github.com/kubernetes/kubernetes/pull/36083)
+ - New unit tests: [#36106](https://github.com/kubernetes/kubernetes/pull/36106), [#36263](https://github.com/kubernetes/kubernetes/pull/36263)
+ - Other improvements: [#36040](https://github.com/kubernetes/kubernetes/pull/36040), [#36625](https://github.com/kubernetes/kubernetes/pull/36625), [#36474](https://github.com/kubernetes/kubernetes/pull/36474), [#37494](https://github.com/kubernetes/kubernetes/pull/37494), [#36025](https://github.com/kubernetes/kubernetes/pull/36025)
+
 #### Second release between v1.4 and v1.5: `v1.5.0-alpha.2.421+a6bea3d79b8bba`
  - Switch to the 10.96.0.0/12 subnet: [#35290](https://github.com/kubernetes/kubernetes/pull/35290)
  - Fix kubeadm on AWS by including /etc/ssl/certs in the controller-manager [#33681](https://github.com/kubernetes/kubernetes/pull/33681)
