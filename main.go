@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -42,6 +43,8 @@ var (
 )
 
 func main() {
+	flag.Set("logtostderr", "true")
+	defer glog.Flush()
 	checkpoints, err := getCheckpointManifests()
 	if err != nil {
 		glog.Fatalf("failed to load existing checkpoint manifests: %v", err)
