@@ -32,14 +32,24 @@ const (
 	kubeAPIServer = "kube-apiserver"
 )
 
-var podAPIServerMeta = unversioned.TypeMeta{
-	APIVersion: "v1",
-	Kind:       "Pod",
-}
-
 var (
 	secureAPIAddr = fmt.Sprintf("https://%s:%s", os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT_HTTPS"))
 )
+
+var tempAPIServerManifest = v1.Pod{
+	TypeMeta: unversioned.TypeMeta{
+		APIVersion: "v1",
+		Kind:       "Pod",
+	},
+	ObjectMeta: v1.ObjectMeta{
+		Name:      "temp-apiserver",
+		Namespace: api.NamespaceSystem,
+	},
+}
+
+var tempPodSpecMap = map[string]v1.Pod{
+	tempAPIServer: tempAPIServerManifest,
+}
 
 func main() {
 	flag.Set("logtostderr", "true")
@@ -69,9 +79,13 @@ func run(actualPodName, tempPodName, namespace string) {
 			// The actual is running. Let's snapshot the pod,
 			// clean it up a bit, and then save it to the ignore path for
 			// later use.
-			checkpointPod := createCheckpointPod(podList, actualPodName, namespace)
-			convertSecretsToVolumeMounts(client, &checkpointPod)
-			writeManifest(checkpointPod, tempPodName)
+			tempSpec, ok := tempPodSpecMap[tempPodName]
+			if !ok {
+				glog.Fatalf("cannot find pod spec for %v", tempPodName)
+			}
+			tempSpec.Spec = parseAPIPodSpec(podList, actualPodName, namespace)
+			convertSecretsToVolumeMounts(client, &tempSpec)
+			writeManifest(tempSpec, tempPodName)
 			glog.Infof("finished creating temp pod %v manifest at %s\n", tempPodName, checkpointManifest(tempPodName))
 
 		default:
@@ -174,20 +188,17 @@ func writeManifest(manifest v1.Pod, name string) {
 	writeAndAtomicCopy(m, checkpointManifest(name))
 }
 
-func createCheckpointPod(podList v1.PodList, n, ns string) v1.Pod {
-	var checkpointPod v1.Pod
+func parseAPIPodSpec(podList v1.PodList, n, ns string) v1.PodSpec {
+	var apiPod v1.Pod
 	for _, p := range podList.Items {
 		if isPod(p, n, ns) {
-			checkpointPod = p
+			apiPod = p
 			break
 		}
 	}
-	// the pod we manifest we got from kubelet does not have TypeMeta.
-	// Add it now.
-	checkpointPod.TypeMeta = podAPIServerMeta
-	cleanVolumes(&checkpointPod)
-	stripNonessentialInfo(&checkpointPod)
-	return checkpointPod
+	cleanVolumes(&apiPod)
+	stripNonessentialInfo(&apiPod)
+	return apiPod.Spec
 }
 
 func newAPIClient() clientset.Interface {
