@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,234 +21,497 @@ import (
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/release_1_5"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	clientcmdapi "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
+	"k8s.io/kubernetes/pkg/fields"
+	"k8s.io/kubernetes/pkg/runtime"
 )
 
 const (
+	nodeNameEnv = "NODE_NAME"
+
 	kubeletAPIPodsURL = "http://127.0.0.1:10255/pods"
-	ignorePath        = "/srv/kubernetes/manifests"
-	activePath        = "/etc/kubernetes/manifests"
-	manifestFilename  = "apiserver.json"
-	kubeconfigPath    = "/etc/kubernetes/kubeconfig"
-	secretsPath       = "/etc/kubernetes/checkpoint-secrets"
+
+	activeCheckpointPath   = "/etc/kubernetes/manifests"
+	inactiveCheckpointPath = "/srv/kubernetes/manifests"
+	checkpointSecretPath   = "/etc/kubernetes/checkpoint-secrets"
+	kubeconfigPath         = "/etc/kubernetes/kubeconfig"
+
+	shouldCheckpointAnnotation = "checkpointer.alpha.coreos.com/checkpoint"    // = "true"
+	checkpointParentAnnotation = "checkpointer.alpha.coreos.com/checkpoint-of" // = "podName"
+	podSourceAnnotation        = "kubernetes.io/config.source"
+
+	shouldCheckpoint = "true"
+	podSourceFile    = "file"
 )
 
-var (
-	tempAPIServer      = []byte("temp-apiserver")
-	kubeAPIServer      = []byte("kube-apiserver")
-	activeManifest     = filepath.Join(activePath, manifestFilename)
-	checkpointManifest = filepath.Join(ignorePath, manifestFilename)
-	secureAPIAddr      = fmt.Sprintf("https://%s:%s", os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT_HTTPS"))
-)
-
-var tempAPIServerManifest = v1.Pod{
-	TypeMeta: unversioned.TypeMeta{
-		APIVersion: "v1",
-		Kind:       "Pod",
-	},
-	ObjectMeta: v1.ObjectMeta{
-		Name:      "temp-apiserver",
-		Namespace: "kube-system",
-	},
-}
+//TODO(aaron): The checkpointer should know how to GC itself because it runs as a static pod.
 
 func main() {
 	flag.Set("logtostderr", "true")
+	flag.Parse()
 	defer glog.Flush()
-	glog.Info("begin apiserver checkpointing...")
-	run()
+
+	nodeName := os.Getenv(nodeNameEnv)
+	if nodeName == "" {
+		glog.Fatalf("Missing required environment variable: %s", nodeNameEnv)
+	}
+
+	glog.Infof("Starting checkpointer for node: %s", nodeName)
+	run(newClient(), nodeName)
 }
 
-func run() {
-	client := newAPIClient()
+func run(client clientset.Interface, nodeName string) {
 	for {
-		var podList v1.PodList
-		if err := json.Unmarshal(getPodsFromKubeletAPI(), &podList); err != nil {
-			glog.Fatal(err)
-		}
-		switch {
-		case bothAPIServersRunning(podList):
-			glog.Info("both temp and kube apiserver running, removing temp apiserver")
-			// Both the self-hosted API Server and the temp API Server are running.
-			// Remove the temp API Server manifest from the config dir so that the
-			// kubelet will stop it.
-			if err := os.Remove(activeManifest); err != nil {
-				glog.Error(err)
-			}
-		case kubeSystemAPIServerRunning(podList, client):
-			glog.Info("kube-apiserver found, creating temp-apiserver manifest")
-			// The self-hosted API Server is running. Let's snapshot the pod,
-			// clean it up a bit, and then save it to the ignore path for
-			// later use.
-			tempAPIServerManifest.Spec = parseAPIPodSpec(podList)
-			convertSecretsToVolumeMounts(client, &tempAPIServerManifest)
-			writeManifest(tempAPIServerManifest)
-			glog.Infof("finished creating temp-apiserver manifest at %s\n", checkpointManifest)
+		time.Sleep(3 * time.Second)
 
-		default:
-			glog.Info("no apiserver running, installing temp apiserver static manifest")
-			b, err := ioutil.ReadFile(checkpointManifest)
-			if err != nil {
-				glog.Error(err)
+		localParentPods, err := getLocalParentPods()
+		if err != nil {
+			// If we can't determine local state from kubelet api, we shouldn't make any decisions about checkpoints.
+			glog.Errorf("Failed to retrive pod list from kubelet api: %v", err)
+			continue
+		}
+
+		createCheckpointsForValidParents(client, localParentPods)
+
+		// Try to get scheduled pods from the apiserver.
+		// These will be used to GC checkpoints for parents no longer scheduled to this node.
+		// A return value of nil is assumed to be "could not contact apiserver"
+		// TODO(aaron): only check this every 30 seconds or so
+		apiParentPods := getAPIParentPods(client, nodeName)
+
+		// Get on disk copies of (in)active checkpoints
+		//TODO(aaron): Could be racy to load from disk each time, but much easier than trying to keep in-memory state in sync.
+		activeCheckpoints := getFileCheckpoints(activeCheckpointPath)
+		inactiveCheckpoints := getFileCheckpoints(inactiveCheckpointPath)
+
+		start, stop, remove := process(localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoints)
+		handleRemove(remove)
+		handleStop(stop)
+		handleStart(start)
+	}
+}
+
+// process() makes decisions on which checkpoints need to be started, stopped, or removed.
+// It makes this decision based on inspecting the states from kubelet, apiserver, active/inactive checkpoints.
+//
+// - localParentPods: pod state from kubelet api for all "to be checkpointed" pods
+// - apiParentPods: pod state from the api server for all "to be checkpointed" pods
+// - activeCheckpoints: checkpoint pod manifests which are currently active & in the static pod manifest
+// - inactiveCheckpoints: checkpoint pod manifets which are stored in an inactive directory, but are ready to be activated
+//
+// The return values are checkpoints which should be started or stopped, and checkpoints which need to be removed alltogether.
+// The removal of a checkpoint means its parent is no longer scheduled to this node, and we need to GC active / inactive
+// checkpoints as well as any secrets / configMaps which are no longer necessary.
+func process(localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoints map[string]*v1.Pod) (start, stop, remove []string) {
+
+	// We can only make some GC decisions if we've successfuly contacted an apiserver.
+	// When apiParentPods == nil, that means we were not able to get an updated list of pods.
+	removeMap := make(map[string]struct{})
+	if apiParentPods != nil {
+
+		// Scan for inacive checkpoints we should GC
+		for id := range inactiveCheckpoints {
+			// If the inactive checkpoint still has a parent pod, do nothing.
+			// This means the kubelet thinks it should still be running, which has the same scheduling info that we do --
+			// so we won't make any decisions about its checkpoint.
+			if _, ok := localParentPods[id]; ok {
+				glog.V(4).Infof("API GC: skipping inactive checkpoint %s", id)
+				continue
+			}
+
+			// If the inactive checkpoint does not have a parent in the api-server, we must assume it should no longer be running on this node.
+			// NOTE: It's possible that a replacement for this pod has not been rescheduled elsewhere, but that's not something we can base our decision on.
+			//       For example, if a single scheduler is running, and the node is drained, the scheduler pod will be deleted and there will be no replacement.
+			//       However, we don't know this, and as far as the checkpointer is concerned - that pod is no longer scheduled to this node.
+			if _, ok := apiParentPods[id]; !ok {
+				glog.V(4).Infof("API GC: should remove inactive checkpoint %s", id)
+				removeMap[id] = struct{}{}
+				delete(inactiveCheckpoints, id)
+			}
+		}
+
+		// Scan active checkpoints we should GC
+		for id := range activeCheckpoints {
+			// If the active checkpoint does not have a parent in the api-server, we must assume it should no longer be running on this node.
+			if _, ok := apiParentPods[id]; !ok {
+				glog.V(4).Infof("API GC: should remove active checkpoint %s", id)
+				removeMap[id] = struct{}{}
+				delete(activeCheckpoints, id)
+			}
+		}
+	}
+
+	// Can make decisions about starting/stopping checkpoints just with local state.
+
+	// If there is an inactive checkpoint, and no parent is running, start the checkpoint
+	for id := range inactiveCheckpoints {
+		if _, ok := localParentPods[id]; !ok {
+			glog.V(4).Infof("Should start checkpoint %s", id)
+			start = append(start, id)
+		}
+	}
+
+	// If there is an active checkpoint and a parent pod, stop the active checkpoint
+	// The parent may not be in a running state, but the kubelet is trying to start it so we should get out of the way.
+	for id := range activeCheckpoints {
+		if _, ok := localParentPods[id]; ok {
+			glog.V(4).Infof("Should stop checkpoint %s", id)
+			stop = append(stop, id)
+		}
+	}
+
+	// De-duped checkpoints to remove. If we decide to GC a checkpoint, we will clean up both inactive/active.
+	for k := range removeMap {
+		remove = append(remove, k)
+	}
+
+	return start, stop, remove
+}
+
+// createCheckpointsForValidParents will iterate through pods which are candidates for checkpoing, and if they should be:
+// - checkpoint any remote assets they need (e.g. secrets)
+// - sanitize their podSpec, removing unnecessary information
+// - store the manifest on disk in an "inactive" checkpoint location
+//TODO(aaron): Add support for checkpointing configMaps
+func createCheckpointsForValidParents(client clientset.Interface, pods map[string]*v1.Pod) {
+	for _, pod := range pods {
+		if !isRunning(pod) {
+			continue
+		}
+		id := PodFullName(pod)
+
+		cp, err := copyPod(pod)
+		if err != nil {
+			glog.Errorf("Failed to create checkpoint pod copy for %s: %v", id, err)
+			continue
+		}
+
+		cp, err = checkpointSecretVolumes(client, cp)
+		if err != nil {
+			glog.Errorf("Failed to checkpoint secrets for pod %s: %v", id, err)
+			continue
+		}
+		cp, err = sanitizeCheckpointPod(cp)
+		if err != nil {
+			glog.Errorf("Failed to sanitize manifest for %s: %v", id, err)
+			continue
+		}
+		if err := writeCheckpointManifest(cp); err != nil {
+			glog.Errorf("Failed to write checkpoint for %s: %v", id, err)
+		}
+	}
+}
+
+// writeCheckpointManifest will save the pod to the inactive checkpoint location if it doesn't already exist.
+func writeCheckpointManifest(pod *v1.Pod) error {
+	b, err := json.Marshal(pod)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(inactiveCheckpointPath, pod.Namespace+"-"+pod.Name+".json")
+	oldb, err := ioutil.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if bytes.Compare(oldb, b) == 0 {
+		glog.V(4).Infof("Checkpoint manifest for %s already exists. Skipping", PodFullName(pod))
+		return nil
+	}
+	glog.Infof("Checkpointing manifest for %s", PodFullName(pod))
+	return writeAndAtomicRename(path, b, 0644)
+}
+
+func sanitizeCheckpointPod(cp *v1.Pod) (*v1.Pod, error) {
+	// Clear ObjectMeta except for name/namespace
+	// NOTE(aaron): If we want to keep labels, we need to add a new label so the static pod
+	//              will not be adopted by higher-level parent (e.g. daemonset/deployment).
+	//              Otherwise you end up in situations where parent tries deleting mirror pods.
+	cp.ObjectMeta = v1.ObjectMeta{
+		Name:        cp.Name,
+		Namespace:   cp.Namespace,
+		Annotations: make(map[string]string),
+	}
+
+	// Track this checkpoint's parent pod
+	cp.Annotations[checkpointParentAnnotation] = cp.Name
+
+	// Remove Service Account
+	cp.Spec.ServiceAccountName = ""
+	cp.Spec.DeprecatedServiceAccount = ""
+
+	// Clear pod status
+	cp.Status.Reset()
+
+	return cp, nil
+}
+
+// getFileCheckpoints will retrieve all checkpoint manifests from a given filepath.
+func getFileCheckpoints(path string) map[string]*v1.Pod {
+	checkpoints := make(map[string]*v1.Pod)
+
+	fi, err := ioutil.ReadDir(path)
+	if err != nil {
+		glog.Fatalf("Failed to read checkpoint manifest path: %v", err)
+	}
+
+	for _, f := range fi {
+		manifest := filepath.Join(path, f.Name())
+		b, err := ioutil.ReadFile(manifest)
+		if err != nil {
+			glog.Errorf("Error reading manifest: %v", err)
+			continue
+		}
+
+		cp := &v1.Pod{}
+		if err := runtime.DecodeInto(api.Codecs.UniversalDecoder(), b, cp); err != nil {
+			glog.Errorf("Error unmarshalling manifest from %s: %v", filepath.Join(path, f.Name()), err)
+			continue
+		}
+
+		if isCheckpoint(cp) {
+			if _, ok := checkpoints[PodFullName(cp)]; ok { // sanity check
+				glog.Warningf("Found multiple checkpoint pods in %s with same id: %s", path, PodFullName(cp))
+			}
+			checkpoints[PodFullName(cp)] = cp
+		}
+	}
+	return checkpoints
+}
+
+// getAPIParentPods will retrieve all pods from apiserver that are parents & should be checkpointed
+func getAPIParentPods(client clientset.Interface, nodeName string) map[string]*v1.Pod {
+	opts := v1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(api.PodHostField, nodeName).String(),
+	}
+
+	podList, err := client.Core().Pods(api.NamespaceAll).List(opts)
+	if err != nil {
+		glog.Warningf("Unable to contact APIServer, skipping garbage collection: %v", err)
+		return nil
+	}
+	return podListToParentPods(podList)
+}
+
+// getAPIParentPods will retrieve all pods from kubelet api that are parents & should be checkpointed
+func getLocalParentPods() (map[string]*v1.Pod, error) {
+	resp, err := http.Get(kubeletAPIPodsURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to contact kubelet pod api: %v", err)
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	var podList v1.PodList
+	if err := json.Unmarshal(b, &podList); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal podlist: %v", err)
+	}
+	return podListToParentPods(&podList), nil
+}
+
+// checkpointSecretVolumes ensures that all pod secrets are checkpointed locally, then converts the secret volume to a hostpath.
+func checkpointSecretVolumes(client clientset.Interface, pod *v1.Pod) (*v1.Pod, error) {
+	for i := range pod.Spec.Volumes {
+		v := &pod.Spec.Volumes[i]
+		if v.Secret == nil {
+			continue
+		}
+
+		path, err := checkpointSecret(client, pod.Namespace, pod.Name, v.Secret.SecretName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to checkpoint secret for pod %s/%s: %v", pod.Namespace, pod.Name, err)
+		}
+
+		v.HostPath = &v1.HostPathVolumeSource{Path: path}
+		v.Secret = nil
+
+	}
+	return pod, nil
+}
+
+// checkpointSecret will locally store secret data.
+// The path to the secret data becomes: checkpointSecretPath/namespace/podname/secretName/secret.file
+// Where each "secret.file" is a key from the secret.Data field.
+func checkpointSecret(client clientset.Interface, namespace, podName, secretName string) (string, error) {
+	secret, err := client.Core().Secrets(namespace).Get(secretName)
+	if err != nil {
+		return "", fmt.Errorf("failed to retrieve secret %s/%s: %v", namespace, secretName, err)
+	}
+
+	basePath := secretPath(namespace, podName, secretName)
+	if err := os.MkdirAll(basePath, 0700); err != nil {
+		return "", fmt.Errorf("failed to create secret checkpoint path %s: %v", basePath, err)
+	}
+	// TODO(aaron): No need to store if already exists
+	for f, d := range secret.Data {
+		if err := writeAndAtomicRename(filepath.Join(basePath, f), d, 0600); err != nil {
+			return "", fmt.Errorf("failed to write secret %s: %v", secret.Name, err)
+		}
+	}
+	return basePath, nil
+}
+
+func handleRemove(remove []string) {
+	for _, id := range remove {
+		// Remove inactive checkpoints
+		glog.Infof("Removing checkpoint of: %s", id)
+		p := PodFullNameToInactiveCheckpointPath(id)
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+			glog.Errorf("Failed to remove inactive checkpoint %s: %v", p, err)
+			continue
+		}
+		// Remove active checkpoints
+		p = PodFullNameToActiveCheckpointPath(id)
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+			glog.Errorf("Failed to remove active checkpoint %s: %v", p, err)
+			continue
+		}
+		// Remove Secrets
+		p = PodFullNameToSecretPath(id)
+		if err := os.RemoveAll(p); err != nil {
+			glog.Errorf("Failed to remove pod secrets from %s: %s", p, err)
+		}
+		// TODO(aaron): Remove configMaps when supported
+	}
+}
+
+func handleStop(stop []string) {
+	for _, id := range stop {
+		glog.Infof("Stopping active checkpoint: %s", id)
+		p := PodFullNameToActiveCheckpointPath(id)
+		if err := os.Remove(p); err != nil {
+			if os.IsNotExist(err) { // Sanity check (it's fine - just want to surface this if it's occuring)
+				glog.Warningf("Attempted to remove active checkpoint, but manifest no longer exists: %s", p)
 			} else {
-				if err := ioutil.WriteFile(activeManifest, b, 0644); err != nil {
-					glog.Error(err)
-				}
+				glog.Errorf("Failed to stop active checkpoint %s: %v", p, err)
 			}
 		}
-		time.Sleep(1 * time.Second)
 	}
 }
 
-func stripNonessentialInfo(p *v1.Pod) {
-	p.Spec.ServiceAccountName = ""
-	p.Spec.DeprecatedServiceAccount = ""
-	p.Status.Reset()
+func handleStart(start []string) {
+	for _, id := range start {
+		src := PodFullNameToInactiveCheckpointPath(id)
+		data, err := ioutil.ReadFile(src)
+		if err != nil {
+			glog.Errorf("Failed to read checkpoint source: %v", err)
+			continue
+		}
+
+		dst := PodFullNameToActiveCheckpointPath(id)
+		if err := ioutil.WriteFile(dst, data, 0644); err != nil {
+			glog.Errorf("Failed to write active checkpoint manifest: %v", err)
+		}
+	}
 }
 
-func getPodsFromKubeletAPI() []byte {
-	var pods []byte
-	res, err := http.Get(kubeletAPIPodsURL)
-	if err != nil {
-		glog.Error(err)
-		return pods
+func isRunning(pod *v1.Pod) bool {
+	// Determine if a pod is "running" by checking if each container status is in a "ready" state
+	// TODO(aaron): Figure out best sets of data to inspect. PodConditions, PodPhase, containerStatus, containerState, etc.
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if !containerStatus.Ready {
+			glog.Infof("Container %s in pod %s not ready. Will not checkpoint", containerStatus.Name, pod.Name)
+			return false
+		}
 	}
-	pods, err = ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		glog.Error(err)
+	return true
+}
+
+func podListToParentPods(pl *v1.PodList) map[string]*v1.Pod {
+	pods := make(map[string]*v1.Pod)
+	for i := range pl.Items {
+		pod, err := copyPod(&pl.Items[i])
+		if err != nil {
+			glog.Errorf("Failed to copy parent pod from podlist %s: %v", PodFullName(&pl.Items[i]), err)
+			continue
+		}
+
+		id := PodFullName(pod)
+		if !isValidParent(pod) {
+			continue
+		}
+		if _, ok := pods[id]; ok { // sanity check (shouldn't ever happen)
+			glog.Warningf("Found multiple local parent pods with same id: %s", id)
+		}
+		pods[id] = pod
+		// Pods from Kubelet API do not have TypeMeta populated - set it here either way.
+		pods[id].TypeMeta = unversioned.TypeMeta{
+			APIVersion: pl.APIVersion,
+			Kind:       "Pod",
+		}
 	}
 	return pods
 }
 
-func bothAPIServersRunning(pods v1.PodList) bool {
-	var kubeAPISeen, tempAPISeen bool
-	for _, p := range pods.Items {
-		kubeAPISeen = kubeAPISeen || isKubeAPI(p)
-		tempAPISeen = tempAPISeen || isTempAPI(p)
-		if kubeAPISeen && tempAPISeen {
-			return true
-		}
+// A valid checkpoint parent:
+//    has the checkpoint=true annotation
+//    is not a static pod itself
+//    is not a checkpoint pod itself
+func isValidParent(pod *v1.Pod) bool {
+	if pod.Annotations == nil {
+		return false
 	}
-	return false
+	shouldCheckpoint := pod.Annotations[shouldCheckpointAnnotation] == shouldCheckpoint
+	isStatic := pod.Annotations[podSourceAnnotation] == podSourceFile
+	return shouldCheckpoint && !isStatic && !isCheckpoint(pod)
 }
 
-func kubeSystemAPIServerRunning(pods v1.PodList, client clientset.Interface) bool {
-	for _, p := range pods.Items {
-		if isKubeAPI(p) {
-			// Make sure it's actually running. Sometimes we get that
-			// pod manifest back, but the server is not actually running.
-			_, err := client.Discovery().ServerVersion()
-			return err == nil
-		}
+func isCheckpoint(pod *v1.Pod) bool {
+	if pod.Annotations == nil {
+		return false
 	}
-	return false
+	_, ok := pod.Annotations[checkpointParentAnnotation]
+	return ok
 }
 
-func isKubeAPI(pod v1.Pod) bool {
-	return strings.Contains(pod.Name, "kube-apiserver") && pod.Namespace == api.NamespaceSystem
-}
-
-func isTempAPI(pod v1.Pod) bool {
-	return strings.Contains(pod.Name, "temp-apiserver") && pod.Namespace == api.NamespaceSystem
-}
-
-// cleanVolumes will sanitize the list of volumes and volume mounts
-// to remove the default service account token.
-func cleanVolumes(p *v1.Pod) {
-	volumes := make([]v1.Volume, 0, len(p.Spec.Volumes))
-	for _, v := range p.Spec.Volumes {
-		if !strings.HasPrefix(v.Name, "default-token") {
-			volumes = append(volumes, v)
-		}
-	}
-	p.Spec.Volumes = volumes
-	for i := range p.Spec.Containers {
-		c := &p.Spec.Containers[i]
-		volumeMounts := make([]v1.VolumeMount, 0, len(c.VolumeMounts))
-		for _, vm := range c.VolumeMounts {
-			if !strings.HasPrefix(vm.Name, "default-token") {
-				volumeMounts = append(volumeMounts, vm)
-			}
-		}
-		c.VolumeMounts = volumeMounts
-	}
-}
-
-// writeManifest will write the manifest to the ignore path.
-// It first writes the file to a temp file, and then atomically moves it into
-// the actual ignore path and correct file name.
-func writeManifest(manifest v1.Pod) {
-	m, err := json.Marshal(manifest)
+func copyPod(pod *v1.Pod) (*v1.Pod, error) {
+	obj, err := api.Scheme.Copy(pod)
 	if err != nil {
-		glog.Fatal(err)
+		return nil, err
 	}
-	writeAndAtomicCopy(m, checkpointManifest)
+	return obj.(*v1.Pod), nil
 }
 
-func parseAPIPodSpec(podList v1.PodList) v1.PodSpec {
-	var apiPod v1.Pod
-	for _, p := range podList.Items {
-		if isKubeAPI(p) {
-			apiPod = p
-			break
-		}
-	}
-	cleanVolumes(&apiPod)
-	stripNonessentialInfo(&apiPod)
-	return apiPod.Spec
+func PodFullName(pod *v1.Pod) string {
+	return pod.Namespace + "/" + pod.Name
 }
 
-func newAPIClient() clientset.Interface {
+func PodFullNameToInactiveCheckpointPath(id string) string {
+	return filepath.Join(inactiveCheckpointPath, strings.Replace(id, "/", "-", -1)+".json")
+}
+
+func PodFullNameToActiveCheckpointPath(id string) string {
+	return filepath.Join(activeCheckpointPath, strings.Replace(id, "/", "-", -1)+".json")
+}
+
+func secretPath(namespace, podName, secretName string) string {
+	return filepath.Join(checkpointSecretPath, namespace, podName, secretName)
+}
+
+func PodFullNameToSecretPath(id string) string {
+	namespace, podname := path.Split(id)
+	return filepath.Join(checkpointSecretPath, namespace, podname)
+}
+
+func newClient() clientset.Interface {
+	// This is run as a static pod, so we can't use InClusterConfig (no secrets/service account)
+	// Use the same kubeconfig as the kubelet for auth - but use the apiserver address populated as pod environment variables.
+	apiServerAddr := fmt.Sprintf("https://%s:%s", os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT_HTTPS"))
 	kubeConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
-		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: secureAPIAddr}}).ClientConfig()
+		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: apiServerAddr}}).ClientConfig()
 	if err != nil {
-		glog.Fatal(err)
+		glog.Fatalf("Failed to load kubeconfig: %v", err)
 	}
 	return clientset.NewForConfigOrDie(kubeConfig)
 }
 
-func convertSecretsToVolumeMounts(client clientset.Interface, pod *v1.Pod) {
-	glog.Info("converting secrets to volume mounts")
-	spec := pod.Spec
-	for i := range spec.Volumes {
-		v := &spec.Volumes[i]
-		if v.Secret != nil {
-			secretName := v.Secret.SecretName
-			basePath := filepath.Join(secretsPath, pod.Name, v.Secret.SecretName)
-			v.HostPath = &v1.HostPathVolumeSource{
-				Path: basePath,
-			}
-			copySecretsToDisk(client, secretName, basePath)
-			v.Secret = nil
-		}
-	}
-}
-
-func copySecretsToDisk(client clientset.Interface, secretName, basePath string) {
-	glog.Info("copying secrets to disk")
-	if err := os.MkdirAll(basePath, 0755); err != nil {
-		glog.Fatal(err)
-	}
-	glog.Infof("created directory %s", basePath)
-	s, err := client.Core().Secrets(api.NamespaceSystem).Get(secretName)
-	if err != nil {
-		glog.Fatal(err)
-	}
-	for name, value := range s.Data {
-		path := filepath.Join(basePath, name)
-		writeAndAtomicCopy(value, path)
-	}
-}
-
-func writeAndAtomicCopy(data []byte, path string) {
-	// First write a "temp" file.
+func writeAndAtomicRename(path string, data []byte, perm os.FileMode) error {
 	tmpfile := filepath.Join(filepath.Dir(path), "."+filepath.Base(path))
-	if err := ioutil.WriteFile(tmpfile, data, 0644); err != nil {
-		glog.Fatal(err)
+	if err := ioutil.WriteFile(tmpfile, data, perm); err != nil {
+		return err
 	}
-	// Finally, copy that file to the correct location.
-	if err := os.Rename(tmpfile, path); err != nil {
-		glog.Fatal(err)
-	}
+	return os.Rename(tmpfile, path)
 }
