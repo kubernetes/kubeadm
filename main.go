@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -20,7 +21,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/v1"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/release_1_5"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
-	clientcmdapi "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/runtime"
 )
@@ -28,7 +28,11 @@ import (
 const (
 	nodeNameEnv = "NODE_NAME"
 
-	kubeletAPIPodsURL = "http://127.0.0.1:10255/pods"
+	// We must use both the :10255/pods and :10250/runningpods/ endpoints, because /pods endpoint could have stale data.
+	// The /pods endpoint will only show the last cached status which has successfully been written to an apiserver.
+	// However, if there is no apiserver, we may get stale state (e.g. saying pod is running, when it really is not).
+	kubeletAPIPodsURL        = "http://127.0.0.1:10255/pods"
+	kubeletAPIRunningPodsURL = "https://127.0.0.1:10250/runningpods/"
 
 	activeCheckpointPath   = "/etc/kubernetes/manifests"
 	inactiveCheckpointPath = "/srv/kubernetes/manifests"
@@ -70,6 +74,12 @@ func run(client clientset.Interface, nodeName string) {
 			continue
 		}
 
+		localRunningPods, err := getLocalRunningPods()
+		if err != nil {
+			glog.Errorf("Failed to retrieve running pods from kubelet api: %v", err)
+			continue
+		}
+
 		createCheckpointsForValidParents(client, localParentPods)
 
 		// Try to get scheduled pods from the apiserver.
@@ -83,7 +93,7 @@ func run(client clientset.Interface, nodeName string) {
 		activeCheckpoints := getFileCheckpoints(activeCheckpointPath)
 		inactiveCheckpoints := getFileCheckpoints(inactiveCheckpointPath)
 
-		start, stop, remove := process(localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoints)
+		start, stop, remove := process(localRunningPods, localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoints)
 		handleRemove(remove)
 		handleStop(stop)
 		handleStart(start)
@@ -93,17 +103,18 @@ func run(client clientset.Interface, nodeName string) {
 // process() makes decisions on which checkpoints need to be started, stopped, or removed.
 // It makes this decision based on inspecting the states from kubelet, apiserver, active/inactive checkpoints.
 //
-// - localParentPods: pod state from kubelet api for all "to be checkpointed" pods
+// - localRunningPods: running pods retrieved from kubelet api. Minimal amount of info (no podStatus) as it is extracted from container runtime.
+// - localParentPods: pod state from kubelet api for all "to be checkpointed" pods - podStatus may be stale (only as recent as last apiserver contact)
 // - apiParentPods: pod state from the api server for all "to be checkpointed" pods
 // - activeCheckpoints: checkpoint pod manifests which are currently active & in the static pod manifest
-// - inactiveCheckpoints: checkpoint pod manifets which are stored in an inactive directory, but are ready to be activated
+// - inactiveCheckpoints: checkpoint pod manifest which are stored in an inactive directory, but are ready to be activated
 //
-// The return values are checkpoints which should be started or stopped, and checkpoints which need to be removed alltogether.
+// The return values are checkpoints which should be started or stopped, and checkpoints which need to be removed altogether.
 // The removal of a checkpoint means its parent is no longer scheduled to this node, and we need to GC active / inactive
 // checkpoints as well as any secrets / configMaps which are no longer necessary.
-func process(localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoints map[string]*v1.Pod) (start, stop, remove []string) {
+func process(localRunningPods, localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoints map[string]*v1.Pod) (start, stop, remove []string) {
 
-	// We can only make some GC decisions if we've successfuly contacted an apiserver.
+	// We can only make some GC decisions if we've successfully contacted an apiserver.
 	// When apiParentPods == nil, that means we were not able to get an updated list of pods.
 	removeMap := make(map[string]struct{})
 	if apiParentPods != nil {
@@ -113,6 +124,10 @@ func process(localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoi
 			// If the inactive checkpoint still has a parent pod, do nothing.
 			// This means the kubelet thinks it should still be running, which has the same scheduling info that we do --
 			// so we won't make any decisions about its checkpoint.
+			// TODO(aaron): This is a safety check, and may not be necessary -- question is do we trust that the api state we received
+			//              is accurate -- and that we should ignore our local state (or assume it could be inaccurate). For example,
+			//              local kubelet pod state will be innacurate in the case that we can't contact apiserver (kubelet only keeps
+			//              cached responses from api) -- however, we're assuming we've been able to contact api, so this likely is moot.
 			if _, ok := localParentPods[id]; ok {
 				glog.V(4).Infof("API GC: skipping inactive checkpoint %s", id)
 				continue
@@ -144,16 +159,16 @@ func process(localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoi
 
 	// If there is an inactive checkpoint, and no parent is running, start the checkpoint
 	for id := range inactiveCheckpoints {
-		if _, ok := localParentPods[id]; !ok {
+		if _, ok := localRunningPods[id]; !ok {
 			glog.V(4).Infof("Should start checkpoint %s", id)
 			start = append(start, id)
 		}
 	}
 
-	// If there is an active checkpoint and a parent pod, stop the active checkpoint
+	// If there is an active checkpoint and a running pod, stop the active checkpoint
 	// The parent may not be in a running state, but the kubelet is trying to start it so we should get out of the way.
 	for id := range activeCheckpoints {
-		if _, ok := localParentPods[id]; ok {
+		if _, ok := localRunningPods[id]; ok {
 			glog.V(4).Infof("Should stop checkpoint %s", id)
 			stop = append(stop, id)
 		}
@@ -167,13 +182,19 @@ func process(localParentPods, apiParentPods, activeCheckpoints, inactiveCheckpoi
 	return start, stop, remove
 }
 
-// createCheckpointsForValidParents will iterate through pods which are candidates for checkpoing, and if they should be:
+// createCheckpointsForValidParents will iterate through pods which are candidates for checkpointing, then:
 // - checkpoint any remote assets they need (e.g. secrets)
 // - sanitize their podSpec, removing unnecessary information
 // - store the manifest on disk in an "inactive" checkpoint location
 //TODO(aaron): Add support for checkpointing configMaps
 func createCheckpointsForValidParents(client clientset.Interface, pods map[string]*v1.Pod) {
 	for _, pod := range pods {
+		// This merely check that the last kubelet pod state thinks this pod was running. It's possible that
+		// state is actually stale (only as recent as last successful contact with api-server). However, this
+		// does contain the full podSpec -- so we can still attempt to checkpoint with this "last known good state".
+		//
+		// We do not use the `localPodRunning` state, because while the runtime may think the pod/containers are running -
+		// they may actually be in a failing state - and we've not successfully sent that podStatus to any api-server.
 		if !isRunning(pod) {
 			continue
 		}
@@ -187,6 +208,8 @@ func createCheckpointsForValidParents(client clientset.Interface, pods map[strin
 
 		cp, err = checkpointSecretVolumes(client, cp)
 		if err != nil {
+			//TODO(aaron): This can end up spamming logs at times when api-server is unavailable. To reduce spam
+			//             we could only log error if api-server can't be contacted and existing secret doesn't exist.
 			glog.Errorf("Failed to checkpoint secrets for pod %s: %v", id, err)
 			continue
 		}
@@ -311,6 +334,28 @@ func getLocalParentPods() (map[string]*v1.Pod, error) {
 	return podListToParentPods(&podList), nil
 }
 
+// getLocalRunningPods uses the /runningpods/ kubelet api to retrieve the local container runtime pod state
+func getLocalRunningPods() (map[string]*v1.Pod, error) {
+	// TODO(aaron): The kubelet api is currently secured by a self-signed cert. We should update this to actually verify at some point
+	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+	resp, err := client.Get(kubeletAPIRunningPodsURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to contact kubelet pod api: %v", err)
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	var podList v1.PodList
+	if err := json.Unmarshal(b, &podList); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal podlist: %v", err)
+	}
+	return podListToMap(&podList, filterNone), nil
+}
+
 // checkpointSecretVolumes ensures that all pod secrets are checkpointed locally, then converts the secret volume to a hostpath.
 func checkpointSecretVolumes(client clientset.Interface, pod *v1.Pod) (*v1.Pod, error) {
 	for i := range pod.Spec.Volumes {
@@ -382,7 +427,7 @@ func handleStop(stop []string) {
 		glog.Infof("Stopping active checkpoint: %s", id)
 		p := PodFullNameToActiveCheckpointPath(id)
 		if err := os.Remove(p); err != nil {
-			if os.IsNotExist(err) { // Sanity check (it's fine - just want to surface this if it's occuring)
+			if os.IsNotExist(err) { // Sanity check (it's fine - just want to surface this if it's occurring)
 				glog.Warningf("Attempted to remove active checkpoint, but manifest no longer exists: %s", p)
 			} else {
 				glog.Errorf("Failed to stop active checkpoint %s: %v", p, err)
@@ -420,23 +465,31 @@ func isRunning(pod *v1.Pod) bool {
 }
 
 func podListToParentPods(pl *v1.PodList) map[string]*v1.Pod {
+	return podListToMap(pl, isValidParent)
+}
+
+func filterNone(p *v1.Pod) bool {
+	return true
+}
+
+type filterFn func(*v1.Pod) bool
+
+func podListToMap(pl *v1.PodList, filter filterFn) map[string]*v1.Pod {
 	pods := make(map[string]*v1.Pod)
 	for i := range pl.Items {
-		pod, err := copyPod(&pl.Items[i])
-		if err != nil {
-			glog.Errorf("Failed to copy parent pod from podlist %s: %v", PodFullName(&pl.Items[i]), err)
+		if !filter(&pl.Items[i]) {
 			continue
 		}
 
+		pod := &pl.Items[i]
 		id := PodFullName(pod)
-		if !isValidParent(pod) {
-			continue
-		}
-		if _, ok := pods[id]; ok { // sanity check (shouldn't ever happen)
+
+		if _, ok := pods[id]; ok { // TODO(aaron): likely not be necessary (shouldn't ever happen) - but sanity check
 			glog.Warningf("Found multiple local parent pods with same id: %s", id)
 		}
-		pods[id] = pod
+
 		// Pods from Kubelet API do not have TypeMeta populated - set it here either way.
+		pods[id] = pod
 		pods[id].TypeMeta = unversioned.TypeMeta{
 			APIVersion: pl.APIVersion,
 			Kind:       "Pod",
@@ -497,11 +550,10 @@ func PodFullNameToSecretPath(id string) string {
 
 func newClient() clientset.Interface {
 	// This is run as a static pod, so we can't use InClusterConfig (no secrets/service account)
-	// Use the same kubeconfig as the kubelet for auth - but use the apiserver address populated as pod environment variables.
-	apiServerAddr := fmt.Sprintf("https://%s:%s", os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT_HTTPS"))
+	// Use the same kubeconfig as the kubelet for auth and api-server location.
 	kubeConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
-		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: apiServerAddr}}).ClientConfig()
+		&clientcmd.ConfigOverrides{}).ClientConfig()
 	if err != nil {
 		glog.Fatalf("Failed to load kubeconfig: %v", err)
 	}

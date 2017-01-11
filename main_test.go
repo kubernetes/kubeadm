@@ -12,6 +12,7 @@ import (
 func TestProcess(t *testing.T) {
 	type testCase struct {
 		desc                string
+		localRunning        map[string]*v1.Pod
 		localParents        map[string]*v1.Pod
 		apiParents          map[string]*v1.Pod
 		activeCheckpoints   map[string]*v1.Pod
@@ -23,14 +24,14 @@ func TestProcess(t *testing.T) {
 
 	cases := []testCase{
 		{
-			desc:                "Inactive checkpoint and no local parent: should start",
+			desc:                "Inactive checkpoint and no local running: should start",
 			inactiveCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
 			expectStart:         []string{"AA"},
 		},
 		{
-			desc:                "Inactive checkpoint and local parent: no change",
+			desc:                "Inactive checkpoint and local running: no change",
 			inactiveCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
-			localParents:        map[string]*v1.Pod{"AA": &v1.Pod{}},
+			localRunning:        map[string]*v1.Pod{"AA": &v1.Pod{}},
 		},
 		{
 			desc:                "Inactive checkpoint and no api parent: should remove",
@@ -39,9 +40,9 @@ func TestProcess(t *testing.T) {
 			expectRemove:        []string{"AA"},
 		},
 		{
-			desc:                "Inactive checkpoint and both api & local parent: no change",
+			desc:                "Inactive checkpoint and both api & local running: no change",
 			inactiveCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
-			localParents:        map[string]*v1.Pod{"AA": &v1.Pod{}},
+			localRunning:        map[string]*v1.Pod{"AA": &v1.Pod{}},
 			apiParents:          map[string]*v1.Pod{"AA": &v1.Pod{}},
 		},
 		{
@@ -51,13 +52,13 @@ func TestProcess(t *testing.T) {
 			expectStart:         []string{"AA"},
 		},
 		{
-			desc:              "Active checkpoint and no local parent: no change",
+			desc:              "Active checkpoint and no local running: no change",
 			activeCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
 		},
 		{
-			desc:              "Active checkpoint and local parent: should stop",
+			desc:              "Active checkpoint and local running: should stop",
 			activeCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
-			localParents:      map[string]*v1.Pod{"AA": &v1.Pod{}},
+			localRunning:      map[string]*v1.Pod{"AA": &v1.Pod{}},
 			expectStop:        []string{"AA"},
 		},
 		{
@@ -72,9 +73,9 @@ func TestProcess(t *testing.T) {
 			expectRemove:      []string{"AA"},
 		},
 		{
-			desc:              "Active checkpoint with local parent, and api parent: should stop",
+			desc:              "Active checkpoint with local running, and api parent: should stop",
 			activeCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
-			localParents:      map[string]*v1.Pod{"AA": &v1.Pod{}},
+			localRunning:      map[string]*v1.Pod{"AA": &v1.Pod{}},
 			apiParents:        map[string]*v1.Pod{"AA": &v1.Pod{}},
 			expectStop:        []string{"AA"},
 		},
@@ -92,10 +93,21 @@ func TestProcess(t *testing.T) {
 			apiParents:          map[string]*v1.Pod{"BB": &v1.Pod{}},
 			expectRemove:        []string{"AA"}, // Only need single remove, we should clean up both active/inactive
 		},
+		{
+			desc:                "Inactive checkpoint, local parent, local running, no api parent: no change", // Safety check - don't GC if local parent still exists (even if possibly stale)
+			inactiveCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
+			localRunning:        map[string]*v1.Pod{"AA": &v1.Pod{}},
+			localParents:        map[string]*v1.Pod{"AA": &v1.Pod{}},
+		},
+		{
+			desc:              "Active checkpoint, local parent, no local running, no api parent: no change", // Safety check - don't GC if local parent still exists (even if possibly stale)
+			activeCheckpoints: map[string]*v1.Pod{"AA": &v1.Pod{}},
+			localParents:      map[string]*v1.Pod{"AA": &v1.Pod{}},
+		},
 	}
 
 	for _, tc := range cases {
-		gotStart, gotStop, gotRemove := process(tc.localParents, tc.apiParents, tc.activeCheckpoints, tc.inactiveCheckpoints)
+		gotStart, gotStop, gotRemove := process(tc.localRunning, tc.localParents, tc.apiParents, tc.activeCheckpoints, tc.inactiveCheckpoints)
 		if !reflect.DeepEqual(tc.expectStart, gotStart) ||
 			!reflect.DeepEqual(tc.expectStop, gotStop) ||
 			!reflect.DeepEqual(tc.expectRemove, gotRemove) {
