@@ -334,10 +334,13 @@ func getLocalParentPods() (map[string]*v1.Pod, error) {
 	return podListToParentPods(&podList), nil
 }
 
+// Transports should be re-used and not created as needed: https://golang.org/pkg/net/http/#Transport
+var insecureTransport *http.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+
 // getLocalRunningPods uses the /runningpods/ kubelet api to retrieve the local container runtime pod state
 func getLocalRunningPods() (map[string]*v1.Pod, error) {
 	// TODO(aaron): The kubelet api is currently secured by a self-signed cert. We should update this to actually verify at some point
-	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+	client := &http.Client{Transport: insecureTransport}
 	resp, err := client.Get(kubeletAPIRunningPodsURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to contact kubelet pod api: %v", err)
