@@ -42,10 +42,8 @@ kubeadm will print out that it is using the certificates that already exist, oth
 Specifying an own CA might be beneficial to orgs that require a specific CA but lets the apiserver keys/certs be generated on the go by kubeadm,
 so that's a hard requirement.
 
-TODO: How should the apiserver <-> kubelet communication be secured properly?
-
 **Inputs**
- - `ExtraDomainsAndAddresses` is needed for knowing which IPs and DNS names the certs should be signed for
+ - `AltNames` is needed for knowing which IPs and DNS names the certs should be signed for
  - `DNSDomain` is needed for knowing which DNS name the internal kubernetes service has
  - `ServiceSubnet` is needed for knowing which IP the internal kubernetes service is going to point to
  - `CertificatesDir` is required for knowing where all certificates should be stored

@@ -4,7 +4,8 @@ type MasterConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// Data shared between phases. Used for defaulting
-	Master     Master     `json:"master"`
+	// TODO: How should we deal with this?
+	// Should they be both top-level and in-phase-level?
 	Networking Networking `json:"networking"`
 	CertificatesDir string `json:"certificatesDir"`
 
@@ -12,25 +13,13 @@ type MasterConfiguration struct {
 	Certificates     Certificates     `json:"certificates"`
 	KubeConfig       KubeConfig       `json:"kubeConfig"`
 	ControlPlane     ControlPlane     `json:"controlPlane"`
-	Discovery        Discovery        `json:"discovery"`
+	Discovery        MasterDiscovery        `json:"discovery"`
 	APIConfiguration APIConfiguration `json:"apiConfiguration"`
 	Addons           Addons           `json:"addons"`
 }
 
 type Phase struct {
 	Annotations map[string]string `json:"annotations"`
-}
-
-// Shared
-// TODO: This field should be HA friendly
-type Master struct {
-	// Only the first address here will be passed to the api-server. The rest will be used for signing CA certs.
-	// This is not great with HA, because can't
-	AdvertiseAddresses []string `json:"advertiseAddresses"`
-	// Used for signing the certs
-	ExternalDNSNames []string `json:"externalDNSNames"`
-	// For the controlplane phase
-	Port int32 `json:"port"`
 }
 
 type Networking struct {
@@ -64,11 +53,10 @@ type SelfSignCertificates struct {
 	Networking Networking `json:"networking"`
 
 	// All IP addresses and DNS names these certs should be signed for
-	// Defaults to an union of .Master.AdvertiseAddresses and .Master.ExternalDNSNames and the hostname of the master node
-	// This could also be named AltNames if we want
-	ExtraDomainsAndAddresses []string `json:"extraDomainsAndAddresses"`
+	// Defaults to the default networking interface's IP address and the hostname of the master node
+	AltNames []string `json:"altNames"`
 	// For example, let the user choose key type
-	// Can be RSA, ECDSA or Ed25519
+	// Can be RSA, ECDSA (or Ed25519 in the future)
 	// Default: RSA
 	PrivateKeyType string `json:"privateKeyType"`
 
@@ -79,7 +67,7 @@ type SelfSignCertificates struct {
 type KubeConfig struct {
 	Phase Phase `json:"phase"`
 
-	//
+	// TODO: Find a better name/purpose
 	MasterDefault *MasterDefaultKubeConfig `json:"masterDefault"`
 }
 
@@ -90,11 +78,11 @@ type MasterDefaultKubeConfig struct {
 	// Path where the certs are located
 	CertificatesDir string `json:"certificatesDir"`
 	// This could be a []string in the API, but initially only support a string before KubeConfig itself supports multiple endpoints.
-	MasterEndpoint []string `json:"masterEndpoint"`
+	MasterEndpoints []string `json:"masterEndpoints"`
 
 	// Outputs
 	// The path to where the admin kubeconfig file should be written
-	// Hmm: Do we want to expose these two values or should they just be hardcoded as /etc/kubernetes/admin.conf and /etc/kubernetes/kubelet.conf
+	// TODO: Do we want to expose these two values or should they just be hardcoded as /etc/kubernetes/admin.conf and /etc/kubernetes/kubelet.conf
 	AdminConfigPath string `json:"adminConfigPath"`
 	// We should be able to generate this KubeConfig file in the same manner as we do on nodes, so the master kubelets don't
 	// have full access to the apiserver while the node kubelet would have limited access, which is a thing we should do later.
@@ -104,22 +92,39 @@ type MasterDefaultKubeConfig struct {
 type ControlPlane struct {
 	Phase Phase `json:"phase"`
 
-	// Needs these fields in Master, Networking and Paths
-	// AdvertiseAddresses []string `json:"advertiseAddresses"`
-	// ExternalDNSNames []string `json:"externalDNSNames"`
-	// Port int32 `json:"port"`
-	// CertificatesDir string `json:"certificatesDir"`
-	// ServiceSubnet string `json:"serviceSubnet"`
-	// DNSDomain     string `json:"dnsDomain"`
-	// PodSubnet     string `json:"podSubnet"`
+	// Needs these fields in Networking
+	CertificatesDir string `json:"certificatesDir"`
 
+	// Networking kind of stuff
+	ServiceSubnet string `json:"serviceSubnet"`
+	DNSDomain     string `json:"dnsDomain"`
+	// This has to be solved somehow. kube-proxy needs the podsubnet and if allocateNodeCIDRs is true, controller-manager also needs it
+	PodSubnet     string `json:"podSubnet"`
+	// Whether controller-manager should allocate cidrs to nodes
+	AllocateNodeCIDRs bool `json:"allocateNodeCIDRs"`
+
+	// Defaults the latest stable version
 	Version           string `json:"version"`
+	// Defaults to gcr.io/google_containers
 	ImageRepository   string `json:"imageRepository"`
+	// This makes it possible to override the control plane images to using
+	// one hyperkube image only
 	UseHyperkubeImage string `json:"useHyperkubeImage"`
+	// Defaults to 6443 in order to not conflict with normal HTTP/HTTPS traffic if any
+	// Also, the user might want to deploy an ingress controller on the master in bare-metal solutions, and therefore we'd not like to default to 443
+	APIServerPort uint32 `json:"apiServerPort"`
+	// TODO: Should we allow more than one here?
+	// Currently, the apiserver itself doesn't allow more than one, but we might want to be future-proof
+	// I guess we could leave this as a string while in beta
+	APIServerBindAddress string `json:"apiServerBindAddress"`
 
-	// Deprecated and will be removed soon
+	// Specifies which authorization mode the apiserver should use
+	AuthorizationMode string `json:"authorizationMode"`
+
+	// Deprecated and will be removed soon in favor for the new cloudprovider flow
 	CloudProvider string `json:"cloudProvider"`
 
+	// Specifies how to deploy or connect to etcd
 	Etcd Etcd `json:"etcd"`
 
 	// TODO: We want to use ComponentConfig here eventually
@@ -132,11 +137,12 @@ type ControlPlane struct {
 }
 
 type StaticPodControlPlane struct {
+	// TODO: What options do we need here?
 	Dummy string
 }
 
 type SelfHostedControlPlane struct {
-	Dummy string
+	ControlPlaneReplicas uint8
 }
 
 type ComponentExtraList struct {
@@ -163,12 +169,13 @@ type LocalEtcd struct {
 	Image   string `json:"image"`
 }
 
-type Discovery struct {
+type MasterDiscovery struct {
 	Phase Phase `json:"phase"`
 
-	// Only one of HTTPS, File and Token can be defined
-	HTTPS *HTTPSDiscovery `json:"https"`
+	// Only one of File and Token can be defined
+	// File outputs a kubeconfig file that can directly be used as an input to the HTTPS or File-based node discovery
 	File  *FileDiscovery  `json:"file"`
+	// Token enables support for the token-based discovery
 	Token *TokenDiscovery `json:"token"`
 }
 
@@ -189,14 +196,29 @@ type TokenDiscovery struct {
 type APIConfiguration struct {
 	Phase Phase `json:"phase"`
 
+	// Defaults to /etc/kubernetes/admin.conf
 	KubeConfigFile string `json:"kubeConfigFile"`
 
-	KubeSystemConfigMaps map[string]string `json:"kubeSystemConfigMaps"`
+	// Custom configmaps the user would like to inject into the kube-system namespace
+	// Do we need this?
+	KubeSystemConfigMaps map[string][]byte `json:"kubeSystemConfigMaps"`
+
+	// Defaults to tainting the master with "dedicated:NoSchedule"
+	// You could extend that here as well.
+	// NodeTaints["my-node"] = "dedicated:NoSchedule"
+	NodeTaints map[string]string `json:"kubeSystemConfigMaps"`
+
+	// A yaml or json componentconfig that sets the base layer for kubelet configuration across the cluster
+	KubeletBaseConfiguration []byte `json:"kubeletBaseConfiguration"`
+
+	// If the authorization mode is RBAC; kubeadm will set up some default rules
+	AuthorizationMode string `json:"authorizationMode"`
 }
 
 type Addons struct {
 	Phase Phase `json:"phase"`
 
+	// Defaults to /etc/kubernetes/admin.conf
 	KubeConfigFile string `json:"kubeConfigFile"`
 
 	ImageRepository string `json:"imageRepository"`
@@ -207,5 +229,12 @@ type Addons struct {
 type NodeConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
 
-	Discovery Discovery `json:"discovery"`
+	Discovery NodeDiscovery `json:"discovery"`
+}
+
+type NodeDiscovery struct {
+	// Only one of HTTPS, File and Token can be defined
+	HTTPS *HTTPSDiscovery `json:"https"`
+	File  *FileDiscovery  `json:"file"`
+	Token *TokenDiscovery `json:"token"`
 }
