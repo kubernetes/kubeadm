@@ -215,6 +215,7 @@ type APIConfiguration struct {
 	AuthorizationMode string `json:"authorizationMode"`
 
 	// We should maybe require this value
+	// Should this be here or in the next	
 	CNIFilePath string `json:"cniFilePath"`
 	// Default: none => kube-proxy doesn't know which traffic is external and which is internal
 	// We should maybe require this value
