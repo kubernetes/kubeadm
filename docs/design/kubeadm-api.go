@@ -22,17 +22,18 @@ type Phase struct {
 	Annotations map[string]string `json:"annotations"`
 }
 
+// TODO: This is not a good struct, we should probably get rid of it
 type Networking struct {
 	// This sets --service-cluster-ip-range on the api server
 	// Default: 10.96.0.1/12
 	ServiceSubnet string `json:"serviceSubnet"`
-	// Default: none => disable this functionality
-	// TODO: Test if this always can be set
+	// Default: none => kube-proxy doesn't know which traffic is external and which is internal
+	// We should maybe require this value
 	PodSubnet string `json:"podSubnet"`
 	// Default: cluster.local
 	DNSDomain string `json:"dnsDomain"`
-	// Possible: cni|kubenet. Default: cni
-	NetworkPlugin string `json:"networkPlugin"`
+	// We should maybe require this value
+	CNIFilePath string `json:"cniFilePath"`
 }
 
 // Phases with their subtypes
@@ -47,10 +48,8 @@ type Certificates struct {
 type SelfSignCertificates struct {
 	// Needs these fields in Master, Networking and Paths
 	// Inputs
-	// ServiceSubnet string `json:"serviceSubnet"`
-	// DNSDomain string `json:"dnsDomain"`
-	// Defaults to .Networking
-	Networking Networking `json:"networking"`
+	ServiceSubnet string `json:"serviceSubnet"`
+	DNSDomain string `json:"dnsDomain"`
 
 	// All IP addresses and DNS names these certs should be signed for
 	// Defaults to the default networking interface's IP address and the hostname of the master node
@@ -58,6 +57,7 @@ type SelfSignCertificates struct {
 	// For example, let the user choose key type
 	// Can be RSA, ECDSA (or Ed25519 in the future)
 	// Default: RSA
+	// TODO: Maybe we should omit this option and let the user self-sign in case of ECDSA or Ed25519?
 	PrivateKeyType string `json:"privateKeyType"`
 
 	// Outputs
@@ -101,6 +101,7 @@ type ControlPlane struct {
 	// This has to be solved somehow. kube-proxy needs the podsubnet and if allocateNodeCIDRs is true, controller-manager also needs it
 	PodSubnet     string `json:"podSubnet"`
 	// Whether controller-manager should allocate cidrs to nodes
+	// TODO: We might want to always set this
 	AllocateNodeCIDRs bool `json:"allocateNodeCIDRs"`
 
 	// Defaults the latest stable version
@@ -121,7 +122,7 @@ type ControlPlane struct {
 	// Specifies which authorization mode the apiserver should use
 	AuthorizationMode string `json:"authorizationMode"`
 
-	// Deprecated and will be removed soon in favor for the new cloudprovider flow
+	// Right now, it can take values like "aws" or "gce", but in the future, that may change to take a path to a file with the cloudprovider controller manifest: https://github.com/kubernetes/community/pull/128
 	CloudProvider string `json:"cloudProvider"`
 
 	// Specifies how to deploy or connect to etcd
@@ -142,7 +143,7 @@ type StaticPodControlPlane struct {
 }
 
 type SelfHostedControlPlane struct {
-	ControlPlaneReplicas uint8
+	ControllerManagerAndSchedulerReplicas uint8
 }
 
 type ComponentExtraList struct {
@@ -199,20 +200,25 @@ type APIConfiguration struct {
 	// Defaults to /etc/kubernetes/admin.conf
 	KubeConfigFile string `json:"kubeConfigFile"`
 
+	// If specified, kubeadm will exec out to an other binary
+	// Is this a sane thing to do security-wise?
+	ExecHook v1.ExecAction
+
 	// Custom configmaps the user would like to inject into the kube-system namespace
 	// Do we need this?
-	KubeSystemConfigMaps map[string][]byte `json:"kubeSystemConfigMaps"`
-
-	// Defaults to tainting the master with "dedicated:NoSchedule"
-	// You could extend that here as well.
-	// NodeTaints["my-node"] = "dedicated:NoSchedule"
-	NodeTaints map[string]string `json:"kubeSystemConfigMaps"`
+	ConfigMaps map[string][]byte `json:"kubeSystemConfigMaps"`
 
 	// A yaml or json componentconfig that sets the base layer for kubelet configuration across the cluster
 	KubeletBaseConfiguration []byte `json:"kubeletBaseConfiguration"`
 
 	// If the authorization mode is RBAC; kubeadm will set up some default rules
 	AuthorizationMode string `json:"authorizationMode"`
+
+	// We should maybe require this value
+	CNIFilePath string `json:"cniFilePath"`
+	// Default: none => kube-proxy doesn't know which traffic is external and which is internal
+	// We should maybe require this value
+	PodSubnet string `json:"podSubnet"`
 }
 
 type Addons struct {
@@ -220,6 +226,11 @@ type Addons struct {
 
 	// Defaults to /etc/kubernetes/admin.conf
 	KubeConfigFile string `json:"kubeConfigFile"`
+
+	// TODO: This is probably not needed
+	ServiceSubnet string `json:"serviceSubnet"`
+
+	DNSDomain     string `json:"dnsDomain"`
 
 	ImageRepository string `json:"imageRepository"`
 
