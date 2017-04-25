@@ -1,0 +1,17 @@
+digraph local_cluster {
+        compound=true;
+        edge [fontsize=10];
+        kubectl [label="kubectl\non the user's\nmachine"];
+        master [shape=rectangle, label="kube-master" ];
+        node1 [shape=rectangle, label="kube-node-1" ];
+        node2 [shape=rectangle, label="kube-node-2" ];
+        docker_socket [shape=diamond, label="Docker socket"];
+        kubeadm_local_cluster [label="kubeadm-local-cluster"];
+        kubeadm_local_cluster -> docker_socket [label="uses to create \nand control\n kube-* containers"];
+        kubeadm_local_cluster -> master [label="kubeadm init"];
+        kubeadm_local_cluster -> node1 [label="kubeadm join"];
+        kubeadm_local_cluster -> node2 [label="kubeadm join"];
+        node1 -> master [label=" apiserver connection"];
+        node2 -> master [label=" apiserver connection"];
+        kubectl -> master [label=" apiserver connection"];
+}
