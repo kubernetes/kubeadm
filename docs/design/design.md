@@ -48,7 +48,7 @@ This means we aim to standardize:
      - `kube-controller-manager.yaml`
      - `kube-scheduler.yaml`
  - `/etc/kubernetes/kubelet.conf` as the path where the kubelet should store its credentials to the API server.
- - `/etc/kubernetes/kubelet.conf` as the path from where the admin can fetch his/her superuser credentials.
+ - `/etc/kubernetes/admin.conf` as the path from where the admin can fetch his/her superuser credentials.
 
 
 ## `kubeadm init` phases
