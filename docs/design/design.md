@@ -167,7 +167,7 @@ Common properties for the control plane components:
 This is a critical moment in time for kubeadm clusters.
 kubeadm waits until `localhost:6443/healthz` returns `ok`
 
-kubeadm relies on the kubelet to pulĺ the control plane images and run them properly as Static Pods.
+kubeadm relies on the kubelet to pull the control plane images and run them properly as Static Pods.
 But there are (as we've seen) a lot of things that can go wrong. Most of them are network/resolv.conf/proxy related.
 
 ### Phase 4+: Post-bootstrap Phases
