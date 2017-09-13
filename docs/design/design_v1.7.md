@@ -1,4 +1,4 @@
-## Implementation design for kubeadm
+## Implementation design for kubeadm 1.7
 
 `kubeadm init` and `kubeadm join` together provides a nice user experience for creating a best-practice but bare Kubernetes cluster from scratch.
 However, it might not be obvious _how_ kubeadm does that.
