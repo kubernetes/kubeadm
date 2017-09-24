@@ -434,7 +434,7 @@ The request is then automatically approved and the operation completes saving `c
 
 Please note that:
 
-- The temporary authentication is validated against the token saved during the `kubeadm init` process (or with additional tokens created with `kuubeadm token`) 
+- The temporary authentication is validated against the token saved during the `kubeadm init` process (or with additional tokens created with `kubeadm token`) 
 - The temporary authentication resolve to a user member of  `system:bootstrappers:kubeadm:default-node-token` group which was granted access to CSR api during the `kubeadm init` process
 - The automatic CSR approval is managed by the csrapprover controller, according with configuration done the `kubeadm init` process
 
