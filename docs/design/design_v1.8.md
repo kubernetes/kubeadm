@@ -271,7 +271,7 @@ Please note that
 
 ### Configure TLS-Bootstrapping for node joining
 
-Kubeadm uses [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) for joining new nodes to an existing cluster; for more details see also [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/bootstrap-discovery.md).
+Kubeadm uses [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) for joining new nodes to an existing cluster; for more details see also [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
 
 `kubeadm init`  ensures that everything is properly configured for this process, and this includes following steps as well as setting API Server and controller flags as already described in previous paragraphs.
 
@@ -380,7 +380,7 @@ Similarly to `kubeadm init`, also `kubeadm join` internal workflow consists of a
 
 This is split into discovery (having the Node trust the Kubernetes Master) and TLS bootstrap (having the Kubernetes Master trust the Node).
 
-see [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) , [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/bootstrap-discovery.md).
+see [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) , [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
 
 ### Discovery cluster-info
 
