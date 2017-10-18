@@ -202,7 +202,7 @@ Other flags that are set unconditionally:
  - `--requestheader-client-ca-file` to `front-proxy-ca.crt`
  - `--admission-control` to `Initializers, NamespaceLifecycle, LimitRanger, ServiceAccount, PersistentVolumeLabel, DefaultStorageClass, DefaultTolerationSeconds, NodeRestriction, ResourceQuota`...or whatever the recommended set of admission controllers is at a given version
  - `--kubelet-preferred-address-types` to `InternalIP,ExternalIP,Hostname;` this makes `kubectl logs` and other apiserver -> kubelet communication work in environments where the hostnames of the nodes aren't resolvable
- - `requestheader-client-ca-file` to`front-proxy-ca.crt`,  `proxy-client-cert-file` to `front-proxy-client.crt`,  `proxy-client-key-file` to `front-proxy-client.key` ,  and`--requestheader-username-headers=X-Remote-User`, `--requestheader-group-headers=X-Remote-Group`, `--requestheader-extra-headers-prefix=X-Remote-Extra-`, `--requestheader-allowed-names=front-proxy-client` so the front proxy ([API Aggregation](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/aggregated-api-servers.md)) communication is secure.
+ - `requestheader-client-ca-file` to`front-proxy-ca.crt`,  `proxy-client-cert-file` to `front-proxy-client.crt`,  `proxy-client-key-file` to `front-proxy-client.key` ,  and`--requestheader-username-headers=X-Remote-User`, `--requestheader-group-headers=X-Remote-Group`, `--requestheader-extra-headers-prefix=X-Remote-Extra-`, `--requestheader-allowed-names=front-proxy-client` so the front proxy ([API Aggregation](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/aggregated-api-servers.md)) communication is secure.
  - `--allow-privileged` to `true` 
 
 
