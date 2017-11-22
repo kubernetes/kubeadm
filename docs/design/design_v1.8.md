@@ -27,7 +27,7 @@ The cluster that `kubeadm init` and `kubeadm join` set up should be:
      - `kubeadm init` on the master
      - `export KUBECONFIG=/etc/kubernetes/admin.conf`
      - `kubectl apply -f <network-of-choice.yaml>`
-     - `kubeadm join --token <token> <master>`
+     - `kubeadm join --token <token> <master-ip>:<master-port>`
      - The `kubeadm join` request to add a node should be automatically approved
  - Extendable
    - It should for example _not_ favor any network provider, instead configuring a network is out-of-scope
@@ -95,8 +95,8 @@ In any case the user can skip preflight checks with the `--skip-preflight-checks
 - [warning] if extra arg flags for APIServer, ControllerManager,  Scheduler contains some invalid options
 - if external etcd is provided, [Error] if etcd version less than 3.0.14
 - if external etcd is not provided, [Error] if ports 2379 is used, if Etcd.DataDir folder already exists and it is not empty,
-- if authorization mode is ABAC, [Error] if abac_policy.json does not exixsts
-- if authorization mode is WebHook, [Error] if webhook_authz.conf does not exixsts
+- if authorization mode is ABAC, [Error] if abac_policy.json does not exists
+- if authorization mode is WebHook, [Error] if webhook_authz.conf does not exists
 
 Please note that:
 
@@ -235,7 +235,7 @@ Please note that:
 
 1. The image, for version  `3.0.17` /current architecture, will be pulled from `gcr.io/google_containers`. In case an alternative image repository is specified this one will be used; In case an alternative image name is specified, this one will be used.
 2. in case of `kubeadm`  executed in the `--dry-run` mode, the etcd static pod manifest is written in a temporary folder.
-3. Static Pod Manifest generation for local etcs can be invoked individually with the `kubeadm phase etcd local` command.
+3. Static Pod Manifest generation for local etcd can be invoked individually with the `kubeadm phase etcd local` command.
 
 ### Wait for the control plane to come up
 
@@ -392,11 +392,11 @@ If `kubeadm join` is invoked with `--discovery-token`, token discovery is used; 
 
 In order to prevent "man in the middle" attacks, several steps are taken:
 
-- First, the CA certificate is retrived via insecure connection (NB. this is possible because `kubeadm init` granted access to  `cluster-info` users for `system:unauthenticated` )
+- First, the CA certificate is retrieved via insecure connection (NB. this is possible because `kubeadm init` granted access to  `cluster-info` users for `system:unauthenticated` )
 - Then the CA certificate goes trough following validation steps: 
   - "Basic validation", using the token ID against a JWT signature
-  - "Pub key validation", using provided `--discovery-token-ca-cert-hash`. This value is available in the output of "kubeadm init" or can be calcuated using standard tools (the hash is calculated over the bytes of the Subject Public Key Info (SPKI) object as in RFC7469). The `--discovery-token-ca-cert-hash flag` may be repeated multiple times to allow more than one public key.
-  - as a additional validation, the CA certificate is retrived via secure connection and then compared with the CA retrieved initially
+  - "Pub key validation", using provided `--discovery-token-ca-cert-hash`. This value is available in the output of "kubeadm init" or can be calculated using standard tools (the hash is calculated over the bytes of the Subject Public Key Info (SPKI) object as in RFC7469). The `--discovery-token-ca-cert-hash flag` may be repeated multiple times to allow more than one public key.
+  - as a additional validation, the CA certificate is retrieved via secure connection and then compared with the CA retrieved initially
 
 Please note that:
 
