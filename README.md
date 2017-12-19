@@ -13,11 +13,11 @@ You can reach the maintainers of this project at:
 - Weekly Zoom Meetings: https://zoom.us/j/166836624 every Tuesday from 17:00 to 18:00 UTC+0
   - Meeting Notes: https://docs.google.com/document/d/1deJYPIF4LmhGjDVaqrswErIrV7mtwJgovtLnPCDxP7U
 
-## Roadmap for v1.6
+## Roadmap for v1.10
 
 The full picture of which direction we're taking is described in [this blog post](http://blog.kubernetes.io/2017/01/stronger-foundation-for-creating-and-managing-kubernetes-clusters.html).
 
-Please also refer to the the [v1.6 milestone in this repo](https://github.com/kubernetes/kubeadm/milestone/1).
+Please also refer to the the [v1.10 milestone in this repo](https://github.com/kubernetes/kubeadm/milestone/5).
 
 ### Code of conduct
 
