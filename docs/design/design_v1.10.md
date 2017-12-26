@@ -89,7 +89,7 @@ In any case the user can skip specific preflight checks (or eventually all prefl
 - [warning] if kubelet service does not exists, if it is disabled.
 - [warning] if firewalld is active.
 - [error] if API.BindPort or ports 10250/10251/10252 are used.
-- [Error] if /etc/kubernetes/manifest folder already exists and it is not empty.
+- [Error] if /etc/kubernetes/manifest folder exists and already contains any known manifest: `kube-apiserver.yaml`, `kube-controller-manager.yaml`, `kube-scheduler.yaml`, or `etcd.yaml`
 - [Error] if /proc/sys/net/bridge/bridge-nf-call-iptables file does not exists/does not contains 1.
 - [Error] if swap is on.
 - [Error] if "ip", "iptables",  "mount", "nsenter" commands are not present in the command path.
