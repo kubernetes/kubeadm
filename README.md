@@ -22,3 +22,7 @@ Please also refer to the the [v1.6 milestone in this repo](https://github.com/ku
 ### Code of conduct
 
 Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
+
+### Additional documents
+
+* [Guide on Hacking on E2E kubeadm tests](e2e.md)
