@@ -1,6 +1,6 @@
 # Kubeadm
 
-The purpose of this repo is to aggregate issues filed against the kubeadm component.
+The purpose of this repo is to aggregate issues filed against the [kubeadm component](https://github.com/kubernetes/kubernetes/tree/master/cmd/kubeadm).
 
 ## Community, discussion, contribution, and support
 
