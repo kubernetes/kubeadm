@@ -6,12 +6,7 @@ The purpose of this repo is to aggregate issues filed against the [kubeadm compo
 
 Learn how to engage with the Kubernetes community on the [community page](http://kubernetes.io/community/).
 
-You can reach the maintainers of this project at:
-
-- Slack: [#kubeadm](http://kubernetes.slackarchive.io/kubeadm/) and [#sig-cluster-lifecycle](http://kubernetes.slackarchive.io/sig-cluster-lifecycle/)
-- Mailing List: https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle
-- Weekly Zoom Meetings: https://zoom.us/j/166836624 every Tuesday from 17:00 to 18:00 UTC+0
-  - Meeting Notes: https://docs.google.com/document/d/1deJYPIF4LmhGjDVaqrswErIrV7mtwJgovtLnPCDxP7U
+You can reach the maintainers of this project at the [Cluster Lifecycle SIG](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle#cluster-lifecycle-sig).
 
 ## Roadmap for v1.6
 
