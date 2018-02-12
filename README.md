@@ -8,11 +8,11 @@ Learn how to engage with the Kubernetes community on the [community page](http:/
 
 You can reach the maintainers of this project at the [Cluster Lifecycle SIG](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle#cluster-lifecycle-sig).
 
-## Roadmap for v1.6
+## Roadmap
 
 The full picture of which direction we're taking is described in [this blog post](http://blog.kubernetes.io/2017/01/stronger-foundation-for-creating-and-managing-kubernetes-clusters.html).
 
-Please also refer to the the [v1.6 milestone in this repo](https://github.com/kubernetes/kubeadm/milestone/1).
+Please also refer to the latest [milestones in this repo](https://github.com/kubernetes/kubeadm/milestones).
 
 ### Code of conduct
 
