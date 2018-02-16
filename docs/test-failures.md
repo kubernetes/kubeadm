@@ -42,3 +42,14 @@ upcoming changes, and maintainers of other projects can subscribe.
 
 Without strict versioning, this contract between projects and upstream
 will always be brittle - so regular communication is a must.
+
+# Troubleshooting
+## Create Cluster Fails
+There is an issue in provisioning the cluster.
+
+Test failure will look like:
+```error during make -C /workspace/kubernetes-anywhere WAIT_FOR_KUBECONFIG=y deploy: exit status 2```
+
+To debug further, dig into the collected logs
+1. Determine if master was able to set up with kubeadm. Logs are under: /artifacts/master-node-name/serial-1.log
+2. Determine if nodes were able to set up with kubeadm. Logs are under: /artifacts/node-name/serial-1.log
