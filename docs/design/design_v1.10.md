@@ -185,15 +185,15 @@ Please note that:
 Common properties for the control plane components:
 
 - All static Pods are deployed on `kube-system` namespace.
-- All static Pods gets `tier:control-plane` and `component:{component-name}` labels.
-- All static Pods gets `scheduler.alpha.kubernetes.io/critical-pod` annotation. Note. this will be moved over to the proper solution of using Pod Priority and Preemption when ready.
+- All static Pods get `tier:control-plane` and `component:{component-name}` labels.
+- All static Pods get `scheduler.alpha.kubernetes.io/critical-pod` annotation. Note. this will be moved over to the proper solution of using Pod Priority and Preemption when ready.
 - `hostNetwork: true` is set on all static Pods to allow control plane startup before a network is configured; accordingly:
   * The `address` that the controller-manager and the scheduler use to refer the API server is `127.0.0.1`.
   * If using a local etcd server, `etcd-servers` address  will be set to `127.0.0.1:2379`.
 - Leader election is enabled for both the controller-manager and the scheduler.
 - Controller-manager and the scheduler will reference kubeconfig files with their respective, unique identities.
-- All static Pods gets any extra flags specified by the user.
-- All static Pods gets any extra extra Volumes specified by the user (Host path).
+- All static Pods get any extra flags specified by the user.
+- All static Pods get any extra extra Volumes specified by the user (Host path).
 
 Please note that:
 
