@@ -80,17 +80,17 @@ In any case the user can skip specific preflight checks (or eventually all prefl
     - [error] if not Kernel 3.10+ or 4+ with specific KernelSpec.
     - [error] if required cgroups subsystem aren't in set up.
   - if using docker:
-    - [error/warning] if Docker endpoint does not exists or does not work, if docker version >17.03.
+    - [error/warning] if Docker endpoint does not exist or does not work, if docker version >17.03.
     Note: starting from 1.9, kubeadm provides better support for CRI-generic functionality; in that case, docker specific controls are skipped or replaced by similar controls for crictl
 - [error] if user is not root.
 - [error] if hostname is not a valid DNS subdomain; [warning] if the host name cannot be reached via network lookup.
 - [error] if kubelet version is lower that the minimum kubelet version supported by kubeadm (current minor -1).
 - [error] if kubelet version is at least one minor higher than the required controlplane version (unsupported version skew).
-- [warning] if kubelet service does not exists, if it is disabled.
+- [warning] if kubelet service does not exist, if it is disabled.
 - [warning] if firewalld is active.
 - [error] if API.BindPort or ports 10250/10251/10252 are used.
 - [Error] if /etc/kubernetes/manifest folder already exists and it is not empty.
-- [Error] if /proc/sys/net/bridge/bridge-nf-call-iptables file does not exists/does not contains 1.
+- [Error] if /proc/sys/net/bridge/bridge-nf-call-iptables file does not exist/does not contain 1.
 - [Error] if swap is on.
 - [Error] if "ip", "iptables",  "mount", "nsenter" commands are not present in the command path.
 - [warning] if "ebtables", "ethtool", "socat", "tc", "touch", "crictl" commands are not present in the command path.
@@ -108,9 +108,9 @@ In any case the user can skip specific preflight checks (or eventually all prefl
 - If external etcd is NOT provided: 
   - [Error] if ports 2379 is used. 
   - [Error] if Etcd.DataDir folder already exists and it is not empty.
-- If authorization mode is ABAC, [Error] if abac_policy.json does not exists.
-- If authorization mode is WebHook, [Error] if webhook_authz.conf does not exists.
-- [Error] if advertise address is ipv6 and /proc/sys/net/bridge/bridge-nf-call-ip6tables does not exists/does not contains 1.
+- If authorization mode is ABAC, [Error] if abac_policy.json does not exist.
+- If authorization mode is WebHook, [Error] if webhook_authz.conf does not exist.
+- [Error] if advertise address is ipv6 and /proc/sys/net/bridge/bridge-nf-call-ip6tables does not exist/does not contain 1.
 
 Please note that:
 
