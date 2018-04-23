@@ -349,7 +349,7 @@ This is implemented by creating a ClusterRoleBinding named `kubeadm:kubelet-boot
 
 #### Setup auto approval for new bootstrap tokens
 
-kubeadm ensures that the Boostrap Token will get its CSR request automatically approved by the the csrapprover controller.
+kubeadm ensures that the Boostrap Token will get its CSR request automatically approved by the csrapprover controller.
 
 This is implemented by creating ClusterRoleBinding named `kubeadm:node-autoapprove-bootstrap` between the  `system:bootstrappers:kubeadm:default-node-token` group and the default role `system:certificates.k8s.io:certificatesigningrequests:nodeclient`.
 
@@ -357,7 +357,7 @@ The role `system:certificates.k8s.io:certificatesigningrequests:nodeclient` shou
 
 #### Setup nodes certificate rotation with auto approval
 
-kubeadm ensures that certificate rotation is enabled for nodes, and that new certificate request for nodes will get its CSR request automatically approved by the the csrapprover controller.
+kubeadm ensures that certificate rotation is enabled for nodes, and that new certificate request for nodes will get its CSR request automatically approved by the csrapprover controller.
 
 This is implemented by creating ClusterRoleBinding named `kubeadm:node-autoapprove-certificate-rotation` between the  `system:nodes` group and the default role `system:certificates.k8s.io:certificatesigningrequests:selfnodeclient`.
 
@@ -508,7 +508,7 @@ Please note that:
 If kubeadm is invoked with `--feature-gates=DynamicKubeletConfig`:
 
 1. Read the kubelet base configuration from the `kubelet-base-config-v1.9` ConfigMap in the `kube-system` namespace  using the Bootstrap Token credentials, and write it to disk as kubelet init configuration file  `/var/lib/kubelet/config/init/kubelet`.
-2. As soon as kubelet starts with the Node's own credential (`/etc/kubernetes/kubelet.conf`), update current node configuration specifying that the the source for the node/kubelet configuration is the above ConfigMap.
+2. As soon as kubelet starts with the Node's own credential (`/etc/kubernetes/kubelet.conf`), update current node configuration specifying that the source for the node/kubelet configuration is the above ConfigMap.
 
 Please note that:
 
