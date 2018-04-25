@@ -79,24 +79,24 @@ In any case the user can skip preflight checks with the `--skip-preflight-checks
   - [error] if not linux, 
   - [error] if not Kernel 3.10+ or 4+ with specific KernelSpec,
   - [error] if required cgroups subsystem aren't in set up,
-  - [error/warning] if Docker endpoint does not exists or does not work, if docker version v1.11.2 <= x <= v1.13.1,
+  - [error/warning] if Docker endpoint does not exist or does not work, if docker version v1.11.2 <= x <= v1.13.1,
 - [error] if user is not root,
-- [warning] if kubelet service does not exists, if it is disabled,
+- [warning] if kubelet service does not exist, if it is disabled,
 - [warning/error] if Docker service does not  exists, if it is disabled, if it is not active,
 - [warning] if firewalld is active,
 - [error] if API.BindPort or ports 10250/10251/10252 are used,
 - [warning] if connection to https://API.AdvertiseAddress:API.BindPort goes thought proxy,
 - [Error] if /etc/kubernetes/manifest folder already exists and it is not empty,
 - [Error] if /var/lib/kubelet folder already exists and it is not empty,
-- [Error] if/proc/sys/net/bridge/bridge-nf-call-iptables file does not exists/does not contains 1
+- [Error] if/proc/sys/net/bridge/bridge-nf-call-iptables file does not exist/does not contain 1
 - [Error] if swap is off,
 - [Error] if "ip", "iptables",  "mount", "nsenter" commands are not present in the command path,
 - [warning] if "ebtables", "ethtool", "socat", "tc", "touch" commands are not present in the command path,
 - [warning] if extra arg flags for APIServer, ControllerManager,  Scheduler contains some invalid options
 - if external etcd is provided, [Error] if etcd version less than 3.0.14
 - if external etcd is not provided, [Error] if ports 2379 is used, if Etcd.DataDir folder already exists and it is not empty,
-- if authorization mode is ABAC, [Error] if abac_policy.json does not exists
-- if authorization mode is WebHook, [Error] if webhook_authz.conf does not exists
+- if authorization mode is ABAC, [Error] if abac_policy.json does not exist
+- if authorization mode is WebHook, [Error] if webhook_authz.conf does not exist
 
 Please note that:
 
@@ -440,7 +440,7 @@ Please note that:
 
 ## Extending `kubeadm`
 
-There are a two primary ways to extend `kubeadm`:
+There are two primary ways to extend `kubeadm`:
  - By setting CLI arguments or editing the lightweight `kubeadm init` API.
  - By running the phases you need separately and giving every phase the arguments it needs
 
