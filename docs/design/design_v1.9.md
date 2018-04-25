@@ -516,7 +516,7 @@ Please note that:
 
 ## Extending `kubeadm`
 
-There are a two primary ways to extend `kubeadm`:
+There are two primary ways to extend `kubeadm`:
  - By setting CLI arguments or editing the lightweight `kubeadm init` API.
  - By running the phases you need separately and giving every phase the arguments it needs
 
