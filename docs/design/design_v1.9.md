@@ -99,7 +99,7 @@ In any case the user can skip specific preflight checks (or eventually all prefl
 - [warning] if connection to services subnet goes thought proxy (only first address checked).
 - [warning] if connection to Pods subnet goes thought proxy (only first address checked).
 - If using docker:
-  - [warning/error] if Docker service does not  exists, if it is disabled, if it is not active.
+  - [warning/error] if Docker service does not exist, if it is disabled, if it is not active.
 - If using other cri engine:
   - [error] if crictl socket does not answer.
 - If external etcd is provided: 
