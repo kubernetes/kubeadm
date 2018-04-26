@@ -82,7 +82,7 @@ In any case the user can skip preflight checks with the `--skip-preflight-checks
   - [error/warning] if Docker endpoint does not exist or does not work, if docker version v1.11.2 <= x <= v1.13.1,
 - [error] if user is not root,
 - [warning] if kubelet service does not exist, if it is disabled,
-- [warning/error] if Docker service does not  exists, if it is disabled, if it is not active,
+- [warning/error] if Docker service does not exist, if it is disabled, if it is not active,
 - [warning] if firewalld is active,
 - [error] if API.BindPort or ports 10250/10251/10252 are used,
 - [warning] if connection to https://API.AdvertiseAddress:API.BindPort goes thought proxy,
