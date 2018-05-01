@@ -16,10 +16,17 @@ Follow either of the two links above to access the appropriate CLA and instructi
 ### Contributing A Patch
 
 1. Submit an issue describing your proposed change to the repo in question.
-1. The [repo owners](OWNERS) will respond to your issue promptly.
-1. If your proposed change is accepted, and you haven't already done so, sign a Contributor License Agreement (see details above).
-1. Fork the desired repo, develop and test your code changes.
-1. Submit a pull request.
+2. The [repo owners](OWNERS) will respond to your issue promptly.
+3. If your proposed change is accepted, and you haven't already done so, sign a Contributor License Agreement (see details above).
+4. Fork the desired repo, develop and test your code changes.
+5. Submit a pull request.
+
+### Building
+
+`kubeadm` uses the same build process as the rest of the `kubernetes/kubernetes` repository.
+However, you do not frequently have to build all of kubernetes to work on kubeadm.
+
+See [./vagrant/README.md](./vagrant/README.md) for a quick workflow to build and test your own kubeadm binaries. 🙂
 
 ### Adding dependencies
 
