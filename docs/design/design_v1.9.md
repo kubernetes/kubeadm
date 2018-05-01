@@ -1,6 +1,6 @@
 ## Implementation design for kubeadm
 
-<img src="https://raw.githubusercontent.com/cncf/artwork/master/kubernetes/certified-kubernetes/1.9/color/certified_kubernetes_1.9_color.png" align="right" width="150px">`kubeadm init` and `kubeadm join` together provides a nice user experience for creating a best-practice but bare Kubernetes cluster from scratch.
+<img src="https://raw.githubusercontent.com/cncf/artwork/master/kubernetes/certified-kubernetes/1.9/color/certified-kubernetes-1.9-color.png" align="right" width="150px">`kubeadm init` and `kubeadm join` together provides a nice user experience for creating a best-practice but bare Kubernetes cluster from scratch.
 However, it might not be obvious _how_ kubeadm does that.
 
 This document strives to explain the phases of work that happen under the hood.
