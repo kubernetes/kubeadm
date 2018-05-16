@@ -21,6 +21,15 @@ Follow either of the two links above to access the appropriate CLA and instructi
 4. Fork the desired repo, develop and test your code changes.
 5. Submit a pull request.
 
+### Contributing `kubeadm` documentation
+
+`kubeadm` is documented in various places on the [kubernetes.io](https://kubernetes.io/docs/search/?q=kubeadm) website.
+These pages cover topics such as installation steps, troubleshooting and command line syntax.
+You can help `kubeadm` **a lot** by filling issue reports for inconsistencies and keeping the documentation up-to-date by submitting PRs.
+
+The process for contributing to the website is very straight forward and is outlined here:
+* https://github.com/kubernetes/website/blob/master/CONTRIBUTING.md
+
 ### Building
 
 `kubeadm` uses the same build process as the rest of the `kubernetes/kubernetes` repository.
