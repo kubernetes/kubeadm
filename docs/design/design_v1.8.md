@@ -128,7 +128,7 @@ Please note that:
 
 1. If a given certificate and private key pair both exist, and its content is evaluated compliant with the above specs, the existing files will be used and the generation phase for the given certificate skipped.
    This means the user can, for example, copy an existing CA to `/etc/kubernetes/pki/ca.{crt,key}` , and then  then `kubeadm` will use those files for signing the rest of the certs.
-2. Only for the CA, it is possible to provide the `ca.crt` file but not the `ca.key` file, if all other certificates and kubeconfig files already are in place `kubeadm` recognise this condition and activates the so called "ExternalCA" mode, which also implies the `csrsigner`controller in controller-manager won't be started.
+2. Only for the CA, it is possible to provide the `ca.crt` file but not the `ca.key` file, if all other certificates and kubeconfig files already are in place `kubeadm` recognize this condition and activates the so called "ExternalCA" mode, which also implies the `csrsigner`controller in controller-manager won't be started.
 3. If `kubeadm` is running in "ExternalCA" mode; all the certificates must be provided as well, because  `kubeadm` cannot generate them by itself.
 4. In case of `kubeadm`  executed in the `--dry-run` mode, certificates files are written in a temporary folder.
 5. Certificate generation can be invoked individually with the `kubeadm phase certs all` command.
