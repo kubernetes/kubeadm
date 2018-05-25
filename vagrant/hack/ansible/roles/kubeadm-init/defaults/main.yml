@@ -1,0 +1,15 @@
+  caKeys:
+    - front-proxy-ca.key
+    - ca.key
+
+  certAndKeys:
+    - apiserver.crt
+    - apiserver.key
+    - apiserver-kubelet-client.crt
+    - apiserver-kubelet-client.key
+    - ca.crt
+    - front-proxy-ca.crt
+    - front-proxy-client.crt
+    - front-proxy-client.key
+    - sa.key
+    - sa.pub

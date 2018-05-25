@@ -1,0 +1,22 @@
+---
+- name: check if CNI netowrking was already done
+  stat: path=/etc/kubernetes/networking.done
+  run_once: true
+  delegate_to: "{{ groups['masters'][0] }}"
+  register: p
+
+- include_tasks: calico.yml
+  when: p.stat.exists is defined and not p.stat.exists and kubernetes_cni_plugin == "calico"
+
+- include_tasks: flannel.yml
+  when: p.stat.exists is defined and not p.stat.exists and kubernetes_cni_plugin == "flannel"
+
+- include_tasks: weavenet.yml
+  when: p.stat.exists is defined and not p.stat.exists and kubernetes_cni_plugin == "weavenet"
+
+- name: mark CNI netowrking done
+  file: path=/etc/kubernetes/networking.done state=touch owner=root group=sys mode=0555
+  run_once: true
+  delegate_to: "{{ groups['masters'][0] }}"
+  when: p.stat.exists is defined and not p.stat.exists
+  

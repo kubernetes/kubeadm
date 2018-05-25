@@ -1,0 +1,14 @@
+
+---
+kubeadmConfig_binary: "{{ vars | deepGet('kubeadm', 'binary', default=default_kubeadm_binary) }}"
+kubeadmConfig_token: "{{ vars | deepGet('kubeadm', 'token', default=default_kubeadm_token) }}"
+kubeadmConfig_version: "{{ vars | deepGet('kubernetes', 'version', default=default_kubernetes_version) }}"
+kubeadmConfig_fqdn: "{{ vars | deepGet('kubernetes', 'vip', 'fqdn', default=default_kubernetes_vip_fqdn }}"
+kubeadmConfig_dnsDomain: "{{ vars | deepGet('kubernetes', 'dnsDomain', default=default_kubernetes_dnsDomain) }}"
+kubeadmConfig_serviceSubnet: "{{ vars | deepGet('kubernetes', 'serviceSubnet', default=default_kubernetes_serviceSubnet) }}"
+kubeadmConfig_podSubnet: "{{ vars | deepGet('kubernetes', 'podSubnet', default=default_kubernetes_podSubnet) }}"
+kubeadmConfig_controlplane: "{{ vars | deepGet('kubernetes', 'controlplane', default=default_kubernetes_controlplane) }}"
+kubeadmConfig_pkiLocation: "{{ vars | deepGet('kubernetes', 'pkiLocation', default=default_kubernetes_pkiLocation) }}"
+kubeadmConfig_dnsAddon: "{{ vars | deepGet('kubernetes', 'dnsAddon', default=default_kubernetes_dnsAddon) }}"
+kubeadmConfig_kubeletConfig: "{{ vars | deepGet('kubernetes', 'kubeletConfig', default=default_kubernetes_kubeletConfig) }}"
+kubeadmConfig_certificateAuthority: "{{ vars | deepGet('kubernetes', 'certificateAuthority', default=default_kubernetes_certificateAuthority) }}"

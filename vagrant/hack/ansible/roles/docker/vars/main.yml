@@ -1,0 +1,3 @@
+---
+docker_debian_version: "{{ vars | deepGet('docker', 'debian', 'version', default=default_docker_debian_version) }}"
+docker_redhat_version: "{{ vars | deepGet('docker', 'redhat', 'version', default=default_docker_redhat_version) }}"

@@ -1,0 +1,23 @@
+---
+
+- name: create kubelet config directory
+  file:
+    dest: /etc/systemd/system/kubelet.service.d
+    state: directory
+
+- name: drop extra args kubelet config
+  template:
+    dest: /etc/systemd/system/kubelet.service.d/09-extra-args.conf
+    src: etc/systemd/system/kubelet.service.d/09-extra-args.conf
+  notify:
+    - restart kubelet
+
+- name: set_fact serviceSubnet
+  set_fact:  
+    serviceSubnet: "{% if kubeletConfig_serviceSubnet==default_kubernetes_serviceSubnet %}10.96.0.0/12{% else %}{{ kubeletConfig_serviceSubnet }}{% endif %}"
+
+- name: configure static route for kubernetes serviceSubnet
+  command: "ip route add {{ serviceSubnet }} via {{ node_ip }}"
+  register: command_result
+  failed_when: "command_result.rc != 0 and 'File exists' not in command_result.stderr"
+  changed_when: "command_result.rc == 0"

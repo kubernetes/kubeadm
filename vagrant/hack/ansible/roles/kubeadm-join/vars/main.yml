@@ -1,0 +1,5 @@
+
+---
+kubeadmJoin_binary: "{{ vars | deepGet('kubeadm', 'binary', default=default_kubeadm_binary) }}"
+kubeadmJoin_token: "{{ vars | deepGet('kubeadm', 'token', default=default_kubeadm_token) }}"
+kubeadmJoin_fqdn: "{{ vars | deepGet('kubernetes', 'vip', 'fqdn', default=default_kubernetes_vip_fqdn) }}"

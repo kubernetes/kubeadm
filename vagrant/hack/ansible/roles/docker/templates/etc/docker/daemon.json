@@ -1,0 +1,7 @@
+{
+  "storage-driver": "overlay2"{% if ansible_os_family|lower == "redhat" %},
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+{% endif %}
+}

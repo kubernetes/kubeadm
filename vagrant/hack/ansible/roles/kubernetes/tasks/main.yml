@@ -1,0 +1,18 @@
+---
+- import_tasks: debian.yml
+  when: ansible_os_family == "Debian"
+
+- import_tasks: redhat.yml
+  when: ansible_os_family == "RedHat"
+
+- name: ensure that the kubelet is running
+  service:
+    name: kubelet
+    state: started
+    enabled: true
+
+- name: cache docker images for kubeadm
+  docker_image:
+    name: "{{ item }}"
+  with_items: "{{ kubernetes_cachedImages}}"
+  when: kubernetes_enableCachedImages | bool

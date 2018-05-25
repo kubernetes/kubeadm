@@ -1,0 +1,11 @@
+---
+- name: enable pass bridged IPv4 traffic to iptables’ chains
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: 1
+    state: present
+
+- name: install weavenet CNI netowrking
+  shell: "/usr/bin/kubectl apply -f {{ kubernetes_cni_weavenet_manifestUrl }} --kubeconfig=/etc/kubernetes/admin.conf"
+  run_once: true
+  delegate_to: "{{ groups['masters'][0] }}"
