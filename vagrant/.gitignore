@@ -1,2 +1,4 @@
 .vagrant
+**/*.pyc 
 bin
+tmp
