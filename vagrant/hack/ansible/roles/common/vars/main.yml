@@ -1,0 +1,2 @@
+---
+common_upgrade: "{{ vars | deepGet ('common', 'upgradeBase', default=default_common_upgrade) }}"

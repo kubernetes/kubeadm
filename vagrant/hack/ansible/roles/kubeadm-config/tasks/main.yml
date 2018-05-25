@@ -1,0 +1,6 @@
+---
+
+- name: drop kubeadm template
+  template:
+    src: etc/kubernetes/kubeadm.conf.yaml.j2
+    dest: /etc/kubernetes/kubeadm.conf

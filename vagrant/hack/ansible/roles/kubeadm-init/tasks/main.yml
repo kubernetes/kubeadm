@@ -1,0 +1,48 @@
+---
+
+- name: check if kubeadm init already done
+  stat: path=/etc/kubernetes/init.done
+  register: p
+
+- name: run kubeadm init on primary master
+  shell: "{{ kubeadmInit_binary }} init --config=/etc/kubernetes/kubeadm.conf"
+  when: p.stat.exists is defined and not p.stat.exists
+
+#- name: slurp the ca certificate and key
+#  slurp: src="/etc/kubernetes/pki/{{ item }}"
+#  with_items: 
+#    - apiserver.crt
+#    - apiserver.key
+#    - apiserver-kubelet-client.crt
+#    - apiserver-kubelet-client.key
+#    - ca.crt
+#    - front-proxy-ca.crt
+#    - front-proxy-client.crt
+#    - front-proxy-client.key
+#    - sa.key
+#    - sa.pub
+#  run_once: true
+#  register: kubernetes_pki
+#
+#- name: create kubernetes pki directory
+#  file:
+#    dest: /bis/etc/kubernetes/pki/
+#    state: directory
+#    owner: root
+#    group: root
+#  run_once: true
+#
+#- name: add kube pki assets
+#  no_log: True
+#  copy:
+#    dest: "/bis{{ item.source }}"
+#    content: "{{ item.content | b64decode }}"
+#    owner: root
+#    group: root
+#    mode: 0700
+#  with_items: "{{ kubernetes_pki.results }}"
+#  run_once: true
+
+- name: mark init done
+  file: path=/etc/kubernetes/init.done state=touch owner=root group=sys mode=0555
+  when: p.stat.exists is defined and not p.stat.exists

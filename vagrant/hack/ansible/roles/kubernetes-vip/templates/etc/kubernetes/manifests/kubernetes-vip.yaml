@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: controlplane-vip
+  namespace: kube-system
+spec:
+  hostNetwork: true
+  containers:
+  - name: controlplane-vip
+    image: ctracey/ucarp
+    securityContext:
+      privileged: true
+    env:
+    - name: UCARP_VID
+      value: "41"
+    - name: UCARP_ADDRESS
+      value: "{{ kubernetesVip_ip }}/24"
+    - name: UCARP_PASSWORD
+      value: "mypassword"
+    - name: UCARP_DEVICE
+      value: "{{ kubernetesVip_interface }}"

@@ -1,0 +1,22 @@
+---
+
+- name: check if externalCA already done
+  stat: path=/etc/kubernetes/externalCA.done
+  register: p
+
+- name: run kubeadm phase certs on primary master to create a CA
+  shell: "{{ externalCA_binary }} alpha phase certs all --config=/etc/kubernetes/kubeadm.conf"
+  when: p.stat.exists is defined and not p.stat.exists
+
+- name: delete CA key files from the external CA
+  file:
+    state: absent
+    path: "/etc/kubernetes/pki/{{ item }}"
+  with_items:
+    - ca.key
+    - front-proxy-ca.key
+  when: p.stat.exists is defined and not p.stat.exists
+  
+- name: mark externalCA done
+  file: path=/etc/kubernetes/externalCA.done state=touch owner=root group=sys mode=0555
+  when: p.stat.exists is defined and not p.stat.exists
