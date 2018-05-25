@@ -1,0 +1,13 @@
+apiVersion: cluster.k8s.io/v1alpha1
+kind: Cluster
+metadata:
+  name: kubeadm-test
+spec:
+  providerConfig: 
+    value: 
+      apiVersion: vagrantCluster/v1alpha1
+      kind: vagrantCluster
+      kubernetes:
+        version: 1.10.2
+        cni:
+          plugin: weavenet
