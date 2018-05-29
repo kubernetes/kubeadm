@@ -79,7 +79,6 @@ class VagrantMachine:
 
 def parse(folder):
     """ parses the cluster api definition in a folder """
-
     if not os.path.isabs(folder):
         folder = os.path.join(vagrant_utils.root_folder, folder)
 
@@ -100,10 +99,10 @@ def parse(folder):
 
     # fails fast if incomplete configurations are detected
     if cluster == None: 
-        raise ValueError("Invalid cluster api specification. Cluster object not defined")
+        raise ValueError("Invalid cluster api specification in %s. Cluster object not defined" % (spec))
     
     if len(machineSets) == 0: 
-        raise ValueError("Invalid cluster  api specification. MachineSets objects not defined")
+        raise ValueError("Invalid cluster  api specification in %s. MachineSets objects not defined" % (spec))
 
     return cluster, machineSets
 
@@ -185,7 +184,7 @@ def get_machines(cluster, machineSets):
         for i in range(1, s.replicas + 1):
             m = VagrantMachine()
             m.name              = "%s-%s" % (cluster.name, s.name) if s.replicas == 1 else "%s-%s%s" % (cluster.name, s.name, j)
-            m.hostname          = "%s-%s.local" % (cluster.name, s.name)
+            m.hostname          = "%s-%s.local" % (cluster.name, m.name)
             m.box               = s.box
             m.ip                = "10.10.10.1%s" % (j)
             m.cpus              = s.cpus
@@ -199,7 +198,7 @@ def get_machines(cluster, machineSets):
         raise ValueError("Invalid cluster definition. At least one Master machine is required")
     elif len(masters) > 1:
         cluster.highavailability = True
-        if sum([1 for m in machines if ROLE_ETCD in m.roles]):
+        if sum([1 for m in machines if ROLE_ETCD in m.roles])==0:
             raise ValueError("Invalid cluster definition. Multi masters requires external etcd.")
         if cluster.pkiLocation == kubeadm_utils.CERTIFICATEAUTHORITY_LOCATION_SECRETS:
             raise ValueError("Invalid cluster definition. Multi masters does not support certificates in secrets yet.")

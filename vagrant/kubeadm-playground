@@ -82,26 +82,32 @@ def validate_args(cluster, machines, command, *args):
     if command == PLAYGROUND_START:
         ## for start command args represent playbooks implementing bootstrap actions
         valid = PLAYGROUND_START_VALID_ARGS + [ARG_META_PLAYBOOK_ALL, ARG_META_PLAYBOOK_NONE]        
+        
+        # compute default create playbooks according to cluster spec
+        default = [ARG_PLAYBOOK_INSTALL_PREREQUISITES]
 
+        if cluster.externalEtcd == True:
+            default = default + [ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD]
+
+        if cluster.certificateAuthority == kubeadm_utils.CERTIFICATEAUTHORITY_TYPE_EXTERNAL:
+            default = default + [ARG_PLAYBOOK_INSTALL_EXTERNAL_CA]
+
+        if cluster.highavailability == True:
+            default = default + [ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP]
+        
+        default = default + [ARG_PLAYBOOK_CREATE_KUBEADM_CONFIG]
+        
         # if args are not specified for start command, set defaults playbooks according to cluster spec
         if len(args) == 0:
-            args = [ARG_PLAYBOOK_INSTALL_PREREQUISITES]
-
-            if cluster.externalEtcd == True:
-                args = args + [ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD]
-
-            if cluster.certificateAuthority == kubeadm_utils.CERTIFICATEAUTHORITY_TYPE_EXTERNAL:
-                args = args + [ARG_PLAYBOOK_INSTALL_EXTERNAL_CA]
-
-            if cluster.highavailability == True:
-                args = args + [ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP]
-            
-            args = args + [ARG_PLAYBOOK_CREATE_KUBEADM_CONFIG]
+            args = default
 
         # if the meta arg ALL is specified, explode the args list
         if ARG_META_PLAYBOOK_ALL in args:
-            args = PLAYGROUND_START_VALID_ARGS
-        
+            args = default + [ARG_PLAYBOOK_RUN_KUBEADM_INIT, ARG_PLAYBOOK_RUN_KUBECTL_APPLY_NETWORK] 
+
+            if len([m for m in machines if cluster_api.ROLE_NODE in m.roles]) >0:
+                args = args + [ARG_PLAYBOOK_RUN_KUBEADM_JOIN] 
+
         # if the meta arg NONE is specified, it should not be used in combination with other args
         if ARG_META_PLAYBOOK_NONE in args and len(args) > 1:
             raise ValueError("'None' arg cannot be used in combination with other args") 
@@ -125,6 +131,10 @@ def validate_args(cluster, machines, command, *args):
     elif command == PLAYGROUND_SSH:
         ## for ssh command args represent machines
         valid = [m.name for m in machines]
+
+        # automatically select machine if only one machine exists
+        if len(args) == 0 and len(valid) ==1:
+            args = valid
 
         # exec requires only one arg 
         if len(args) != 1:
@@ -155,7 +165,13 @@ def validate_args(cluster, machines, command, *args):
 def get_cluster_spec(spec):
     """ return the cluster specification from the cluster api definition in a folder """
 
-    cluster, machineSets = cluster_api.parse(spec) 
+    if spec == None:
+        if 'KUBEADM_PLAYGROUND_SPEC' in os.environ:
+            spec = os.environ['KUBEADM_PLAYGROUND_SPEC']
+        else:
+            spec= 'spec'
+
+    cluster, machineSets = cluster_api.parse(os.path.join(spec, '*.yml')) 
 
     # if ansible is not installed, cluster spec is modified ensuring compability 
     #  with the fallback_boostrap script defined in the Vagrant file
@@ -367,7 +383,7 @@ def main():
     parser.add_argument('arg', metavar='arg', nargs='*', 
                         help="""argument to be passed to playground subcommands. use `kubeadm-playground help [command]` for further info""")
 
-    parser.add_argument('--spec', dest='spec', metavar='PATH', default='spec/*.yml',
+    parser.add_argument('--spec', dest='spec', metavar='PATH', default=None,
                     help='path to the cluster api specification (default spec/*.yml)')
     
     parser.add_argument('--issue', '--pr', dest='prefix', metavar='N', default=None,

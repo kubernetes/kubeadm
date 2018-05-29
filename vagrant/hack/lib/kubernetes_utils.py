@@ -43,8 +43,8 @@ def build_output_path(builder):
         but it can be eventually overwritten with ENV.kube_root """
 
     goPath = os.path.join(os.environ['HOME'], 'go')
-    if 'KUBEADM_BUILD_ROOT' in os.environ: 
-        goPath = os.environ['KUBEADM_BUILD_ROOT']
+    if 'KUBERNETES_ROOT' in os.environ: 
+        goPath = os.environ['KUBERNETES_ROOT']
     elif 'GOPATH' in os.environ:
         goPath = os.environ['GOPATH']
 

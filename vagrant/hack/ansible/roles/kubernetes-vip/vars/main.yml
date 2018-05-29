@@ -1,4 +1,4 @@
 ---
-kubernetesVip_ip: "{{ vars | deepGet('kubernetes', 'vip', 'ip' default=default_kubernetes_vip_ip }}"
-kubernetesVip_fqdn: "{{ vars | deepGet('kubernetes', 'vip', 'fqdn' default=default_kubernetes_vip_fqdn }}"
+kubernetesVip_ip: "{{ vars | deepGet('kubernetes', 'vip', 'ip', default=default_kubernetes_vip_ip) }}"
+kubernetesVip_fqdn: "{{ vars | deepGet('kubernetes', 'vip', 'fqdn', default=default_kubernetes_vip_fqdn) }}"
 kubernetesVip_interface: "{{ vars | deepGet('kubernetes', 'vip', 'interface', default=default_kubernetes_vip_interface) }}"

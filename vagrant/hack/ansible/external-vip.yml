@@ -14,7 +14,7 @@
 
 ---
 - name: install kubernetes-vip if required (acts as external load balancer)
-  hosts: masters
+  hosts: masters:nodes
   become: yes
   roles:
     - { role: kubernetes-vip, when: "groups['masters'] | length > 1" } 

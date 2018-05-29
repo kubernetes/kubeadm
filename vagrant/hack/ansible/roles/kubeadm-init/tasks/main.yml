@@ -1,7 +1,7 @@
 ---
 
 - name: check if kubeadm init already done
-  stat: path=/etc/kubernetes/init.done
+  stat: path=/etc/kubernetes/kubelet.conf
   register: p
 
 - name: run kubeadm init on primary master
@@ -42,7 +42,3 @@
 #    mode: 0700
 #  with_items: "{{ kubernetes_pki.results }}"
 #  run_once: true
-
-- name: mark init done
-  file: path=/etc/kubernetes/init.done state=touch owner=root group=sys mode=0555
-  when: p.stat.exists is defined and not p.stat.exists
