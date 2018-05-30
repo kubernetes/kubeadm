@@ -1,7 +1,7 @@
 ---
 
 - name: check if externalCA already done
-  stat: path=/etc/kubernetes/externalCA.done
+  stat: path=/etc/kubernetes/pki/ca.crt
   register: p
 
 - name: run kubeadm phase certs on primary master to create a CA
@@ -17,6 +17,3 @@
     - front-proxy-ca.key
   when: p.stat.exists is defined and not p.stat.exists
   
-- name: mark externalCA done
-  file: path=/etc/kubernetes/externalCA.done state=touch owner=root group=sys mode=0555
-  when: p.stat.exists is defined and not p.stat.exists

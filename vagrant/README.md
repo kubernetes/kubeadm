@@ -16,7 +16,7 @@ kubeadm and eventually test a local build of kubeadm itself.
     - [Advanced options](#advanced-options)
         - [Customize the kubeadm playground](#customize-the-kubeadm-playground)
         - [Customizing the playground provisioning process](#customizing-the-playground-provisioning-process)
-        - [Completing cluster setup with kubeadm](#completing-cluster-setup-with-kubeadm)
+        - [Executing kubeadm E2E tests manually](#executing-kubeadm-e2e-tests-manually)
         - [Executing kubeadm E2E tests automatically](#executing-kubeadm-e2e-tests-automatically)
         - [Customizing kubeadm deploy](#customizing-kubeadm-deploy)
         - [Comparing two version of kubeadm](#comparing-two-version-of-kubeadm)
@@ -40,7 +40,7 @@ In order to make the `kubeadm-playground` command easily accessible from other l
 open your `.bashrc` file and append the following line:
 
 ```bash
-alias kubeadm-playground='~/go/src/k8s.io/kubeadm/kubeadm-playground'
+alias kubeadm-playground='~/go/src/k8s.io/kubeadm/vagrant/kubeadm-playground'
 ```
 
 ## Getting started
@@ -88,7 +88,7 @@ Access the playground with:
 kubeadm-playground ssh kubeadm-test-master
 ```
 
-And then execute your kubeadm test  scenario (See following paragraphs for more info).
+And then execute your kubeadm test scenario (See following paragraphs for more info).
 
 ## Iterative dev/build/release/test cycles
 
@@ -111,7 +111,10 @@ Afterwards, repeat build, deploy and test steps as described above.
 By default the kubeadm playground is composed by a single machine with role master.
 
 It is possible to customize the kubeadm playground by modifying the cluster definition in
-the `spec/` folder. Supported options are:
+the `spec/` folder or creating your own spec folder and passing it to `kubeadm-playground`
+with the `--spec` flag or the `KUBEADM_PLAYGROUND_SPEC` environment variable. 
+
+Supported options are:
 
 - Different cluster topologies e.g. add master nodes, add worker nodes, define the
   nodes in charge for hosting an external etcd cluster.
@@ -128,14 +131,15 @@ See the [readme](spec/README.md) file under `spec/` folder for more info
 
 ### Customizing the playground provisioning process
 
-`kubeadm-playground start` by default will install all the necessary pre-requisites for 
+`kubeadm-playground start` by default will install all the necessary pre-requisites for
 running `kubeadm init`.
 
 If ansible is not installed on the guest machine, this includes only kubernetes, kubelet and
 kubeadm binaries, that is basically what you need for test in clusters with only one machine.
 
 Instead, if ansible is available `kubeadm-playground start` by default will take charge of
-executing following additional steps simplifying test and making possible also scenarios with more than on machine:
+executing following additional steps simplifying test activities and making possible also 
+scenarios with more than on machine:
 
 - Additional kubernetes, kubelet configurations required for running in vagrant (e.g. node-ip)
 - Creation of a kubeadm config file customized with the selected kubeadm options and saved
@@ -156,6 +160,8 @@ playbooks to the `kubeadm-playground start` command; available playbooks are:
 - `kubeadm-init`
 - `kubectl-apply-network`
 - `kubeadm-join`
+- `all` (default playbooks + `kubeadm-init`, `kubectl-apply-network` and `kubeadm-join` 
+  if there are machine with role node)
 - `none` (none the above)
 
 Accordingly, it is possible reduce actions executed by `kubeadm-playground start`, e.g.
@@ -173,22 +179,21 @@ to obtaining a fully working kubernetes cluster, e.g.
 kubeadm-playground start prerequisites kubeadm-config kubeadm-init kubectl-apply-network kubeadm-join
 ```
 
-### Completing cluster setup with kubeadm
+### Executing kubeadm E2E tests manually
 
 `kubeadm-playground start` by default will install all the necessary pre-requisites
 for running `kubeadm init`.
 
-Running `kubeadm init` eventually `kubeadm join` on nodes is typically up to the user
-as part od the test scenarios (use `kubeadm-playground ssh` to connect to the machines).
+Running `kubeadm init` and eventually `kubeadm join` on nodes is typically up to the user
+as initial part of your test scenario (use `kubeadm-playground ssh` to connect to the machines).
 
-A getting started guide for executing this actions is accessible by running `kubeadm-playground help` followed by one of the provisioning
-action described above e.g.
+A getting started guide for executing common kubeadm actions is accessible by running `kubeadm-playground help` followed by one of the actions described in the previous paragraph e.g.
 
 ```bash
 kubeadm-playground help kubeadm-init
 ```
 
-If ansible is available is installed on the guest machine, it is also possible to execute single provisioning steps automatically e.g.
+If ansible is available on the guest machine, it is also possible to execute single provisioning steps automatically e.g.
 
 ```bash
 kubeadm-playground exec kubeadm-init
@@ -214,8 +219,14 @@ It is possible to customize this operation by:
   specify the kubernetes build method in use (choices are `bazel`, `docker` or `local`)
 - using the  `--issue` or `--pr` flags or the `KUBEADM_PLAYGROUND_ISSUE` environment variable
   to specify a prefix for the target kubeadm binary file name
-- using the `KUBEADM_PLAYGROUND_BUILD_ROOT` environment variable to set the  kubernetes build root if
+- using the `KUBERNETES_ROOT` environment variable to set the kubernetes build root if
   the default folders are not used.
+
+### create a base box
+
+In order to make working `kubeadm-playground` provisioning faster, you can create a
+vagrant base box with all the prerequisites already in place.
+see [instruction](box.md) for more info
 
 ### Comparing two version of kubeadm
 

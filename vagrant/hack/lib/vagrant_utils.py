@@ -88,7 +88,7 @@ def exec_up(fallbackMode):
 
 def write_sshconfig():
     """ Run `vagrant ssh-config` to get ssh connection info and makes it available to ansible """
-    output = subprocess.check_output(['vagrant', 'ssh-config'])
+    output = check_vagrant(['ssh-config'])
 
     if not os.path.exists(tmp_folder):
         os.makedirs(tmp_folder)

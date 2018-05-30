@@ -1,26 +1,8 @@
 ---
-- name: check if kubeadm init already done
-  stat: path=/etc/kubernetes/init.done
+- name: check if kubeadm init/join already done
+  stat: path=/etc/kubernetes/kubelet.conf
   register: i
-  when: inventory_hostname in groups['masters']
 
 - name: run kubeadm reset
   shell: "{{ kubeadmReset_binary }} reset"
-  when: inventory_hostname in groups['masters'] and i.stat.exists is defined and i.stat.exists
-
-- name: remove mark init done
-  file: path=/etc/kubernetes/init.done state=absent
-  when: inventory_hostname in groups['masters'] and i.stat.exists is defined and i.stat.exists
- 
-- name: check if kubeadm join already done
-  stat: path=/etc/kubernetes/join.done
-  register: j
-  when: inventory_hostname in groups['nodes']
-
-- name: run kubeadm reset
-  shell: "{{ kubeadmReset_binary }} reset"
-  when: inventory_hostname in groups['nodes'] and j.stat.exists is defined and j.stat.exists
-
-- name: remove mark join done
-  file: path=/etc/kubernetes/join.done state=absent
-  when: inventory_hostname in groups['nodes'] and j.stat.exists is defined and j.stat.exists
+  when: i.stat.exists is defined and i.stat.exists

@@ -1,5 +1,10 @@
 ---
 
+- name: computes etcd client endpoints
+  set_fact:
+    etcd_client_endpoints: "{{ groups['etcds']|map('extract', hostvars, ['node_ip'])|map('regex_replace', '^(.*)$', 'http://\\1:2379')|list|sort }}"
+  when: "groups['etcds'] | length > 1"
+
 - name: drop kubeadm template
   template:
     src: etc/kubernetes/kubeadm.conf.yaml.j2

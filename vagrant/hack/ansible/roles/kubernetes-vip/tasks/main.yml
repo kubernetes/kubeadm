@@ -3,6 +3,7 @@
   template:
     dest: /etc/kubernetes/manifests/kubernetes-vip.yaml
     src: etc/kubernetes/manifests/kubernetes-vip.yaml
+  when: inventory_hostname in groups['masters']
 
 - name: update /etc/hosts to include cluster fqdn
   lineinfile:

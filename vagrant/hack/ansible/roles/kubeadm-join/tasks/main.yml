@@ -1,7 +1,7 @@
 ---
 
 - name: check if kubeadm join already done
-  stat: path=/etc/kubernetes/join.done
+  stat: path=/etc/kubernetes/kubelet.conf
   register: p
 
 - name: Set kubeadmJoin_url
@@ -11,7 +11,4 @@
 - name: join nodes to masters
   command: "{{ kubeadmJoin_binary }} join {{ kubeadmJoin_url }}:6443 --token='{{ kubeadmJoin_token }}' --discovery-token-unsafe-skip-ca-verification"
   when: p.stat.exists is defined and not p.stat.exists
-
-- name: mark join done
-  file: path=/etc/kubernetes/join.done state=touch owner=root group=sys mode=0555
-  when: p.stat.exists is defined and not p.stat.exists
+  
