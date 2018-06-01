@@ -5,7 +5,7 @@
     value: 1
     state: present
 
-- name: install weavenet CNI netowrking
+- name: install weavenet CNI networking
   shell: "/usr/bin/kubectl apply -f {{ kubernetes_cni_weavenet_manifestUrl }} --kubeconfig=/etc/kubernetes/admin.conf"
   run_once: true
   delegate_to: "{{ groups['masters'][0] }}"
