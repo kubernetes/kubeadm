@@ -5,7 +5,7 @@
     value: 1
     state: present
 
-- name: install flannel CNI netowrking
+- name: install flannel CNI networking
   command: "/usr/bin/kubectl apply -f {{ kubernetes_cni_flannel_manifestUrl }} --kubeconfig=/etc/kubernetes/admin.conf"
   run_once: true
   delegate_to: "{{ groups['masters'][0] }}"
