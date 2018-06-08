@@ -37,6 +37,11 @@ However, you do not frequently have to build all of kubernetes to work on kubead
 
 See [./vagrant/README.md](./vagrant/README.md) for a quick workflow to build and test your own kubeadm binaries. 🙂
 
+### Testing pre-release versions of Kubernetes with kubeadm
+
+See [testing-pre-releases.md](testing-pre-releases.md) for information about how to get pre-release versions of kubernetes
+or kubeadm and how to test them.
+
 ### Adding dependencies
 
 If your patch depends on new packages, add that package with [`godep`](https://github.com/tools/godep). Follow the [instructions to add a dependency](https://github.com/kubernetes/kubernetes/blob/master/docs/devel/development.md#godep-and-dependency-management).
