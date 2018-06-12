@@ -1,0 +1,30 @@
+---
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+kubernetesVersion: {% if kubeadmConfig_controlpane_version!=""%}"{{ kubeadmConfig_controlpane_version }}"{% else %}"{{ kubeadmConfig_version }}"{% endif %}
+
+token: "{{ kubeadmConfig_token }}"
+api:
+  advertiseAddress: "{{ node_ip }}"
+{% if groups['masters'] | length > 1 %}
+  controlPlaneEndpoint: "{{ kubeadmConfig_api_fqdn }}"
+apiServerCertSANs:
+    - "{{ kubeadmConfig_api_fqdn }}"
+    - "{{ kubeadmConfig_api_ip }}"
+{% for host in groups['masters'] | difference([inventory_hostname]) %}
+    - "{{ hostvars[host]['node_ip'] }}"
+{% endfor %}{% endif %} 
+{% if 'etcds' in groups %}{% if groups['etcds'] | length > 0 %}
+etcd:
+  endpoints: {{ etcd_client_endpoints | to_yaml }}{% endif %}{% endif %}
+{% if kubeadmConfig_dnsDomain!=""  or kubeadmConfig_serviceSubnet!="" or kubeadmConfig_podSubnet!="" %}
+networking:
+  {% if kubeadmConfig_dnsDomain!="" %}dnsDomain: "{{ kubeadmConfig_dnsDomain }}"{% endif %}
+  {% if kubeadmConfig_serviceSubnet!="" %}serviceSubnet: "{{ kubeadmConfig_serviceSubnet }}"{% endif %}
+  {% if kubeadmConfig_podSubnet!="" %}podSubnet: "{{ kubeadmConfig_podSubnet }}"{% endif %}{% endif %}
+{% if kubeadmConfig_dnsAddon=="coreDNS"  or kubeadmConfig_kubeletConfig=="dynamicKubeletConfig" or kubeadmConfig_controlplane=="selfHosting" or kubeadmConfig_pkiLocation=="secrets" %}
+featureGates:
+  {% if kubeadmConfig_dnsAddon=="coreDNS" %}CoreDNS: "true" {% endif %}
+  {% if kubeadmConfig_kubeletConfig=="dynamicKubeletConfig" %}DynamicKubeletConfig: "true" {% endif %}
+  {% if kubeadmConfig_controlplane=="selfHosting" %}SelfHosting: "true" {% endif %}
+  {% if kubeadmConfig_pkiLocation=="secrets" %}StoreCertsInSecrets: "true" {% endif %}{% endif %}

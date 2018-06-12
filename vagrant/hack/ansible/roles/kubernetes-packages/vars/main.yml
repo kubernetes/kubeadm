@@ -5,5 +5,3 @@ kubernetes_aptKeyUrl: "{{ vars | deepGet('kubernetes', 'apt_key_url', default=de
 kubernetes_aptRepo: "{{ vars | deepGet('kubernetes', 'apt_repo', default=default_kubernetes_aptRepo) }}"
 kubernetes_yumBaseUrl: "{{ vars | deepGet('kubernetes', 'yum_base_url', default=default_kubernetes_yumBaseUrl) }}"
 kubernetes_yumGpgKey: "{{ vars | deepGet('kubernetes', 'yum_gpg_key', default=default_kubernetes_yumGpgKey) }}"
-kubernetes_enableCachedImages: "{{ vars | deepGet('kubernetes', 'enableCachedImages', default=default_kubernetes_enableCachedImages) }}"
-kubernetes_cachedImages: "{{ vars | deepGet('kubernetes', 'cachedImages', default=default_kubernetes_cachedImages) }}"

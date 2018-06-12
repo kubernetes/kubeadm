@@ -10,12 +10,11 @@ default_etcd_version:                         'v3.2.17'
 default_etcd_clusterToken:                    '444fddcc-beae-45bc-9da6-d941d446b595'
 
 default_kubernetes_version:                   '1.10.2'
+default_kubernetes_controlplane_version:      ''  # = use kubernets version
 default_kubernetes_aptKeyUrl:                 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'
 default_kubernetes_aptRepo:                   'deb http://apt.kubernetes.io/ kubernetes-xenial main'
 default_kubernetes_yumBaseUrl:                'https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64'
 default_kubernetes_yumGpgKey:                 'https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg'
-default_kubernetes_enableCachedImages:        False
-default_kubernetes_cachedImages:              []
 default_kubernetes_dnsDomain:                 ''  # = use kubeadm default
 default_kubernetes_serviceSubnet:             ''  # = use kubeadm default
 default_kubernetes_podSubnet:                 ''  # = use kubeadm default
@@ -38,6 +37,7 @@ default_kubernetes_cni_weavenet_manifestUrl:  "https://cloud.weave.works/k8s/net
 default_kubernetes_kubelet_extra_args:        {}
 
 default_kubeadm_binary:                       '/usr/bin/kubeadm'
-default_kubeadm_token:                        '6l9137.gphsahptna3sf56p'
+default_kubeadm_api_version:                  ''  # kuberentesVersion<v1.11 defaults to v1alpha1, else defaults to v1alpha2 
+default_kubeadm_token:                        'abcdef.0123456789abcdef'
 
 # NB. defaults used in the test guide is mirrored into hack/lib/ansible-utils.rb

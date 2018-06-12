@@ -4,7 +4,7 @@ Define a cluster api spec with a single machine. Then create the
 machine installing only prerequisites:
 
 ```bash
-kubeadm-playground create prerequisites
+kubeadm-playground start prerequisites
 ```
 
 Once the machine is created connect with `kubeadm-playground ssh` and pre-pull images

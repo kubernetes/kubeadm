@@ -17,6 +17,7 @@
 
 import os
 import sys
+import json
 import yaml
 import argparse
 import traceback
@@ -62,9 +63,9 @@ ARG_PLAYBOOK_E2E_EXAMPLE               = 'test-example'
 ARG_PLAYBOOK_KUBEADM_RESET             = 'kubeadm-reset'
 
 PLAYGROUND_START_VALID_ARGS  = [ARG_PLAYBOOK_INSTALL_PREREQUISITES, ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD, ARG_PLAYBOOK_INSTALL_EXTERNAL_CA, ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP, ARG_PLAYBOOK_CREATE_KUBEADM_CONFIG, ARG_PLAYBOOK_RUN_KUBEADM_INIT, ARG_PLAYBOOK_RUN_KUBECTL_APPLY_NETWORK, ARG_PLAYBOOK_RUN_KUBEADM_JOIN] 
-PLAYGROUND_EXEC_VALID_ARGS    = PLAYGROUND_START_VALID_ARGS + [ARG_PLAYBOOK_KUBEADM_RESET] 
-PLAYGROUND_E2E_VALID_ARGS     = [ARG_PLAYBOOK_E2E_EXAMPLE] 
-PLAYGROUND_HELP_VALID_ARGS     = list(set(VALID_COMMANDS + PLAYGROUND_START_VALID_ARGS + PLAYGROUND_EXEC_VALID_ARGS + PLAYGROUND_E2E_VALID_ARGS))
+PLAYGROUND_EXEC_VALID_ARGS   = PLAYGROUND_START_VALID_ARGS + [ARG_PLAYBOOK_KUBEADM_RESET] 
+PLAYGROUND_E2E_VALID_ARGS    = [ARG_PLAYBOOK_E2E_EXAMPLE] 
+PLAYGROUND_HELP_VALID_ARGS   = list(set(VALID_COMMANDS + PLAYGROUND_START_VALID_ARGS + PLAYGROUND_EXEC_VALID_ARGS + PLAYGROUND_E2E_VALID_ARGS))
 
 def playground_command(arg):
     """ validation of playground_command """
@@ -162,7 +163,7 @@ def validate_args(cluster, machines, command, *args):
 
     return args
 
-def get_cluster_spec(spec):
+def get_cluster_spec(spec, extra_vars):
     """ return the cluster specification from the cluster api definition in a folder """
 
     if spec == None:
@@ -190,6 +191,18 @@ def get_cluster_spec(spec):
         extra_vars_override = yaml.load(open(extra_vars_override_file))
         utils.dict_merge(cluster.extra_vars, extra_vars_override)
 
+    # if extra_vars are passed from the command line, merge in the cluster.extra_vars (input for ansible)
+    if extra_vars == None and 'KUBEADM_PLAYGROUND_EXTRA_VARS' in os.environ:
+        extra_vars = os.environ['KUBEADM_PLAYGROUND_EXTRA_VARS']
+
+    if extra_vars != None:
+        try:           
+            decoded_extra_vars = json.loads(extra_vars.decode('ascii', 'ignore'))
+        except Exception as e:
+            raise RuntimeError('Error parsing extra_vars `' + extra_vars + '`: ' + repr(e))
+        
+        utils.dict_merge(cluster.extra_vars, decoded_extra_vars)
+
     return cluster, machineSets, machines, fallbackMode
 
 def do_status():
@@ -203,41 +216,45 @@ def do_status():
 
     print
 
-def do_deploy(builder, prefix):
-    """ deploy kubeadm binary from build output to vagrant machines 
-        
-        both the source of the kubeadm binary (builder) and the target (prefix)
-        can be set via flags or env variables """
+def do_deploy_packages(packages):
+    """ if specified, deploy a packages containing .deb or .rpm packages to vagrant machines """
 
-    utils.print_H1('Deploying to vagrant')
+    if packages == None and 'KUBEADM_PLAYGROUND_PACKAGES' in os.environ:
+        packages = os.environ['KUBEADM_PLAYGROUND_PACKAGES']
 
-    if builder == None:
-        if 'KUBEADM_PLAYGROUND_BUILDER' in os.environ:
-            builder = os.environ['KUBEADM_PLAYGROUND_BUILDER']
-        else:
-            builder = kubernetes_utils.KUBERNETES_BAZEL_BUILD
+    if packages != None:
+        utils.print_H1("Deploying packages '%s' to vagrant" % (packages))
+        kubeadm_binary = vagrant_utils.import_packages(packages)
+        utils.print_normal('packages deployed to vagrant')
 
-    if prefix == None:
-        if 'KUBEADM_PLAYGROUND_ISSUE' in os.environ:
-            prefix = os.environ['KUBEADM_PLAYGROUND_ISSUE']
-        else:
-            prefix = ''
-        
-    kubeadm_binary = vagrant_utils.import_kubeadm_from_build_output_path(builder, prefix)
-    utils.print_normal("kubeadm deployed to vagrant as '%s'" % (kubeadm_binary))
+        print
 
-    print
+def do_deploy_kubeadm_binary(prefix, binary, builder):
+    """ deploy kubeadm binary to vagrant machines 
 
-def undo_deploy(builder, prefix):
-    """ undo kubeadm binary in vagrant machines """
+        source (in order of priority):
+        - binary (given path)
+        - builder (build_output folder for a given kubernetes build method)"""
 
-    utils.print_H1('Removing kubeadm deploy to vagrant')
+    if binary == None and 'KUBEADM_PLAYGROUND_BINARY' in os.environ:
+        binary = os.environ['KUBEADM_PLAYGROUND_BINARY']
 
-    vagrant_utils.undo_kubeadm_import(builder, prefix)
+    if binary == None and builder == None and 'KUBEADM_PLAYGROUND_BUILDER' in os.environ:
+        builder = os.environ['KUBEADM_PLAYGROUND_BUILDER']
 
-    utils.print_normal("'%s' removed from vagrant" % (kubeadm_binary))
+    if binary == None and builder == None:
+        builder = kubernetes_utils.KUBERNETES_BAZEL_BUILD
 
-    print
+    if prefix == None and 'KUBEADM_PLAYGROUND_ISSUE' in os.environ:
+        prefix = os.environ['KUBEADM_PLAYGROUND_ISSUE']
+
+    if binary != None or builder != None:
+        utils.print_H1('Deploying kubeadm to vagrant')
+
+        kubeadm_binary = vagrant_utils.import_kubeadm_binary(binary, builder, prefix)
+        utils.print_normal("kubeadm deployed to vagrant as '%s'" % (kubeadm_binary))
+
+        print
 
 def do_start(fallbackMode):
     """ starts all the machines in the cluster """
@@ -385,12 +402,21 @@ def main():
 
     parser.add_argument('--spec', dest='spec', metavar='PATH', default=None,
                     help='path to the cluster api specification (default spec/*.yml)')
+
+    parser.add_argument('--extra-vars', dest='extra_vars', metavar='JSON', default=None,
+                    help='extra vars to merge into Cluster.spec.providerConfig.value')
+
+    parser.add_argument('--packages', dest='packages', metavar='PATH', default=None, 
+                    help='Path to a local folder where .deb or .rpm packages for kubectl, kubeadm, kubelet and kubernetes-cni are available;\n if a kubeadm binary is present in the same folder, it will be used as well')
     
-    parser.add_argument('--issue', '--pr', dest='prefix', metavar='N', default=None,
-                    help='issue or pull request number to be prepended to kubeadm binary when deploying from kubernetes build output to the playground')
+    parser.add_argument('--binary', dest='binary', metavar='PATH', default=None, 
+                    help='Path to a local kubeadm binary to be deployed in the playground')
     
     parser.add_argument('--builder', dest='builder', metavar='TYPE', default=None, 
                     help='kubernetes build method used for generating the kubeadm binary to be deployed in the playground')
+
+    parser.add_argument('--issue', '--pr', dest='prefix', metavar='N', default=None,
+                    help='issue or pull request number to be prepended to kubeadm binary when deploying from kubernetes build output to the playground')
 
     parser.add_argument('-v', dest='v', action='store_true', 
                     help='verbose mode')
@@ -398,7 +424,7 @@ def main():
     try:
         args = parser.parse_args()
 
-        cluster, machineSets, machines, fallbackMode = get_cluster_spec(args.spec)  
+        cluster, machineSets, machines, fallbackMode = get_cluster_spec(args.spec, args.extra_vars)  
         machines = cluster_api.get_machines(cluster, machineSets)
 
         parg = validate_args(cluster, machines, args.command, args.arg)
@@ -406,11 +432,12 @@ def main():
         if args.command == PLAYGROUND_STATUS:
             do_status()
         elif args.command == PLAYGROUND_START:
+            do_deploy_packages(args.packages)
             do_start(fallbackMode)
             if not fallbackMode:
                 do_ansible(cluster, machines, args.command, parg)
         elif args.command == PLAYGROUND_DEPLOY:        
-            do_deploy(args.builder, args.prefix)
+            do_deploy_kubeadm_binary(args.prefix, args.binary, args.builder)
         elif args.command == PLAYGROUND_EXEC:
             if not fallbackMode:
                 do_ansible(cluster, machines, args.command, parg)

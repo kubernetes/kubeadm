@@ -1,8 +1,7 @@
 ---
-apiVersion: kubeadm.k8s.io/v1alpha1
+apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
-kubernetesVersion: "{{ kubeadmConfig_version }}"
-token: "{{ kubeadmConfig_token }}"
+kubernetesVersion: "{% if kubeadmConfig_controlpane_version!=""%}{{ kubeadmConfig_controlpane_version }}{% else %}{{ kubeadmConfig_version }}{% endif %}"
 api:
   advertiseAddress: "{{ node_ip }}"
 {% if groups['masters'] | length > 1 %}
@@ -13,9 +12,12 @@ apiServerCertSANs:
 {% for host in groups['masters'] | difference([inventory_hostname]) %}
     - "{{ hostvars[host]['node_ip'] }}"
 {% endfor %}{% endif %} 
+bootstrapTokens:
+- token: "{{ kubeadmConfig_token }}"
 {% if 'etcds' in groups %}{% if groups['etcds'] | length > 0 %}
 etcd:
-  endpoints: {{ etcd_client_endpoints | to_yaml }}{% endif %}{% endif %}
+  external:
+    endpoints: {{ etcd_client_endpoints | to_yaml }}{% endif %}{% endif %}
 {% if kubeadmConfig_dnsDomain!=""  or kubeadmConfig_serviceSubnet!="" or kubeadmConfig_podSubnet!="" %}
 networking:
   {% if kubeadmConfig_dnsDomain!="" %}dnsDomain: "{{ kubeadmConfig_dnsDomain }}"{% endif %}
@@ -27,3 +29,6 @@ featureGates:
   {% if kubeadmConfig_kubeletConfig=="dynamicKubeletConfig" %}DynamicKubeletConfig: "true" {% endif %}
   {% if kubeadmConfig_controlplane=="selfHosting" %}SelfHosting: "true" {% endif %}
   {% if kubeadmConfig_pkiLocation=="secrets" %}StoreCertsInSecrets: "true" {% endif %}{% endif %}
+nodeRegistration:
+  kubeletExtraArgs:
+    node-ip: "{{ node_ip }}"

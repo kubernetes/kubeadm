@@ -1,4 +1,4 @@
-# cluster.k8s.io/v1alpha1
+# cluster api specification
 
 Cluster API uses two objects for specifying the cluster topology, Cluster and MachineSets.
 
@@ -7,19 +7,20 @@ Cluster API uses two objects for specifying the cluster topology, Cluster and Ma
 Allows to specify some characteristics of the cluster, selecting among all the supported kubeadm options. 
 You can define:
 
-      - The target kubernetes/kubeadm version
-      - How the controlplane will be deployed (static pods vs self hosting)
-      - Which type of certificate authority are you going to use (local vs external)
-      - Where your PKI will be stored (filesystem or secrets)
-      - Which type of DNS are you going to use (kubeDNS or coreDNS)
-      - Which type of pod network add-on are you going to use (weavenet, flannel, calico)
-      - Which type of kubelet config are you going to use (systemd dropIn files, dynamic Kubelet config)
-      - TODO: Which type of network are you using (Ipv4, Ipv6)
-      - TODO: Which type of environment are you simulating (with or without internet connection)
-      - TODO: Auditing
-      - ...
+- The target kubernetes/kubeadm version
+- How the controlplane will be deployed (static pods vs self hosting)
+- Which type of certificate authority are you going to use (local vs external)
+- Where your PKI will be stored (filesystem or secrets)
+- Which type of DNS are you going to use (kubeDNS or coreDNS)
+- Which type of pod network add-on are you going to use (weavenet, flannel, calico)
+- Which type of kubelet config are you going to use (systemd dropIn files, dynamic Kubelet config)
+- TODO: Which type of network are you using (Ipv4, Ipv6)
+- TODO: Which type of environment are you simulating (with or without internet connection)
+- TODO: Auditing
+- ...
 
-Most of the configuration should be done in the providerConfig object
+Most of the configuration should be done in the `spec.providerConfig.value` object; this object
+can be merged eventually with values passed via the `--extra-vars` flag or the `` environment variable.
 
 ``` yaml
 apiVersion: cluster.k8s.io/v1alpha1
@@ -34,9 +35,13 @@ spec:
       kubernetes:
         version:
           <string (optional, default 1.10.2)
-          defines the version of kubeadm, kubelet, kubectl binaries and of the version of the
-          controlplane components to be installed>
-        controlPlaneType:
+          defines the version of kubeadm, kubelet, kubectl .deb, .rpm and of the version of the
+          controlplane components to be installed.
+          See advanced usage for explanation about possible variations to the default version behavior>
+        controlplaneVersion:
+          <string (optional, default empty)
+          See advanced usage for explanation about possible variations to the default version behavior>
+        controlplane:
           <staticPods|selfHosting (optional, default staticPods)
           defines how the controlplane will be deployed>
         certificateAuthority:
@@ -60,6 +65,11 @@ spec:
       etcd:
         version: <string (optional, default v3.2.17), defines the version of etcd binaries to be
         installed - only external etcd - >
+      kubeadm:
+        apiVersion: <string (optional, default v1alpha1), defines API version to use for the
+          kubeadm.conf file - >
+        token: <string (optional, default abcdef.0123456789abcdef), defines the token string to use
+          for kubeadm init and join - >
 ```
 
 ## kind: MachineSet
@@ -100,4 +110,4 @@ spec:
 ```
 
 NB. the `version` object defined in cluster API is ignored! Use the `version` config value at
-cluster level instead
+cluster level instead.
