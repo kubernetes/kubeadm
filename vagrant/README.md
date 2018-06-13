@@ -18,8 +18,11 @@ kubeadm and eventually test a local build of kubeadm itself.
         - [Customizing the playground provisioning process](#customizing-the-playground-provisioning-process)
         - [Executing kubeadm E2E tests manually](#executing-kubeadm-e2e-tests-manually)
         - [Executing kubeadm E2E tests automatically](#executing-kubeadm-e2e-tests-automatically)
-        - [Customizing kubeadm deploy](#customizing-kubeadm-deploy)
+        - [Testing pre-release versions](#testing-pre-release-versions)
+            - [inject pre-release versions during kubeadm-playground start](#inject-pre-release-versions-during-kubeadm-playground-start)
+            - [inject pre-release versions with kubeadm-playground deploy](#inject-pre-release-versions-with-kubeadm-playground-deploy)
         - [Comparing two version of kubeadm](#comparing-two-version-of-kubeadm)
+        - [create a base box](#create-a-base-box)
 
 <!-- /TOC -->
 
@@ -100,7 +103,7 @@ run `kubeadm reset` on all machines (either manually by ssh-ing into each machin
 automatically invoking `kubeadm-playground exec reset` from the host machine)
 
 Instead, in case it is necessary to recreate the kubeadm playground before a
-new test session, run `kubeadm-playground delete` and then `kubeadm-playground create` again.
+new test session, run `kubeadm-playground delete` and then `kubeadm-playground start` again.
 
 Afterwards, repeat build, deploy and test steps as described above.
 
@@ -112,7 +115,7 @@ By default the kubeadm playground is composed by a single machine with role mast
 
 It is possible to customize the kubeadm playground by modifying the cluster definition in
 the `spec/` folder or creating your own spec folder and passing it to `kubeadm-playground`
-with the `--spec` flag or the `KUBEADM_PLAYGROUND_SPEC` environment variable. 
+with the `--spec` flag or the `KUBEADM_PLAYGROUND_SPEC` environment variable.
 
 Supported options are:
 
@@ -120,7 +123,7 @@ Supported options are:
   nodes in charge for hosting an external etcd cluster.
 
 - Different attributes of the cluster, selecting among all the supported kubeadm options. You can define:
-  - The target kubernetes/kubeadm version
+  - The target kubernetes/kubeadm version (including CI/CD versions)
   - How the controlplane will be deployed (static pods vs self hosting)
   - Which type of certificate authority are you going to use (local vs external)
   - Where your PKI will be stored (filesystem or secrets)
@@ -138,7 +141,7 @@ If ansible is not installed on the guest machine, this includes only kubernetes,
 kubeadm binaries, that is basically what you need for test in clusters with only one machine.
 
 Instead, if ansible is available `kubeadm-playground start` by default will take charge of
-executing following additional steps simplifying test activities and making possible also 
+executing following additional steps simplifying test activities and making possible also
 scenarios with more than on machine:
 
 - Additional kubernetes, kubelet configurations required for running in vagrant (e.g. node-ip)
@@ -160,7 +163,7 @@ playbooks to the `kubeadm-playground start` command; available playbooks are:
 - `kubeadm-init`
 - `kubectl-apply-network`
 - `kubeadm-join`
-- `all` (default playbooks + `kubeadm-init`, `kubectl-apply-network` and `kubeadm-join` 
+- `all` (default playbooks + `kubeadm-init`, `kubectl-apply-network` and `kubeadm-join`
   if there are machine with role node)
 - `none` (none the above)
 
@@ -175,7 +178,7 @@ But it is also possible to extend actions executed automatically by `kubeadm-pla
 to obtaining a fully working kubernetes cluster, e.g.
 
 ```bash
-# install everything required on a single node cluster, and execute kubeadm init and join 
+# install everything required on a single node cluster, and execute kubeadm init and join
 kubeadm-playground start prerequisites kubeadm-config kubeadm-init kubectl-apply-network kubeadm-join
 ```
 
@@ -187,7 +190,8 @@ for running `kubeadm init`.
 Running `kubeadm init` and eventually `kubeadm join` on nodes is typically up to the user
 as initial part of your test scenario (use `kubeadm-playground ssh` to connect to the machines).
 
-A getting started guide for executing common kubeadm actions is accessible by running `kubeadm-playground help` followed by one of the actions described in the previous paragraph e.g.
+A getting started guide for executing common kubeadm actions is accessible by running `kubeadm-playground help`
+followed by one of the actions described in the previous paragraph e.g.
 
 ```bash
 kubeadm-playground help kubeadm-init
@@ -205,28 +209,57 @@ kubeadm playground include the necessary scaffholding code for automating kubead
 by developing an ansible playbooks. Test will be afterwards available via the `e2e` command e.g.
 
 ```bash
-`kubeadm-playground e2e test-example`
+kubeadm-playground e2e test-example
 ```
 
-### Customizing kubeadm deploy
+### Testing pre-release versions
 
-`kubeadm-playground deploy` copies the kubeadm binary from the build output into the
-`/vagrant/bin` folder of each machine in the playground.
+Kubeadm-playground by default uses the `kubernetes.version` field in the cluster API definition as a source for
+the version of kubeadm, kubelet, kubectl .deb or .rpm and for the version of the controlplane components to be installed.
 
-It is possible to customize this operation by:
+While `kubernetes.version`  can be used only with GA versions, kubeadm-playground allows to test alpha, beta, CI/CD
+or local build versions. See [Testing pre-release versions of Kubernetes with kubeadm](https://github.com/kubernetes/kubeadm/blob/master/testing-pre-releases.md)
+for more details about how to retrieve/how to build pre-release versions.
 
-- using the `--builder` flag or the `KUBEADM_PLAYGROUND_BUILDER` environment variable to
-  specify the kubernetes build method in use (choices are `bazel`, `docker` or `local`)
-- using the  `--issue` or `--pr` flags or the `KUBEADM_PLAYGROUND_ISSUE` environment variable
-  to specify a prefix for the target kubeadm binary file name
-- using the `KUBERNETES_ROOT` environment variable to set the kubernetes build root if
-  the default folders are not used.
+kubeadm-playground allows to:
 
-### create a base box
+- "inject" pre-release version during `kubeadm-playground start` (.deb packages, bynaries, tar of docker images)
+- "inject" pre-release versions of kubeadm binary on an already existing playground with `kubeadm-playground deploy`
+  (used for iterative dev/build/release/test cycles)
 
-In order to make working `kubeadm-playground` provisioning faster, you can create a
-vagrant base box with all the prerequisites already in place.
-see [instruction](box.md) for more info
+#### inject pre-release versions during kubeadm-playground start
+
+`kubeadm-playground start` provide support automatic deployment of pre-release artifacts; to trigger this feature
+you should specify a folder where pre-release packages are available by using the `--packages` flag or the
+`KUBEADM_PLAYGROUND_PACKAGES` environment variable.
+
+Deployment of pre-release artifacts depends by the content of the packages folder.
+
+- If the packages folder contains `kubectl.deb`, `kubernetes-cni.deb`, `kubelet.deb` or `kubeadm.deb`,
+  such packages will installed instead of the corresponding package from the official kubernetes deb repository
+- If the packages folder contains `kubectl` or `kubelet` binary, such binary will override the corresponding binary
+  installed by .deb packages into the `/usr/bin/` folder.
+- If the packages folder contains tars with docker images, those tars will be loaded into docker.
+
+#### inject pre-release versions with kubeadm-playground deploy
+
+`kubeadm-playground deploy` command will copy the kubeadm binary contained in the bazel output folder on the
+local machine into the `/vagrant/bin` folder of all the playground machines.
+
+> NB. kubeadm binary injected with deploy into the `/vagrant/bin` folder does not override the kubeadm binary
+installed during `kubeadm-playground start` into the `/usr/bin/` folder; to access the injected kubeadm binary
+you must specify the full path e.g. `/vagrant/bin/kubeadm`.
+
+Following options are available to customize the deploy action:
+
+- use the `--binary` flag or the `KUBEADM_PLAYGROUND_BINARY` environment variable to
+  specify a local kubeadm binary to be deployed to the vagrant playground
+- use the `--builder` flag or the `KUBEADM_PLAYGROUND_BUILDER` environment variable to
+  specify the kubernetes build method in use (choices are `bazel`, `docker` or `local`, default `bazel`);
+  the kubeadm binary available in the build output will be deployed to the vagrant playground
+
+Additionally, it is possible to specify a prefix for the target kubeadm binary file name using the `--issue`
+or `--pr` flags or the `KUBEADM_PLAYGROUND_ISSUE` environment variable.
 
 ### Comparing two version of kubeadm
 
@@ -249,3 +282,9 @@ Then you can connect to the playground with `kubeadm-playground ssh` and:
   # compare with the second version of kubeadm e.g. deployed with prefix 710
   sudo /vagrant/bin/710_kubeadm init
 ```
+
+### create a base box
+
+In order to make working `kubeadm-playground` provisioning faster, you can create a
+vagrant base box with all the prerequisites already in place.
+see [instruction](box.md) for more info

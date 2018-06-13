@@ -1,16 +1,22 @@
 ---
 
+- name: gets the kubelet version
+  shell: "kubelet --version | sed 's/Kubernetes //g'"
+  register: kubelet_output
+
 - name: create kubelet config directory
   file:
     dest: /etc/systemd/system/kubelet.service.d
     state: directory
+  when: kubelet_output.stdout | semverlt('v1.11.0-a') # nb. in kubelet >= v1.11.* this is managed via env vars
 
-- name: drop extra args kubelet config
+- name: drop extra args kubelet config 
   template:
     dest: /etc/systemd/system/kubelet.service.d/09-extra-args.conf
     src: etc/systemd/system/kubelet.service.d/09-extra-args.conf
   notify:
     - restart kubelet
+  when: kubelet_output.stdout | semverlt('v1.11.0-a') # nb. in kubelet >= v1.11.* this is managed via env vars
 
 - name: set_fact serviceSubnet
   set_fact:  

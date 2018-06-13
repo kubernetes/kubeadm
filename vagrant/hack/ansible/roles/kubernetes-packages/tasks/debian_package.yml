@@ -1,0 +1,21 @@
+---
+- name: "checks if {{ package }}.deb is manually provided"
+  stat: 
+    path: "/vagrant/bin/packages/{{ package }}.deb"
+  register: p
+
+- name: create /opt/cni/bin directory # workaround for kubernetes-cni local deb requires this folder but not create it...
+  file:
+    dest: "/opt/cni/bin"
+    state: directory
+  when: package == "kubernetes-cni" and p.stat.exists is defined and p.stat.exists
+
+- name: "install {{ package }}.deb from local filesystem"
+  apt:
+    deb: "/vagrant/bin/packages/{{ package }}.deb"
+  when: p.stat.exists is defined and p.stat.exists
+
+- name: "install {{ package }}.deb from official kubernetes repository"
+  apt:
+    name: "{{ package }}={{ version | kube_platform_version('debian') }}"
+  when: p.stat.exists is defined and not p.stat.exists

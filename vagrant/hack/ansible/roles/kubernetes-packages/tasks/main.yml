@@ -1,0 +1,41 @@
+---
+
+- name: installs deb packages
+  import_tasks: debian.yml
+  when: ansible_os_family == "Debian"
+
+- name: installs rpm packages
+  import_tasks: redhat.yml
+  when: ansible_os_family == "RedHat"
+
+- name: ensure that the kubelet is running
+  service:
+    name: kubelet
+    state: started
+    enabled: true
+
+- name: overrides binaries from packages if local binaries are manually provided
+  include_tasks: binary.yml
+  vars: 
+      package: "{{ item }}"
+  with_items:
+    - kubectl
+    - kubelet          
+
+- name: Get tar files if provided
+  find:
+    paths: /vagrant/bin/packages/
+    patterns: '*.tar'
+  register: t
+
+- name: load image from tar files if provided
+  command: "docker load -i {{ item.path }}"
+  with_items: "{{ t.files }}"
+
+- name: tags images with the platform id
+  shell: "$(sudo docker images --filter=reference='k8s.gcr.io/{{ item }}:*' --format='sudo docker tag {{ '{{.Repository}}:{{.Tag}} {{.Repository}}-amd64:{{.Tag}}' }}')"
+  with_items: 
+    - kube-apiserver 
+    - kube-controller-manager 
+    - kube-scheduler 
+    - kube-proxy

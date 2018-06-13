@@ -19,7 +19,7 @@
   roles:
     - common
     - docker
-    - kubernetes
+    - kubernetes-packages
 
 - name: setup kubernetes for running in vagrant
   hosts: masters:nodes

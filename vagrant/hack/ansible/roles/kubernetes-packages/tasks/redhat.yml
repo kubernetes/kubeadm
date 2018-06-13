@@ -16,3 +16,6 @@
     - "kubeadm-{{ kubernetes_version | kube_platform_version('redhat') }}"
     - "kubectl-{{ kubernetes_version | kube_platform_version('redhat') }}"
     - "kubernetes-cni-{{ kubernetes_cni_version | kube_platform_version('redhat')}}"
+
+#TODO  deployment of local rpm if provided 
+

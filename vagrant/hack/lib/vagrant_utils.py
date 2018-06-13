@@ -18,6 +18,7 @@ import re
 import os
 import sys
 import yaml
+import stat
 import shutil
 import subprocess
 
@@ -27,15 +28,20 @@ hack_lib_folder = os.path.dirname(os.path.abspath(__file__))
 root_folder = os.path.abspath(os.path.join(hack_lib_folder, '../..'))
 ansible_folder = os.path.join(root_folder, 'hack/ansible')
 bin_folder = os.path.join(root_folder, 'bin')
+packages_folder = os.path.join(bin_folder, 'packages')
 tmp_folder = os.path.join(root_folder, 'tmp')
 
-def import_kubeadm_from_build_output_path(builder, prefix):
-    """ copies copies kubeadm build to vagrant and store vars override for future usages """
+def import_kubeadm_binary(binary, builder, prefix):
+    """ copies kubeadm binary to vagrant and store vars override for future usages """
 
-    # import kubeadm binary
-    kubernetes_kubeadm_binary = os.path.join(kubernetes_utils.build_output_path(builder), 'kubeadm')
+    if binary != None:
+        source_kubeadm_binary = binary
+    else:
+        source_kubeadm_binary = os.path.join(kubernetes_utils.build_output_path(builder), 'kubeadm')
 
-    if prefix != '':
+    if prefix == None:
+        prefix = ''
+    else:
         prefix = prefix + '_'
 
     vagrant_kubeadm_binary = os.path.join(bin_folder, "%skubeadm" % (prefix))
@@ -43,7 +49,10 @@ def import_kubeadm_from_build_output_path(builder, prefix):
     if not os.path.exists(bin_folder):
         os.makedirs(bin_folder)
 
-    shutil.copyfile(kubernetes_kubeadm_binary, vagrant_kubeadm_binary)
+    shutil.copyfile(source_kubeadm_binary, vagrant_kubeadm_binary)
+
+    st = os.stat(vagrant_kubeadm_binary)
+    os.chmod(vagrant_kubeadm_binary, st.st_mode | stat.S_IEXEC)
 
     # stores the var override
     extra_vars_override = { 
@@ -62,6 +71,32 @@ def import_kubeadm_from_build_output_path(builder, prefix):
 
     return extra_vars_override['kubeadm']['binary']
 
+def import_packages(packages):
+    """ copies packages to vagrant """
+
+    if not os.path.exists(packages_folder):
+        os.makedirs(packages_folder)
+
+    for f in os.listdir(packages):
+        filename, file_extension = os.path.splitext(f)
+        if f in ['kubelet', 'kubectl']: # if supported binary files
+            pass
+        elif file_extension == ".deb" and filename in ['kubeadm', 'kubectl', 'kubelet',  'kubernetes-cni']: # if supported deb files
+            pass
+        elif file_extension == ".tar" and not filename.endswith("-internal-layer"): # if tar file - excluding internal layers
+            pass
+        else:
+            continue # ignore the file
+
+        s = os.path.join(packages, f)
+        if os.path.isfile(s):
+            d = os.path.join(packages_folder, f)
+            shutil.copy2(s, d)
+
+            st = os.stat(d)
+            os.chmod(d, st.st_mode | stat.S_IRWXU)
+
+
 def get_status():
     """ Run `vagrant status` and parse the current vm state """
     node_state = {}
@@ -70,6 +105,8 @@ def get_status():
     for i, line in enumerate(output.splitlines()):
         if i < 2:
             continue
+        if line == "":
+            break
         parts = re.split('\s+', line)
         if len(parts) == 3:
             node_state[parts[0]] = parts[1]

@@ -1,0 +1,22 @@
+---
+- name: add the kubernetes apt repo key
+  apt_key:
+    url: "{{ kubernetes_aptKeyUrl }}"
+    state: present
+
+- name: add the kubernetes apt repo
+  apt_repository:
+    repo: "{{ kubernetes_aptRepo }}"
+    update_cache: True
+    state: present
+
+- include_tasks: debian_package.yml
+  vars: 
+      package: "{{ item.package }}"
+      version: "{{ item.version }}"
+  with_items:
+    - { package: kubectl, version: "{{ kubernetes_version }}" }
+    - { package: kubernetes-cni, version: "{{ kubernetes_cni_version }}" }
+    - { package: kubelet, version: "{{ kubernetes_version }}" }
+    - { package: kubeadm, version: "{{ kubernetes_version }}" }              
+    

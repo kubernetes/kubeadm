@@ -72,6 +72,17 @@ def write_inventory(machines):
             for val in vals:
                 fh.write("%s\n" % (val))
 
+
+class quoted(str):
+    pass
+
+def quoted_presenter(dumper, data):
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
+
+
+def unicode_presenter(self, data):
+    return self.represent_str(data.encode('utf-8'))
+
 def write_extra_vars(cluster):
     """ Creates the `tmp/extra_vars.yml` file.
         Extra extra vars are computed as a merge between extra_vars defined 
@@ -88,7 +99,7 @@ def write_extra_vars(cluster):
                 },
                 'cni': {
                     'weavenet': {
-                        'manifestUrl': "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+                        'manifestUrl': quoted("https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')")
                     },
                     'flannel': {
                         'manifestUrl': 'https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml'
@@ -100,12 +111,12 @@ def write_extra_vars(cluster):
             },
             'kubeadm': {
                 'binary': '/usr/bin/kubeadm',
-                'token': '6l9137.gphsahptna3sf56p'
+                'token': 'abcdef.0123456789abcdef'
             }
     }
 
-    extra_vars = cluster.extra_vars
-    utils.dict_merge(extra_vars, default_extra_vars)
+    utils.dict_merge(default_extra_vars, cluster.extra_vars)
+    cluster.extra_vars=default_extra_vars
 
     # writes the `tmp/extra_vars.yml` file
     if not os.path.exists(vagrant_utils.tmp_folder):
@@ -113,8 +124,10 @@ def write_extra_vars(cluster):
 
     extra_vars_file = os.path.join(vagrant_utils.tmp_folder, 'extra_vars.yml')
     
+    yaml.add_representer(quoted, quoted_presenter)
+    yaml.add_representer(unicode, unicode_presenter)
     with open(extra_vars_file, 'w') as outfile:
-        yaml.dump(extra_vars, outfile, default_flow_style=False)
+        yaml.dump(cluster.extra_vars, outfile, default_flow_style=False)
 
 def run_ansible(playbook):
     """ Run ansible playbook via subprocess. 
