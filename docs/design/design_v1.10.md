@@ -399,7 +399,7 @@ Please note that
 
 ### (Optional and alpha in v1.9) self-hosting
 
-This phase is performed only if `kubeadm init` is invoked with `—features-gates=self-hosting`
+This phase is performed only if `kubeadm init` is invoked with `--features-gates=SelfHosting`
 
 The self hosting phase basically replaces static Pods for control plane components with DaemonSets; this is achieved by executing following procedure for API server, scheduler and controller manager static Pods:
 
