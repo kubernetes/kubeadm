@@ -10,7 +10,7 @@
     update_cache: True
     state: present
 
-- include_tasks: debian_package.yml
+- include: debian_package.yml
   vars: 
       package: "{{ item.package }}"
       version: "{{ item.version }}"
