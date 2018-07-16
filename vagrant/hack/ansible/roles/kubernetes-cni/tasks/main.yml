@@ -1,10 +1,10 @@
 ---
-- include_tasks: calico.yml
+- include: calico.yml
   when: kubernetes_cni_plugin == "calico"
 
-- include_tasks: flannel.yml
+- include: flannel.yml
   when: kubernetes_cni_plugin == "flannel"
 
-- include_tasks: weavenet.yml
+- include: weavenet.yml
   when: kubernetes_cni_plugin == "weavenet"
   

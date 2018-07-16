@@ -1,11 +1,11 @@
 ---
 
 - name: installs deb packages
-  import_tasks: debian.yml
+  include: debian.yml
   when: ansible_os_family == "Debian"
 
 - name: installs rpm packages
-  import_tasks: redhat.yml
+  include: redhat.yml
   when: ansible_os_family == "RedHat"
 
 - name: ensure that the kubelet is running
@@ -15,7 +15,7 @@
     enabled: true
 
 - name: overrides binaries from packages if local binaries are manually provided
-  include_tasks: binary.yml
+  include: binary.yml
   vars: 
       package: "{{ item }}"
   with_items:
