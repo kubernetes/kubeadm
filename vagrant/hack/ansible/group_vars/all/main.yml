@@ -12,7 +12,7 @@ default_etcd_clusterToken:                    '444fddcc-beae-45bc-9da6-d941d446b
 default_kubernetes_version:                   '1.10.2'
 default_kubernetes_controlplane_version:      ''  # = use kubernetes version
 default_kubernetes_aptKeyUrl:                 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'
-default_kubernetes_aptRepo:                   'deb http://apt.kubernetes.io/ kubernetes-xenial main'
+default_kubernetes_aptRepo:                   'deb http://apt.kubernetes.io/ kubernetes-xenial main'  # ubuntu 16.04 or HypriotOS v1.0.1
 default_kubernetes_yumBaseUrl:                'https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64'
 default_kubernetes_yumGpgKey:                 'https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg'
 default_kubernetes_dnsDomain:                 ''  # = use kubeadm default
