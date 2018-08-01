@@ -1,4 +1,16 @@
 ---
+
+# This task disables swap for Kubernetes node (see https://github.com/kubernetes/kubernetes/pull/31996)
+- name: Remove swapfile from /etc/fstab
+  mount:
+    name: swap
+    fstype: swap
+    state: absent
+
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
 - import_tasks: debian.yml
   when: ansible_os_family == "Debian"
 
