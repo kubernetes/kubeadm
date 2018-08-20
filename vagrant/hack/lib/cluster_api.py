@@ -102,7 +102,7 @@ def parse(folder):
         raise ValueError("Invalid cluster api specification in %s. Cluster object not defined" % (spec))
     
     if len(machineSets) == 0: 
-        raise ValueError("Invalid cluster  api specification in %s. MachineSets objects not defined" % (spec))
+        raise ValueError("Invalid cluster api specification in %s. MachineSets objects not defined" % (spec))
 
     return cluster, machineSets
 
@@ -167,7 +167,7 @@ def getx(data, keys, default=None, validator=None):
             if default != None:
                 return default
             else:
-                raise KeyError("invalid cluster api definition. Key '%s' does not exists" % (keys)) 
+                raise KeyError("invalid cluster api definition. Key '%s' does not exist" % (keys)) 
     
     if validator != None:
         validator(data)
@@ -219,7 +219,7 @@ def get_machines(cluster, machineSets):
 
 def fallbackSettings(cluster, machineSets):
     """ Fixes cluster and machineSets options in case of ansible not available,
-        ensuring compability with the fallback_boostrap script defined in the Vagrant file """ 
+        ensuring compatibility with the fallback_boostrap script defined in the Vagrant file """ 
 
     for s in machineSets:
         s.box = "bento/ubuntu-17.10" # base box tested with the boostrap script
