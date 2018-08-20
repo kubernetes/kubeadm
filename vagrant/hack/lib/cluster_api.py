@@ -78,7 +78,7 @@ class VagrantMachine:
         self.roles      = []
 
 def parse(folder):
-    """ parses the cluster api definition in a folder """
+    """ parses the cluster API definition in a folder """
     if not os.path.isabs(folder):
         folder = os.path.join(vagrant_utils.root_folder, folder)
 
@@ -95,19 +95,19 @@ def parse(folder):
                 elif data["kind"] == "MachineSet":
                     machineSets.append(get_machineSet(data))
             except Exception as e:
-                raise RuntimeError('Error parsing cluster api specification in `' + repr(f) + '`: ' + repr(e))
+                raise RuntimeError('Error parsing cluster API specification in `' + repr(f) + '`: ' + repr(e))
 
     # fails fast if incomplete configurations are detected
     if cluster == None: 
-        raise ValueError("Invalid cluster api specification in %s. Cluster object not defined" % (spec))
+        raise ValueError("Invalid cluster API specification in %s. Cluster object not defined" % (spec))
     
     if len(machineSets) == 0: 
-        raise ValueError("Invalid cluster api specification in %s. MachineSets objects not defined" % (spec))
+        raise ValueError("Invalid cluster API specification in %s. MachineSets objects not defined" % (spec))
 
     return cluster, machineSets
 
 def get_cluster(data):
-    """ get the cluster definition from a cluster api object """
+    """ get the cluster definition from a cluster API object """
 
     c = VagrantCluster()
 
@@ -144,7 +144,7 @@ def get_cluster(data):
     return c
 
 def get_machineSet(data):
-    """ get the machine set definition from a cluster api object """
+    """ get the machine set definition from a cluster API object """
 
     s = VagrantMachineSet()
 
@@ -158,7 +158,7 @@ def get_machineSet(data):
     return s
 
 def getx(data, keys, default=None, validator=None):
-    """ extended get of an attribute of the cluster api with, recoursion (deep get), defaulting & validation """
+    """ extended get of an attribute of the cluster API with, recoursion (deep get), defaulting & validation """
 
     for key in keys.split('.'):
         try:
@@ -167,7 +167,7 @@ def getx(data, keys, default=None, validator=None):
             if default != None:
                 return default
             else:
-                raise KeyError("invalid cluster api definition. Key '%s' does not exist" % (keys)) 
+                raise KeyError("invalid cluster API definition. Key '%s' does not exist" % (keys)) 
     
     if validator != None:
         validator(data)
