@@ -315,7 +315,7 @@ Please note that
 As soon as the control plane is available, kubeadm executes following actions:
 
 - Label  the master with `node-role.kubernetes.io/master=""`
-- Taints  the master with `node-role.kubernetes.io/master:NoSchedule`
+- Taints  the master with `node-role.kubernetes.io/master="":NoSchedule`
 
 Please note that
 
