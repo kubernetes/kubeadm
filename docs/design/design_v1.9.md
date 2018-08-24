@@ -458,7 +458,7 @@ If `kubeadm join` is invoked with `--discovery-token`, token discovery is used; 
 In order to prevent "man in the middle" attacks, several steps are taken:
 
 - First, the CA certificate is retrieved via insecure connection (note: this is possible because `kubeadm init` granted access to  `cluster-info` users for `system:unauthenticated` )
-- Then the CA certificate goes trough following validation steps: 
+- Then the CA certificate goes through following validation steps: 
   - "Basic validation", using the token ID against a JWT signature
   - "Pub key validation", using provided `--discovery-token-ca-cert-hash`. This value is available in the output of "kubeadm init" or can be calculated using standard tools (the hash is calculated over the bytes of the Subject Public Key Info (SPKI) object as in RFC7469). The `--discovery-token-ca-cert-hash flag` may be repeated multiple times to allow more than one public key.
   - as a additional validation, the CA certificate is retrieved via secure connection and then compared with the CA retrieved initially
