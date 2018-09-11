@@ -77,7 +77,7 @@ if [[ ! -z "$available" ]]; then
 fi
 
 if [[ ! -z "$missing" ]]; then
-    echo "These versions do not have matching debs:"
+    echo "ERROR: These versions do not have matching packages:"
     echo "$missing"
     exit 1
 else
