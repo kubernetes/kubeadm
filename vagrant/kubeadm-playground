@@ -15,15 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+from argparse import RawTextHelpFormatter
+import json
 import os
 import sys
-import json
-import yaml
-import argparse
 import traceback
-from argparse import RawTextHelpFormatter
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'hack/lib'))
+import yaml
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'hack/lib'))
 
 import utils
 import cluster_api
@@ -35,20 +37,20 @@ import help_utils
 
 # playground commands
 PLAYGROUND_STATUS       = 'status'
-PLAYGROUND_START        = 'start' 
+PLAYGROUND_START        = 'start'
 PLAYGROUND_DEPLOY       = 'deploy'
 PLAYGROUND_EXEC         = 'exec'
 PLAYGROUND_E2E          = 'e2e'
 PLAYGROUND_SSH          = 'ssh'
-PLAYGROUND_STOP         = 'stop' 
-PLAYGROUND_DELETE       = 'delete'  
+PLAYGROUND_STOP         = 'stop'
+PLAYGROUND_DELETE       = 'delete'
 PLAYGROUND_HELP         = 'help'
 
 VALID_COMMANDS = [PLAYGROUND_STATUS, PLAYGROUND_START, PLAYGROUND_DEPLOY, PLAYGROUND_EXEC, PLAYGROUND_E2E, PLAYGROUND_SSH, PLAYGROUND_STOP, PLAYGROUND_DELETE, PLAYGROUND_HELP]
 
 # ansible playbooks (That is are used as a argument for start, exec, e2e and help commands)
 ARG_PLAYBOOK_BOOTSTRAP_ANSIBLE         = 'bootstrap'
-ARG_PLAYBOOK_INSTALL_PREREQUISITES     = 'prerequisites' 
+ARG_PLAYBOOK_INSTALL_PREREQUISITES     = 'prerequisites'
 ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD     = 'external-etcd'
 ARG_PLAYBOOK_INSTALL_EXTERNAL_CA       = 'external-ca'
 ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP      = 'external-vip'
@@ -62,119 +64,118 @@ ARG_META_PLAYBOOK_ALL                  = 'all'
 ARG_PLAYBOOK_E2E_EXAMPLE               = 'test-example'
 ARG_PLAYBOOK_KUBEADM_RESET             = 'kubeadm-reset'
 
-PLAYGROUND_START_VALID_ARGS  = [ARG_PLAYBOOK_INSTALL_PREREQUISITES, ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD, ARG_PLAYBOOK_INSTALL_EXTERNAL_CA, ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP, ARG_PLAYBOOK_CREATE_KUBEADM_CONFIG, ARG_PLAYBOOK_RUN_KUBEADM_INIT, ARG_PLAYBOOK_RUN_KUBECTL_APPLY_NETWORK, ARG_PLAYBOOK_RUN_KUBEADM_JOIN] 
-PLAYGROUND_EXEC_VALID_ARGS   = PLAYGROUND_START_VALID_ARGS + [ARG_PLAYBOOK_KUBEADM_RESET] 
-PLAYGROUND_E2E_VALID_ARGS    = [ARG_PLAYBOOK_E2E_EXAMPLE] 
+PLAYGROUND_START_VALID_ARGS  = [ARG_PLAYBOOK_INSTALL_PREREQUISITES, ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD, ARG_PLAYBOOK_INSTALL_EXTERNAL_CA, ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP, ARG_PLAYBOOK_CREATE_KUBEADM_CONFIG, ARG_PLAYBOOK_RUN_KUBEADM_INIT, ARG_PLAYBOOK_RUN_KUBECTL_APPLY_NETWORK, ARG_PLAYBOOK_RUN_KUBEADM_JOIN]
+PLAYGROUND_EXEC_VALID_ARGS   = PLAYGROUND_START_VALID_ARGS + [ARG_PLAYBOOK_KUBEADM_RESET]
+PLAYGROUND_E2E_VALID_ARGS    = [ARG_PLAYBOOK_E2E_EXAMPLE]
 PLAYGROUND_HELP_VALID_ARGS   = list(set(VALID_COMMANDS + PLAYGROUND_START_VALID_ARGS + PLAYGROUND_EXEC_VALID_ARGS + PLAYGROUND_E2E_VALID_ARGS))
 
 def playground_command(arg):
     """ validation of playground_command """
-    
+
     arg = arg.lower()
     if arg not in VALID_COMMANDS:
-        raise argparse.ArgumentTypeError("invalid playground command '%s'. Valid commands are [%s]" % (arg, ', '.join(VALID_COMMANDS))) 
+        raise argparse.ArgumentTypeError("invalid playground command '%s'. Valid commands are [%s]" % (arg, ', '.join(VALID_COMMANDS)))
     return arg
 
 def validate_args(cluster, machines, command, *args):
     """ validates positional args passed to the selected command """
 
-    args = args[0] # unwraps the list of args
+    args = args[0]  # unwraps the list of args
 
     if command == PLAYGROUND_START:
         ## for start command args represent playbooks implementing bootstrap actions
-        valid = PLAYGROUND_START_VALID_ARGS + [ARG_META_PLAYBOOK_ALL, ARG_META_PLAYBOOK_NONE]        
-        
+        valid = PLAYGROUND_START_VALID_ARGS + [ARG_META_PLAYBOOK_ALL, ARG_META_PLAYBOOK_NONE]
+
         # compute default create playbooks according to cluster spec
         default = [ARG_PLAYBOOK_INSTALL_PREREQUISITES]
 
-        if cluster.externalEtcd == True:
-            default = default + [ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD]
+        if cluster.externalEtcd is True:
+            default += [ARG_PLAYBOOK_INSTALL_EXTERNAL_ETCD]
 
         if cluster.certificateAuthority == kubeadm_utils.CERTIFICATEAUTHORITY_TYPE_EXTERNAL:
-            default = default + [ARG_PLAYBOOK_INSTALL_EXTERNAL_CA]
+            default += [ARG_PLAYBOOK_INSTALL_EXTERNAL_CA]
 
-        if cluster.highavailability == True:
-            default = default + [ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP]
-        
-        default = default + [ARG_PLAYBOOK_CREATE_KUBEADM_CONFIG]
-        
+        if cluster.highavailability is True:
+            default += [ARG_PLAYBOOK_INSTALL_EXTERNAL_VIP]
+
+        default += [ARG_PLAYBOOK_CREATE_KUBEADM_CONFIG]
+
         # if args are not specified for start command, set defaults playbooks according to cluster spec
-        if len(args) == 0:
+        if not args:
             args = default
 
         # if the meta arg ALL is specified, explode the args list
         if ARG_META_PLAYBOOK_ALL in args:
-            args = default + [ARG_PLAYBOOK_RUN_KUBEADM_INIT, ARG_PLAYBOOK_RUN_KUBECTL_APPLY_NETWORK] 
+            args = default + [ARG_PLAYBOOK_RUN_KUBEADM_INIT, ARG_PLAYBOOK_RUN_KUBECTL_APPLY_NETWORK]
 
-            if len([m for m in machines if cluster_api.ROLE_NODE in m.roles]) >0:
-                args = args + [ARG_PLAYBOOK_RUN_KUBEADM_JOIN] 
+            if len([m for m in machines if cluster_api.ROLE_NODE in m.roles]) > 0:
+                args += [ARG_PLAYBOOK_RUN_KUBEADM_JOIN]
 
         # if the meta arg NONE is specified, it should not be used in combination with other args
         if ARG_META_PLAYBOOK_NONE in args and len(args) > 1:
-            raise ValueError("'None' arg cannot be used in combination with other args") 
+            raise ValueError("'None' arg cannot be used in combination with other args")
 
     elif command == PLAYGROUND_EXEC:
         ## for exec command args represent playbooks implementing bootstrap actions or other actions
         valid = PLAYGROUND_EXEC_VALID_ARGS
 
-        # exec requires only one arg 
+        # exec requires only one arg
         if len(args) != 1:
-            raise ValueError("command '%s' requires one arg. Valid arg are [%s]" % (command, ', '.join(valid))) 
+            raise ValueError("command '%s' requires one arg. Valid arg are [%s]" % (command, ', '.join(valid)))
 
     elif command == PLAYGROUND_E2E:
         ## for e2e command args represent playbooks implementing e2e tests
         valid = PLAYGROUND_E2E_VALID_ARGS
 
-        # exec requires only one arg 
+        # exec requires only one arg
         if len(args) != 1:
-            raise ValueError("command '%s' requires one arg. Valid arg are [%s]" % (command, ', '.join(valid))) 
+            raise ValueError("command '%s' requires one arg. Valid arg are [%s]" % (command, ', '.join(valid)))
 
     elif command == PLAYGROUND_SSH:
         ## for ssh command args represent machines
         valid = [m.name for m in machines]
 
         # automatically select machine if only one machine exists
-        if len(args) == 0 and len(valid) ==1:
+        if len(args) == 0 and len(valid) == 1:
             args = valid
 
-        # exec requires only one arg 
+        # exec requires only one arg
         if len(args) != 1:
-            raise ValueError("command '%s' requires one arg. Valid arg are [%s]" % (command, ', '.join(valid))) 
+            raise ValueError("command '%s' requires one arg. Valid arg are [%s]" % (command, ', '.join(valid)))
 
     elif command == PLAYGROUND_HELP:
-        ## for help command args represent a topic 
+        ## for help command args represent a topic
         valid = PLAYGROUND_HELP_VALID_ARGS
 
-        # exec requires only one arg 
+        # exec requires only one arg
         if len(args) != 1:
-            raise ValueError("command '%s' requires one arg. Valid args are [%s]" % (command, ', '.join(valid))) 
+            raise ValueError("command '%s' requires one arg. Valid args are [%s]" % (command, ', '.join(valid)))
 
-    else: 
-        # other commands doesn't support arg specification 
-        if len(args) == 0: 
+    else:
+        # other commands doesn't support arg specification
+        if not args:
             return args
-        else: 
-            raise ValueError("command '%s' does support additional args" % (command)) 
+        else:
+            raise ValueError("command '%s' does support additional args" % (command))
 
-    
     for arg in args:
         if arg not in valid:
-            raise ValueError("invalid arg '%s' for '%s' command. Valid args are [%s]" % (arg, command, ', '.join(valid))) 
+            raise ValueError("invalid arg '%s' for '%s' command. Valid args are [%s]" % (arg, command, ', '.join(valid)))
 
     return args
 
 def get_cluster_spec(spec, extra_vars):
     """ return the cluster specification from the cluster api definition in a folder """
 
-    if spec == None:
+    if spec is None:
         if 'KUBEADM_PLAYGROUND_SPEC' in os.environ:
             spec = os.environ['KUBEADM_PLAYGROUND_SPEC']
         else:
-            spec= 'spec'
+            spec = 'spec'
 
-    cluster, machineSets = cluster_api.parse(os.path.join(spec, '*.yml')) 
+    cluster, machineSets = cluster_api.parse(os.path.join(spec, '*.yml'))
 
-    # if ansible is not installed, cluster spec is modified ensuring compability 
+    # if ansible is not installed, cluster spec is modified ensuring compability
     #  with the fallback_boostrap script defined in the Vagrant file
     fallbackMode = False
     if not ansible_utils.ansible_installed():
@@ -192,15 +193,15 @@ def get_cluster_spec(spec, extra_vars):
         utils.dict_merge(cluster.extra_vars, extra_vars_override)
 
     # if extra_vars are passed from the command line, merge in the cluster.extra_vars (input for ansible)
-    if extra_vars == None and 'KUBEADM_PLAYGROUND_EXTRA_VARS' in os.environ:
+    if extra_vars is None and 'KUBEADM_PLAYGROUND_EXTRA_VARS' in os.environ:
         extra_vars = os.environ['KUBEADM_PLAYGROUND_EXTRA_VARS']
 
-    if extra_vars != None:
-        try:           
+    if extra_vars is not None:
+        try:
             decoded_extra_vars = json.loads(extra_vars.decode('ascii', 'ignore'))
         except Exception as e:
             raise RuntimeError('Error parsing extra_vars `' + extra_vars + '`: ' + repr(e))
-        
+
         utils.dict_merge(cluster.extra_vars, decoded_extra_vars)
 
     return cluster, machineSets, machines, fallbackMode
@@ -219,10 +220,10 @@ def do_status():
 def do_deploy_packages(packages):
     """ if specified, deploy a packages containing .deb or .rpm packages to vagrant machines """
 
-    if packages == None and 'KUBEADM_PLAYGROUND_PACKAGES' in os.environ:
+    if packages is None and 'KUBEADM_PLAYGROUND_PACKAGES' in os.environ:
         packages = os.environ['KUBEADM_PLAYGROUND_PACKAGES']
 
-    if packages != None:
+    if packages is not None:
         utils.print_H1("Deploying packages '%s' to vagrant" % (packages))
         kubeadm_binary = vagrant_utils.import_packages(packages)
         utils.print_normal('packages deployed to vagrant')
@@ -230,25 +231,25 @@ def do_deploy_packages(packages):
         print
 
 def do_deploy_kubeadm_binary(prefix, binary, builder):
-    """ deploy kubeadm binary to vagrant machines 
+    """ deploy kubeadm binary to vagrant machines
 
         source (in order of priority):
         - binary (given path)
         - builder (build_output folder for a given kubernetes build method)"""
 
-    if binary == None and 'KUBEADM_PLAYGROUND_BINARY' in os.environ:
+    if binary is None and 'KUBEADM_PLAYGROUND_BINARY' in os.environ:
         binary = os.environ['KUBEADM_PLAYGROUND_BINARY']
 
-    if binary == None and builder == None and 'KUBEADM_PLAYGROUND_BUILDER' in os.environ:
-        builder = os.environ['KUBEADM_PLAYGROUND_BUILDER']
+    if binary is None and builder is None:
+        if 'KUBEADM_PLAYGROUND_BUILDER' in os.environ:
+            builder = os.environ['KUBEADM_PLAYGROUND_BUILDER']
+        else:
+            builder = kubernetes_utils.KUBERNETES_BAZEL_BUILD
 
-    if binary == None and builder == None:
-        builder = kubernetes_utils.KUBERNETES_BAZEL_BUILD
-
-    if prefix == None and 'KUBEADM_PLAYGROUND_ISSUE' in os.environ:
+    if prefix is None and 'KUBEADM_PLAYGROUND_ISSUE' in os.environ:
         prefix = os.environ['KUBEADM_PLAYGROUND_ISSUE']
 
-    if binary != None or builder != None:
+    if binary is not None or builder is not None:
         utils.print_H1('Deploying kubeadm to vagrant')
 
         kubeadm_binary = vagrant_utils.import_kubeadm_binary(binary, builder, prefix)
@@ -272,12 +273,12 @@ def do_start(fallbackMode):
         utils.print_H1('Starting machines')
 
         if fallbackMode:
-            utils.print_warning ('kubeadm playground is working without ansible installed on the guest machine.',
-                                 'Some setting in cluster and machines specification might be changed to align to supported options (e.g. base box),',
-                                 '',
-                                 'Boostrap process will install only core requirements (e.g. kubernetes binaries)',
-                                 '`kubeadm playground exec` and `kubeadm playground e2e` command will not be available.')
-        
+            utils.print_warning('kubeadm playground is working without ansible installed on the guest machine.',
+                                'Some setting in cluster and machines specification might be changed to align to supported options (e.g. base box),',
+                                '',
+                                'Boostrap process will install only core requirements (e.g. kubernetes binaries)',
+                                '`kubeadm playground exec` and `kubeadm playground e2e` command will not be available.')
+
         vagrant_utils.exec_up(fallbackMode)
     else:
         utils.print_normal('All the machines are already running')
@@ -287,7 +288,7 @@ def do_ansible(cluster, machines, command, args):
     """ executes one or more ansible playbooks """
 
     ## for all the commands using ansible args values should match playbooks
-    playbooks = args 
+    playbooks = args
 
     ## if the meta playbook 'none' is requested, empty the playbook list
     if ARG_META_PLAYBOOK_NONE in playbooks:
@@ -351,7 +352,7 @@ def do_delete():
     answer = ""
     while answer not in ["y", "n"]:
         answer = raw_input("Are you sure you want to delete the current kubeadm playground? [Y/N] ").lower()
-    
+
     if answer == "n":
         return
 
@@ -397,7 +398,7 @@ def main():
                                 " status    Return the status of the machines in the current playground\n"
                                 " help")
 
-    parser.add_argument('arg', metavar='arg', nargs='*', 
+    parser.add_argument('arg', metavar='arg', nargs='*',
                         help="""argument to be passed to playground subcommands. use `kubeadm-playground help [command]` for further info""")
 
     parser.add_argument('--spec', dest='spec', metavar='PATH', default=None,
@@ -406,25 +407,25 @@ def main():
     parser.add_argument('--extra-vars', dest='extra_vars', metavar='JSON', default=None,
                     help='extra vars to merge into Cluster.spec.providerConfig.value')
 
-    parser.add_argument('--packages', dest='packages', metavar='PATH', default=None, 
+    parser.add_argument('--packages', dest='packages', metavar='PATH', default=None,
                     help='Path to a local folder where .deb or .rpm packages for kubectl, kubeadm, kubelet and kubernetes-cni are available;\n if a kubeadm binary is present in the same folder, it will be used as well')
-    
-    parser.add_argument('--binary', dest='binary', metavar='PATH', default=None, 
+
+    parser.add_argument('--binary', dest='binary', metavar='PATH', default=None,
                     help='Path to a local kubeadm binary to be deployed in the playground')
-    
-    parser.add_argument('--builder', dest='builder', metavar='TYPE', default=None, 
+
+    parser.add_argument('--builder', dest='builder', metavar='TYPE', default=None,
                     help='kubernetes build method used for generating the kubeadm binary to be deployed in the playground')
 
     parser.add_argument('--issue', '--pr', dest='prefix', metavar='N', default=None,
                     help='issue or pull request number to be prepended to kubeadm binary when deploying from kubernetes build output to the playground')
 
-    parser.add_argument('-v', dest='v', action='store_true', 
+    parser.add_argument('-v', dest='v', action='store_true',
                     help='verbose mode')
 
     try:
         args = parser.parse_args()
 
-        cluster, machineSets, machines, fallbackMode = get_cluster_spec(args.spec, args.extra_vars)  
+        cluster, machineSets, machines, fallbackMode = get_cluster_spec(args.spec, args.extra_vars)
         machines = cluster_api.get_machines(cluster, machineSets)
 
         parg = validate_args(cluster, machines, args.command, args.arg)
@@ -436,18 +437,18 @@ def main():
             do_start(fallbackMode)
             if not fallbackMode:
                 do_ansible(cluster, machines, args.command, parg)
-        elif args.command == PLAYGROUND_DEPLOY:        
+        elif args.command == PLAYGROUND_DEPLOY:
             do_deploy_kubeadm_binary(args.prefix, args.binary, args.builder)
         elif args.command == PLAYGROUND_EXEC:
             if not fallbackMode:
                 do_ansible(cluster, machines, args.command, parg)
             else:
-                utils.print_warning ("Exec command requires ansbile to be installed on the guest machine")
+                utils.print_warning("Exec command requires ansbile to be installed on the guest machine")
         elif args.command == PLAYGROUND_E2E:
             if not fallbackMode:
                 do_ansible(cluster, machines, args.command, parg)
             else:
-                utils.print_warning ("E2E command requires ansbile to be installed on the guest machine")
+                utils.print_warning("E2E command requires ansbile to be installed on the guest machine")
         elif args.command == PLAYGROUND_SSH:
             do_ssh(parg[0])
         elif args.command == PLAYGROUND_STOP:
@@ -456,7 +457,7 @@ def main():
             do_delete()
         elif args.command == PLAYGROUND_HELP:
             do_help(cluster, machines, parg[0])
-    
+
     except Exception as e:
         utils.print_error(e)
         if args.v:
@@ -464,4 +465,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
