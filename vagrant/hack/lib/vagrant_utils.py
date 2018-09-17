@@ -16,7 +16,6 @@
 
 import re
 import os
-import sys
 import yaml
 import stat
 import shutil
@@ -34,12 +33,12 @@ tmp_folder = os.path.join(root_folder, 'tmp')
 def import_kubeadm_binary(binary, builder, prefix):
     """ copies kubeadm binary to vagrant and store vars override for future usages """
 
-    if binary != None:
+    if binary is not None:
         source_kubeadm_binary = binary
     else:
         source_kubeadm_binary = os.path.join(kubernetes_utils.build_output_path(builder), 'kubeadm')
 
-    if prefix == None:
+    if prefix is None:
         prefix = ''
     else:
         prefix = prefix + '_'
@@ -55,12 +54,12 @@ def import_kubeadm_binary(binary, builder, prefix):
     os.chmod(vagrant_kubeadm_binary, st.st_mode | stat.S_IEXEC)
 
     # stores the var override
-    extra_vars_override = { 
-        'kubeadm': { 
-            'binary': vagrant_kubeadm_binary.replace(bin_folder, '/vagrant/bin') 
+    extra_vars_override = {
+        'kubeadm': {
+            'binary': vagrant_kubeadm_binary.replace(bin_folder, '/vagrant/bin')
         }
     }
-    
+
     if not os.path.exists(tmp_folder):
         os.makedirs(tmp_folder)
 
@@ -112,7 +111,7 @@ def get_status():
             node_state[parts[0]] = parts[1]
         elif len(parts) == 4:
             node_state[parts[0]] = " ".join(parts[1:3])
-    
+
     return node_state
 
 def exec_up(fallbackMode):
@@ -129,7 +128,7 @@ def write_sshconfig():
 
     if not os.path.exists(tmp_folder):
         os.makedirs(tmp_folder)
-    
+
     ssh_config = os.path.join(tmp_folder, 'ssh_config')
 
     with open(ssh_config, 'w') as fh:
@@ -148,13 +147,13 @@ def exec_ssh(machine):
     run_vagrant(['ssh', machine])
 
 def check_vagrant(args):
-    try:           
+    try:
         return subprocess.check_output(['vagrant'] + args, cwd=root_folder)
     except Exception as e:
         raise RuntimeError('Error executing `vagrant ' + args[0] + '`: ' + repr(e))
 
 def run_vagrant(args):
-    try:           
+    try:
         subprocess.call(['vagrant'] + args, cwd=root_folder)
     except Exception as e:
         raise RuntimeError('Error executing `vagrant ' + args[0] + '`: ' + repr(e))
@@ -165,4 +164,3 @@ def clean_working_folders():
     for d in [bin_folder, tmp_folder]:
         if os.path.exists(d):
             shutil.rmtree(d)
-
