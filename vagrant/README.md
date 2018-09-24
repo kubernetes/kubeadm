@@ -95,7 +95,7 @@ And then execute your kubeadm test scenario (See following paragraphs for more i
 
 ## Iterative dev/build/release/test cycles
 
-If you are developing new kubeadm futures, most probably you will execute several dev/build/release/test
+If you are developing new kubeadm features, most probably you will execute several dev/build/release/test
 cycles.
 
 In case it is not necessary to fully recreate the kubeadm playground before a new test session,
