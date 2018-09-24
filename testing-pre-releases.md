@@ -73,7 +73,7 @@ To access GCS buckets from the command-line, install the [gsutil](https://cloud.
 
 ### Getting .deb or .rpm packages form repository
 
-Pre-compiled GA version of .deb or .rpm packages are deployed into official Kubernetes repositories. See [installing kubeadm](https://kubernetes.io/docs/tasks/tools/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl)
+Pre-compiled GA version of .deb or .rpm packages are deployed into official Kubernetes repositories. See [installing kubeadm](https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl)
 for instruction about how add the necessary repository and repository key.
 
 To explore versions available in a repository use:
@@ -254,13 +254,13 @@ build output will be stored in  `bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped
 
 ## Creating the Kubernetes cluster with kubeadm
 
-The kubernetes web site contains reference documentation for [installing kubeadm](https://kubernetes.io/docs/tasks/tools/install-kubeadm/)
+The kubernetes web site contains reference documentation for [installing kubeadm](https://kubernetes.io/docs/setup/independent/install-kubeadm/)
 and for [creating a cluster using it](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/).
 
 According to selected versions to be installed (the version of .deb or .rpm packages, the version of the kubeadm binary to be used, the version number of the control plane components) following variants to the standard procedure should be applied:
 
 - if you are going to use .deb or .rpm packages available locally (no matter if retrieved from GCS buckets pre-compiled or built locally), you should not
-  execute action descibed in [Installing kubeadm, kubelet and kubectl](https://kubernetes.io/docs/tasks/tools/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl). Instead you should e.g.
+  execute action described in [Installing kubeadm, kubelet and kubectl](https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl). Instead you should e.g.
 
   ```bash
   # Ubuntu, Debian or HypriotOS (assuming the command executed in the same folder of deb files)
@@ -268,7 +268,7 @@ According to selected versions to be installed (the version of .deb or .rpm pack
   ````
 
 - if you are going to use a kubeadm binary available locally, overriding the one installed with packages, after
-  [Installing kubeadm, kubelet and kubectl](https://kubernetes.io/docs/tasks/tools/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl) you should
+  [Installing kubeadm, kubelet and kubectl](https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl) you should
 
   ```bash
   cp path/to/local/kubeadm /usr/bin/kubeadm
@@ -276,7 +276,7 @@ According to selected versions to be installed (the version of .deb or .rpm pack
 
   or simply use `path/to/local/kubeadm` instead of `kubeadm` in following steps.
 
-- if you are going to use controplane images available locally, before executing [kubeadm init](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#instructions) you should
+- if you are going to use control plane images available locally, before executing [kubeadm init](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#instructions) you should
 
   ```bash
   array=(kube-apiserver kube-controller-manager kube-scheduler kube-proxy)
