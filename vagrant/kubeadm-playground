@@ -176,7 +176,7 @@ def get_cluster_spec(spec, extra_vars):
     cluster, machineSets = cluster_api.parse(os.path.join(spec, '*.yml'))
 
     # if ansible is not installed, cluster spec is modified ensuring compability
-    #  with the fallback_boostrap script defined in the Vagrant file
+    #  with the fallback_bootstrap script defined in the Vagrant file
     fallbackMode = False
     if not ansible_utils.ansible_installed():
         cluster_api.fallbackSettings(cluster, machineSets)
@@ -276,7 +276,7 @@ def do_start(fallbackMode):
             utils.print_warning('kubeadm playground is working without ansible installed on the guest machine.',
                                 'Some setting in cluster and machines specification might be changed to align to supported options (e.g. base box),',
                                 '',
-                                'Boostrap process will install only core requirements (e.g. kubernetes binaries)',
+                                'Bootstrap process will install only core requirements (e.g. kubernetes binaries)',
                                 '`kubeadm playground exec` and `kubeadm playground e2e` command will not be available.')
 
         vagrant_utils.exec_up(fallbackMode)
@@ -443,12 +443,12 @@ def main():
             if not fallbackMode:
                 do_ansible(cluster, machines, args.command, parg)
             else:
-                utils.print_warning("Exec command requires ansbile to be installed on the guest machine")
+                utils.print_warning("Exec command requires ansible to be installed on the guest machine")
         elif args.command == PLAYGROUND_E2E:
             if not fallbackMode:
                 do_ansible(cluster, machines, args.command, parg)
             else:
-                utils.print_warning("E2E command requires ansbile to be installed on the guest machine")
+                utils.print_warning("E2E command requires ansible to be installed on the guest machine")
         elif args.command == PLAYGROUND_SSH:
             do_ssh(parg[0])
         elif args.command == PLAYGROUND_STOP:
