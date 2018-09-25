@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# This script is 
-
 # Install dependencies
 apt-get update && apt-get install -y apt-transport-https curl jq gnupg2 yum
 
@@ -48,8 +46,8 @@ for release in $(curl -s https://api.github.com/repos/kubernetes/kubernetes/rele
 	elif [[ $supported_versions != *"${minor#v}"* ]]; then
 		# release we don't care about (e.g. older releases)
 		skipped="$skipped $release"
-    else
-    	if [[ $deb_policy != *"${release#v}"* ]]; then
+	else
+		if [[ $deb_policy != *"${release#v}"* ]]; then
 			# release we care about but has missing debs
 			missing="$missing deb:$release"
 		else
