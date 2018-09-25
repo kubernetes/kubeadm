@@ -219,7 +219,7 @@ def get_machines(cluster, machineSets):
 
 def fallbackSettings(cluster, machineSets):
     """ Fixes cluster and machineSets options in case of ansible not available,
-        ensuring compatibility with the fallback_boostrap script defined in the Vagrant file """ 
+        ensuring compatibility with the fallback_bootstrap script defined in the Vagrant file """ 
 
     for s in machineSets:
-        s.box = "bento/ubuntu-17.10" # base box tested with the boostrap script
+        s.box = "bento/ubuntu-17.10" # base box tested with the bootstrap script
