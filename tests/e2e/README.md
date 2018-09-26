@@ -1,12 +1,8 @@
-## Tools for verifying Kubernetes packages are published
+### kubeadm e2e tests
 
-The `verify_packages_published.sh` script in this folder verifies that the necessary deb/rpms are published to official repositories.
-This script is run periodically and results are available at https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-all#periodic-kubernetes-e2e-packages-pushed
+This folder contains kubeadm e2e tests that run as periodic jobs.
 
-### Running
+The definitions for these jobs can be found in the test-infra repository
+[here](https://github.com/kubernetes/test-infra/tree/master/config/jobs/kubernetes/sig-cluster-lifecycle).
 
-The script should be run in a Docker container like this:
-
-```
-docker run -it -v $(pwd):/test debian:stretch /test/tests/e2e/verify_packages_published.sh
-```
+Test results can be monitored in this [testgrid dashboard](https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-all).
