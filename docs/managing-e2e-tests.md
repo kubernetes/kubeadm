@@ -1,4 +1,3 @@
-
 ## Managing kubeadm end-to-end tests
 
 ### Overview
@@ -89,7 +88,8 @@ The files can be found in the [sig-cluster-lifecycle](https://github.com/kuberne
 
 The idea is to remove old test jobs and add new ones. If Kubernetes 1.15 is about to be released soon, this means that the `15 - 3 = 12` MINOR version would go outside of the support skew of the project. `1.12` jobs have to be removed and `1.15` jobs have to be added. The project would support version `15 - 2 = 13` as the minimum.
 
-- If there are `1.12 -> 1.13` upgrade jobs or `1.12 on 1.13` jobs leave them, because they still contain a supported version `1.13`.
+- If there are `1.12 -> 1.13` upgrade jobs leave them, because upgrades to `1.13` still have to be supported.
+- Remove `1.12 on 1.13` jobs.
 - Remove plain `1.12` jobs.
 - Add upgrade jobs for `1.14 -> 1.15` and `1.14 on 1.15` jobs.
 - Add plain `1.15` jobs.
