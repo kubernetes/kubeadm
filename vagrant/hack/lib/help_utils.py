@@ -49,7 +49,7 @@ def print_help_external_etcd(hi):
                 "in case your cluster has machines with role '%s'." % (cluster_api.ROLE_ETCD))
     if len(hi.etcds) == 0:
         print
-        utils.print_warning ('The kubeadm playground currently does not requires an external etcd.',
+        utils.print_warning ('The kubeadm playground currently does not require an external etcd.',
                              'Please change your cluster api specification')
 
     utils.print_H2 ('Assisted mode')
@@ -72,7 +72,7 @@ def print_help_external_ca(hi):
                 'in case your cluster is configured with `certificateAuthority: external`')
     if hi.cluster.certificateAuthority!=kubeadm_utils.CERTIFICATEAUTHORITY_TYPE_EXTERNAL:
         print
-        utils.print_warning ('The kubeadm playground currently does not requires an external ca.',
+        utils.print_warning ('The kubeadm playground currently does not require an external ca.',
                                 'Please change your cluster api specification')
 
     utils.print_H2 ('Assisted mode')
