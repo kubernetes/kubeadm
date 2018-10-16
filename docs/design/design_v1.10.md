@@ -422,7 +422,7 @@ Please note that:
 
      Note: Please note that storing the CA key in a Secret might have security implications.
 
-   - creation of `schedler.conf` and `controller-manager.conf` secrets in`kube-system` namespace with respective kubeconfig files
+   - creation of `scheduler.conf` and `controller-manager.conf` secrets in`kube-system` namespace with respective kubeconfig files
 
    - mutation of  all the Pod specs by replacing host path volumes with projected volumes from the secrets above
 
