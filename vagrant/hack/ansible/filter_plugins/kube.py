@@ -19,12 +19,12 @@ def parse(version):
     return version_parts
 
 def _compare_by_keys( version, other):
-    
+
     d1 = parse(version)
     d2 = parse(other)
-  
+
     for key in ['major', 'minor', 'patch']:
-        v = cmp(d1.get(key), d2.get(key))
+        v = (d1.get(key) > d2.get(key)) - (d1.get(key) < d2.get(key))
         if v:
             return v
 
@@ -39,7 +39,7 @@ def _compare_by_keys( version, other):
         return -1
 
     return rccmp
-    
+
 def _nat_cmp(a, b):
     def convert(text):
         return int(text) if re.match('^[0-9]+$', text) else text
@@ -49,13 +49,13 @@ def _nat_cmp(a, b):
 
     def cmp_prerelease_tag(a, b):
         if isinstance(a, int) and isinstance(b, int):
-            return cmp(a, b)
+            return (a > b) - (a < b)
         elif isinstance(a, int):
             return -1
         elif isinstance(b, int):
             return 1
         else:
-            return cmp(a, b)
+            return (a > b) - (a < b)
 
     a, b = a or '', b or ''
     a_parts, b_parts = split_key(a), split_key(b)
@@ -64,8 +64,8 @@ def _nat_cmp(a, b):
         if cmp_result != 0:
             return cmp_result
     else:
-        return cmp(len(a), len(b))
-        
+        return (len(a) > len(b)) - (len(a) < len(b))
+
 class FilterModule(object):
 
     def filters(self):
