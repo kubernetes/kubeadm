@@ -25,12 +25,12 @@ sudo docker pull k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8
 sudo docker pull k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8
 ```
 
-Pre pull images for the external vip installation:
+Pre-pull images for the external vip installation:
 ```bash
 sudo docker pull ctracey/ucarp
 ```
 
-Then, prepull images for your network provider:
+Then, pre-pull images for your network provider:
 ```bash
 sudo docker pull weaveworks/weave-npc:2.3.0
 sudo docker pull weaveworks/weave-kube:2.3.0
