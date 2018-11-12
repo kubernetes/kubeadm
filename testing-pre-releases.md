@@ -230,7 +230,7 @@ cd ~/go/src/k8s.io/kubernetes
 # run all unit tests
 bazel test //cmd/kubeadm/...
 
-# build kubeadm binary for the target platform used by the the machines in the playground (linux)
+# build kubeadm binary for the target platform used by the machines in the playground (linux)
 bazel build //cmd/kubeadm
 
 # To cross build for linux- amd64 from mac
