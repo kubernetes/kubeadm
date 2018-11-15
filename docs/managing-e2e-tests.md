@@ -109,7 +109,7 @@ Once the changes to the jobs have been made it is time to open the testgrid [con
 
 The same procedure applies here - old jobs are being removed and new jobs are being added.
 
-Search and replace is your friend. Remember the job names that you just changed in the the `kubeadm*.yaml` files. Don't forget that jobs can exist under multiple dashboards in testgrid, so make sure you find all occurrences and modify them.
+Search and replace is your friend. Remember the job names that you just changed in the `kubeadm*.yaml` files. Don't forget that jobs can exist under multiple dashboards in testgrid, so make sure you find all occurrences and modify them.
 
 Following the `1.15` example from earlier, a job called `ci-kubernetes-e2e-kubeadm-gce-1-12` would have to be removed from all occurrences and a new job `ci-kubernetes-e2e-kubeadm-gce-1-15` has to be added in it's place.
 
