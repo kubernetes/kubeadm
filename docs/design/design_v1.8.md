@@ -170,7 +170,7 @@ Please note that:
 Common properties for the control plane components:
 
 - `hostNetwork: true` is present on all static pods since there is no network configured yet; accordingly 
-  -  the `address` of the api server for controller-manager and the scheduler will be set to `127.0.0.1`
+  -  the `address` of the API server for controller-manager and the scheduler will be set to `127.0.0.1`
   -  if using a local etcd server, `etcd-servers` address  will be set to `127.0.0.1:2379`
 - Leader election is enabled for both the controller-manager and the scheduler
 - controller-manager and the scheduler will reference kubeconfig files with their respective, unique identities

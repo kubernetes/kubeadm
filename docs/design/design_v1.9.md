@@ -213,7 +213,7 @@ The API server needs to know this in particular:
 
 Other flags that are set unconditionally:
 
- - `--insecure-port=0` to avoid insecure connections to the api server.
+ - `--insecure-port=0` to avoid insecure connections to the API server.
  - `--enable-bootstrap-token-auth=true` to enable the `BootstrapTokenAuthenticator` authentication module. 
  - `--allow-privileged` to `true` (used e.g. by kube proxy).
  - `--client-ca-file` to `ca.crt`.
