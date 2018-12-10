@@ -1,3 +1,10 @@
+
+## WARNING: kubernetes-anywhere is deprecated and will be retired in a future release.
+
+Kubeadm-playground was designed as a tool for helping kubeadm contributors.
+It will be discontinued soon in favor of https://github.com/kubernetes-sigs/kind 
+that could potentially support faster dev/test iterations.
+
 # Kubeadm Playground
 
 The kubeadm playground consists of one or more vagrant machines where you can experiment
