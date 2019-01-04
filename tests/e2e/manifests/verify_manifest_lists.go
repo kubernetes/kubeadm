@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -306,6 +306,11 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	// images outside the scope of kubeadm, but still using the k8s version
 	images["hyperkube"] = k8sVersionV
 	images["cloud-controller-manager"] = k8sVersionV
+	// test the conformance image, but only for newer versions as it was added in v1.13.0-alpha.2
+	conformanceMinVer := version.MustParseGeneric("v1.13.0-alpha.2")
+	if ver.AtLeast(conformanceMinVer) {
+		images["conformance"] = k8sVersionV
+	}
 
 	// parse the constants file and fetch versions.
 	// note: Split(...)[1] is safe here given a line contains the key.
