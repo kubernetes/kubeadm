@@ -307,7 +307,7 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	images["hyperkube"] = k8sVersionV
 	images["cloud-controller-manager"] = k8sVersionV
 	// test the conformance image, but only for newer versions as it was added in v1.13.0-alpha.2
-	conformanceMinVer := version.MustParseGeneric("v1.13.0-alpha.2")
+	conformanceMinVer := version.MustParseSemantic("v1.13.0-alpha.2")
 	if ver.AtLeast(conformanceMinVer) {
 		images["conformance"] = k8sVersionV
 	}
