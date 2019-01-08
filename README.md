@@ -10,10 +10,3 @@ You can reach the maintainers of this project at the [Cluster Lifecycle SIG](htt
 
 ## Roadmap
 
-The full picture of which direction we're taking is described in [this blog post](https://kubernetes.io/blog/2017/01/stronger-foundation-for-creating-and-managing-kubernetes-clusters/).
-
-Please also refer to the latest [milestones in this repo](https://github.com/kubernetes/kubeadm/milestones).
-
-### Code of conduct
-
-Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
