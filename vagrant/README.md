@@ -46,11 +46,11 @@ cd ~/go/src/k8s.io
 git clone https://github.com/kubernetes/kubeadm.git
 ```
 
-In order to make the `kubeadm-playground` command easily accessible from other locations,
-open your `.bashrc` file and append the following line:
+To make the `kubeadm-playground` command easily accessible from other directories, throw this alias
+in your shell script (.bashrc, .zshrc, etc.) of choice:
 
 ```bash
-alias kubeadm-playground='~/go/src/k8s.io/kubeadm/vagrant/kubeadm-playground'
+alias kubeadm-playground=`PIPENV_PIPFILE=/path/to/pipfile pipenv run /path/to/kubeadm-playground`
 ```
 
 ## Getting started
