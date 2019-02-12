@@ -1,12 +1,23 @@
-## Tools for verifying Kubernetes packages are published
+## Tools for verifying Kubernetes packages
 
-The `verify_packages_published.sh` script in this folder verifies that the necessary deb/rpms are published to official repositories.
-This script is run periodically and results are available at https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-all#periodic-kubernetes-e2e-packages-pushed
+The tests in this folder run periodically and their status is available here:
+https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-all
 
-### Running
+### Package publishing
 
-The script should be run in a Docker container like this:
+The `verify_packages_published.sh` script verifies that the necessary DEB/RPM packages are published to official repositories.
 
+Running locally:
 ```
 docker run -it -v $(pwd):/test debian:stretch /test/tests/e2e/packages/verify_packages_published.sh
+```
+
+### Package installation
+
+The `verify_packages_install_deb.sh` verifies that the DEB packages from our release repositories and CI build
+can be installed and uninstalled successfully.
+
+Running locally:
+```
+docker run -it -v $(pwd):/test debian:stretch /test/tests/e2e/packages/verify_packages_install_deb.sh
 ```
