@@ -1,6 +1,0 @@
----
-
-kubernetes_cni_plugin: "{{ vars | deepGet('kubernetes', 'cni', 'plugin', default=default_kubernetes_cni_plugin) }}"
-kubernetes_cni_calico_manifestUrl: "{{ vars | deepGet('kubernetes', 'cni', 'calico', 'manifestUrl', default=default_kubernetes_cni_calico_manifestUrl) }}"
-kubernetes_cni_flannel_manifestUrl: "{{ vars | deepGet('kubernetes', 'cni', 'flannel', 'manifestUrl', default=default_kubernetes_cni_flannel_manifestUrl) }}"
-kubernetes_cni_weavenet_manifestUrl: "{{ vars | deepGet('kubernetes', 'cni', 'weavenet', 'manifestUrl', default=default_kubernetes_cni_weavenet_manifestUrl) }}"

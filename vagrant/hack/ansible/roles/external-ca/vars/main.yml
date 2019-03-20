@@ -1,2 +1,0 @@
----
-externalCA_binary: "{{ vars | deepGet('kubeadm', 'binary', default=default_kubeadm_binary) }}"

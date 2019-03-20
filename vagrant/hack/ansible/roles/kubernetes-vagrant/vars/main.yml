@@ -1,3 +1,0 @@
----
-kubeletConfig_extra_args: "{{ vars | deepGet('kubernetes', 'kubelet', 'extraArgs', default=default_kubernetes_kubelet_extra_args) }}"
-kubeletConfig_serviceSubnet: "{{ vars | deepGet('kubernetes', 'serviceSubnet', default=default_kubernetes_serviceSubnet) }}"

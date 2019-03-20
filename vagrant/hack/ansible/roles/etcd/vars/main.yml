@@ -1,3 +1,0 @@
----
-etcd_version: "{{ vars | deepGet('etcd', 'version', default=default_etcd_version) }}"
-etcd_cluster_token: "{{ vars | deepGet('etcd', 'clusterToken', default=default_etcd_clusterToken) }}"
