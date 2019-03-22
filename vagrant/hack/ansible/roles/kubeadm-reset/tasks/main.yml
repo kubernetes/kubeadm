@@ -1,8 +1,0 @@
----
-- name: check if kubeadm init/join already done
-  stat: path=/etc/kubernetes/kubelet.conf
-  register: i
-
-- name: run kubeadm reset
-  shell: "{{ kubeadmReset_binary }} reset"
-  when: i.stat.exists is defined and i.stat.exists

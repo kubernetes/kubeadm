@@ -1,7 +1,0 @@
----
-kubernetes_version: "{{ vars | deepGet('kubernetes', 'version', default=default_kubernetes_version) }}"
-kubernetes_cni_version: "{{ vars | deepGet('kubernetes', 'cni', 'version', default=default_kubernetes_cni_version) }}"
-kubernetes_aptKeyUrl: "{{ vars | deepGet('kubernetes', 'apt_key_url', default=default_kubernetes_aptKeyUrl) }}"
-kubernetes_aptRepo: "{{ vars | deepGet('kubernetes', 'apt_repo', default=default_kubernetes_aptRepo) }}"
-kubernetes_yumBaseUrl: "{{ vars | deepGet('kubernetes', 'yum_base_url', default=default_kubernetes_yumBaseUrl) }}"
-kubernetes_yumGpgKey: "{{ vars | deepGet('kubernetes', 'yum_gpg_key', default=default_kubernetes_yumGpgKey) }}"
