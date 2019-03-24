@@ -38,7 +38,7 @@ Here is a document that explains the process of updating the `kubeadm` command l
 `kubeadm` uses the same build process as the rest of the `kubernetes/kubernetes` repository.
 However, you do not frequently have to build all of kubernetes to work on kubeadm.
 
-See [./vagrant/README.md](./vagrant/README.md) for a quick workflow to build and test your own kubeadm binaries. 🙂
+See [./kinder/README.md](./kinder/README.md) for a quick workflow to build and test your own kubeadm binaries. 🙂
 
 ### Testing pre-release versions of Kubernetes with kubeadm
 
