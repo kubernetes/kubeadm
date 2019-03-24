@@ -6,14 +6,14 @@ The purpose of this repo is to aggregate issues filed against the [kubeadm compo
 Kubeadm is a tool built to provide best-practice “fast paths” for creating Kubernetes clusters. It was designed by bootstrapping rather than provisioning kubernetes cluster, it performs the actions necessary to get a minimum viable cluster up and running. 
 
 ## Common Kubeadm cmdlets 
-1. **kubeadm init** to bootstrap a Kubernetes control-plane node
-1. **kubeadm join** to bootstrap a Kubernetes worker node and join it to the cluster
-1. **kubeadm upgrade** to upgrade a Kubernetes cluster to a newer version
-1. **kubeadm config** if you initialized your cluster using kubeadm v1.7.x or lower, to configure your cluster for kubeadm upgrade
-1. **kubeadm token** to manage tokens for kubeadm join
-1. **kubeadm reset** to revert any changes made to this host by kubeadm init or kubeadm join
-1. **kubeadm version** to print the kubeadm version
-1. **kubeadm alpha** to preview a set of features made available for gathering feedback from the community
+1. **kubeadm init** to bootstrap kubernetes control-plane nodes.
+1. **kubeadm join** to bootstrap a Kubernetes worker node and join it to the cluster.
+1. **kubeadm upgrade** to upgrade a Kubernetes cluster to a newer version.
+1. **kubeadm config** if you initialized your cluster using kubeadm v1.7.x or lower, to configure your cluster for kubeadm upgrade.
+1. **kubeadm token** to manage tokens for kubeadm join.
+1. **kubeadm reset** to revert any changes made to this host by kubeadm init or kubeadm join.
+1. **kubeadm version** to print the kubeadm version.
+1. **kubeadm alpha** to preview a set of features made available for gathering feedback from the community.
 
 ## Community, discussion, contribution, and support
 
