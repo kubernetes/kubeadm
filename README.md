@@ -3,7 +3,8 @@
 The purpose of this repo is to aggregate issues filed against the [kubeadm component](https://github.com/kubernetes/kubernetes/tree/master/cmd/kubeadm).
 
 ## What is Kubeadm ?
-Kubeadm is a tool built to provide best-practice “fast paths” for creating Kubernetes clusters. It was designed by bootstrapping rather than provisioning kubernetes cluster, it performs the actions necessary to get a minimum viable cluster up and running. 
+Kubeadm is a tool built to provide best-practice “fast paths” for creating Kubernetes clusters. It was designed with the purpose of simplifing creation, configuration, upgrade, downgrade, and teardown of Kubernetes clusters and their components. It performs the actions necessary to get a minimum viable cluster up and running with best-practice cluster for each minor version. Simplify the user experience and secure the cluster in fatest way. 
+
 
 ## Common Kubeadm cmdlets 
 1. **kubeadm init** to bootstrap kubernetes control-plane nodes.
