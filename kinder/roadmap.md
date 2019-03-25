@@ -11,23 +11,23 @@ High level goals for kinder v0.1 include:
 
 - [ ] Provide a local test environment for kubeadm development
    - [x] Allow creation of nodes "ready for installing Kubernetes"
-   - [x] Provide pre built “developer” workflows for kubedam init, join, reset
+   - [x] Provide pre built developer-workflows for kubeadm init, join, reset
       - [x] init and init with phases
       - [x] join and join with phases
       - [x] init and join with automatic copy certs
-      - [x] Provide pre built “developer” workflow for kubeadm upgrades
+      - [x] Provide pre built developer-workflow for kubeadm upgrades
       - [x] reset
    - [x] Allow build of node-image variants
       - [x] add pre-loaded images to a node-image
       - [x] replace the kubeadm binary into a node-image
-      - [x] add kubernetes binaries for a second kubernetes versions (target for upgrades)
+      - [x] add Kubernetes binaries for a second Kubernetes versions (target for upgrades)
    - [x] Allow test of kubeadm cluster variations
       - [x] external etcd
       - [x] kube-dns
    - [x] Provide "topology aware" wrappers for `docker exec` and `docker cp`
-   - [x] Provide a way to add nodes to an existing cluster
-      - [x] Add worker node
-      - [x] Add control plane node (and reconfigure load balancer)
+   - [ ] Provide a way to add nodes to an existing cluster
+      - [ ] Add worker node
+      - [ ] Add control plane node (and reconfigure load balancer)
    - [x] Provide smoke test action
    - [ ] Provide E2E run action(s)
 
