@@ -9,8 +9,8 @@ Kubeadm's scope is limited to the local node filesystem and the Kubernetes API, 
 
 
 ## Common Kubeadm cmdlets 
-1. **kubeadm init** to bootstrap kubernetes control-plane nodes.
-1. **kubeadm join** to bootstrap a Kubernetes worker node and join it to the cluster.
+1. **kubeadm init** to bootstrap the initial Kubernetes control-plane node.
+1. **kubeadm join** to bootstrap a Kubernetes worker node or an additional control plane node, and join it to the cluster.
 1. **kubeadm upgrade** to upgrade a Kubernetes cluster to a newer version.
 1. **kubeadm reset** to revert any changes made to this host by kubeadm init or kubeadm join.
 
