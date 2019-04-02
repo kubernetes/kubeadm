@@ -72,3 +72,6 @@ kinder build node-variant \
      --image kindest/node:vX-variant \
      --with-upgrade-binaries $mylocalbinaries/vY
 ```
+
+Please note that it is possible to get Kubernetes artifact locally using `kinder get artifacts` and
+use them for building node-variant without accessing internet.
