@@ -7,6 +7,8 @@ designed for helping kubeadm contributors.
 
 **kinder is a work in progress. Test it! Break it! Send feedback!**
 
+See the kinder [roadmap](roadmap.md) for more information.
+
 ## Prerequisites
 
 ### Install git
@@ -52,15 +54,76 @@ This will put kinder in $(go env GOPATH)/bin.
 
 ## Usage
 
-Read the [kind documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) first.
+kinder is based on kind, so it is recommended to read the [kind documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) first.
 
-Then [Prepare for tests](doc/prepare-for-tests.md)
+What makes kinder different, is the fact that it is designed for helping kubeadm contributors,
+so it provides a slightly different workflow that allows developers to take control of the cluster
+bootstrap process.
 
-Follow the how to guides:
+![Kinder workflow](doc/kinder-workflow.png)
+
+### Prepare node-image & node-image variants
+
+Kind can be extremely efficient when the node image contains all the necessary artifacts.
+
+kinder allows kubeadm contributors to exploit this feature by implementing the `kinder build node-variant` command, that takes a node-image and allows to build variants by:
+
+- Adding new pre-loaded images that will be made available on all nodes at cluster creation time
+- Replacing the kubeadm binary installed in the image, e.g. with a locally build version of kubeadm
+- Adding binaries for a second Kubernetes version to be used for upgrade testing
+
+e.g. if you want to test a kubeadm version already built locally:
+
+```bash
+kinder build node-variant \
+    --base-image kindest/node:v1.13.4 \
+    --image kindest/node:PR1234 \
+    --with-kubeadm $working_dir/kubernetes/bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm
+```
+
+see [Prepare for tests](doc/prepare-for-tests.md) for more details.
+
+### Create Nodes
+
+By default kinder stops the cluster creation process before executing kubeadm init and kubeadm join;
+this will give you nodes ready for installing Kubernetes and more specifically:
+
+- The necessary prerequisites already installed on all nodes
+- A kubeadm config file in `/kind/kubeadm.conf`
+- In case of more than one control-plane node exists in the cluster, a pre-configured external load balancer
+
+Additionally, the `kinder create` command gives you shortcuts for testing different Kubernetes cluster topologies without using the kind config file:
+
+- Flag `--control-plane-nodes`
+- Flag `--worker-nodes`
+
+Similarly, `kinder create` command gives you also shortcuts for testing Kubernetes cluster variants:
+
+- Flag `--kube-dns`
+- Flag `--external-etcd`
+
+### Work on Nodes
+
+`kinder do` command is the kinder swiss knife.
+It allows to execute actions (repetitive tasks/sequence of commands) on one or more nodes. Available actions are
+
+| action          | Notes                                                        |
+| --------------- | ------------------------------------------------------------ |
+| kubeadm-init    | Executes the kubeadm-init workflow, installs the CNI plugin and then copies the kubeconfig file on the host machine.|
+| manual-copy-certs      | Implement the manual copy of certificates to be shared across control-plane nodes (n.b. manual means not managed by kubeadm).|
+| kubeadm-join    | Executes the kubeadm-join workflow both on secondary control plane nodes and on worker nodes.|
+| kubeadm-upgrade |Executes the kubeadm upgrade workflow and upgrading K8s.|
+| Kubeadm-reset   | Executes the kubeadm-reset workflow on all the nodes.|
+| cluster-info    | Returns a summary of cluster info|
+| smoke-test      | Implements a non-exhaustive set of tests|
+
+kinder provides also `kinder exec` and `kinder cp` commands, a topology aware wrappers on `docker exec` and `docker cp`.
+
+For more details please take a look at following how to guides:
 
 - [Getting started (test single control-plane)](doc/getting-started.md)
 - [Testing HA](doc/test-HA.md)
 - [Testing upgrades](doc/test-upgrades.md)
 - [Testing X on Y](doc/test-XonY.md)
 
-Or have a look at the [Kinder reference](doc/reference.md)
+or at the [Kinder reference](doc/reference.md)

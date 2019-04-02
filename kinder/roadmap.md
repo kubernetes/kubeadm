@@ -29,7 +29,12 @@ High level goals for kinder v0.1 include:
       - [ ] Add worker node
       - [ ] Add control plane node (and reconfigure load balancer)
    - [x] Provide smoke test action
-   - [ ] Provide E2E run action(s)
+
+- [ ] Be a temporary, kubeadm-project CI glue on top of kind
+   - [ ] Provide get Kubernetes artifacts command(s)
+   - [ ] Allow build of node-image variants using Kubernetes artifacts from different sources
+   - [ ] Provide E2E run command(s)
+   - [ ] Provide test command that automates complex test scenarios composed by many steps/stages
 
 **Non**-Goals include:
 
