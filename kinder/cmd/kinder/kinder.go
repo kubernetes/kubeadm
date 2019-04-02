@@ -30,10 +30,10 @@ import (
 	kcreate "k8s.io/kubeadm/kinder/cmd/kinder/create"
 	kdo "k8s.io/kubeadm/kinder/cmd/kinder/do"
 	kexec "k8s.io/kubeadm/kinder/cmd/kinder/exec"
+	kget "k8s.io/kubeadm/kinder/cmd/kinder/get"
 	kversion "k8s.io/kubeadm/kinder/cmd/kinder/version"
 	"sigs.k8s.io/kind/cmd/kind/delete"
 	"sigs.k8s.io/kind/cmd/kind/export"
-	"sigs.k8s.io/kind/cmd/kind/get"
 	"sigs.k8s.io/kind/cmd/kind/load"
 )
 
@@ -75,13 +75,13 @@ func NewCommand() *cobra.Command {
 	// add kind top level subcommands re-used without changes
 	cmd.AddCommand(delete.NewCommand())
 	cmd.AddCommand(export.NewCommand())
-	cmd.AddCommand(get.NewCommand())
 	cmd.AddCommand(load.NewCommand())
 
 	// add kind commands commands customized in kind
 	cmd.AddCommand(kbuild.NewCommand())
 	cmd.AddCommand(kcreate.NewCommand())
 	cmd.AddCommand(kversion.NewCommand())
+	cmd.AddCommand(kget.NewCommand())
 
 	// add kinder only commands
 	cmd.AddCommand(kcp.NewCommand())
