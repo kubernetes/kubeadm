@@ -56,6 +56,8 @@ kinder do cluster-info
 kinder do smoke-test
 ```
 
+See [run e2e tests](e2e-test.md) for validating your cluster with Kubernetes/Kubeadm e2e test suites.
+
 ## Cleanup
 
 ```bash

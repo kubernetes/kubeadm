@@ -49,6 +49,8 @@ Also in this case:
 - you can use the `--only-node` flag to execute actions only on a selected node.
 - as alternative to `kinder do`, it is possible to use `docker exec` and `docker cp`
 
+See [run e2e tests](e2e-test.md) for validating your cluster with Kubernetes/Kubeadm e2e test suites.
+
 ## Cleanup
 
 ```bash

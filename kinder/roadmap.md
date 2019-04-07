@@ -33,7 +33,7 @@ High level goals for kinder v0.1 include:
 - [ ] Be a temporary, kubeadm-project CI glue on top of kind
    - [ ] Provide get Kubernetes artifacts command(s)
    - [ ] Allow build of node-image variants using Kubernetes artifacts from different sources
-   - [ ] Provide E2E run command(s)
+   - [x] Provide E2E run command(s)
    - [ ] Provide test command that automates complex test scenarios composed by many steps/stages
 
 **Non**-Goals include:
