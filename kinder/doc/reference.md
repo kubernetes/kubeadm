@@ -42,9 +42,9 @@ More sophisticated cluster topologies can be achieved using the kind config file
 kubeadm-config or specifying volume mounts. see [kind documentation](https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster)
 for more details.
 
-### Testing Kubernetes cluster variants
+### Testing Kubernetes cluster configurations
 
-kinder gives you shortcuts for testing Kubernetes cluster variants supported by kubeadm:
+kinder gives you shortcuts for testing well known Kubernetes cluster configurations supported by kubeadm:
 
 ```bash
 # create a cluster using kube-dns instead of CoreDNS
@@ -53,6 +53,9 @@ kinder create cluster --kube-dns
 # create a cluster using an external etcd
 kinder create cluster --external-etcd
 ```
+
+Further configurations can be achieved customizing the `kubeadm-conf.yaml` file under the `kind` folder on the
+bootstrap control-plane node.
 
 ## Working on nodes
 
@@ -162,48 +165,106 @@ kinder cp \
 
 Kind can be extremely efficient when the node image contains all the necessary artifacts.
 
-kinder allows kubeadm contributor to exploit this feature by implementing the `kinder build node-variant` command, that takes a node-image and allows to build variants by:
+kinder allows kubeadm contributor to exploit this feature by implementing the `kinder build node-image-variant` command, that takes a node-image and allows to build variants by:
 
 - Adding new pre-loaded images that will be made available on all nodes at cluster creation time
 - Replacing the kubeadm binary installed in the cluster, e.g. with a locally build version of kubeadm
+- Replacing the kubelet binary installed in the cluster, e.g. with a locally build version of kubelet
 - Adding binaries for a second Kubernetes version to be used for upgrade testing
 
- The above options can be combined together in one command, if necessary
+`kinder build node-image-variant` can read artifacts to be added to the base image from following sources
+
+- a version, e.g. v1.14.0 or v1.15.0-alpha.0.100+78573805a7292a
+- a release build label, e.g. release/stable, release/stable-1.13, release/latest-14
+- a ci build label, e.g. ci/latest, ci/latest-1.14
+- a remote repository, e.g. http://k8s.mycompany.com/
+- a local folder, as shown in the examples above.
 
 ### Add images
 
 ```bash
-kinder build node-variant \
+kinder build node-image-variant \
+     --base-image kindest/node:latest \
+     --image kindest/node:PR12345 \
+     --with-images v1.14.0
+
+kinder build node-image-variant \
      --base-image kindest/node:latest \
      --image kindest/node:PR12345 \
      --with-images $my-local-images/nginx.tar
 ```
 
-Both single file or folder can be used as a arguments for the `--with-images`, but only image tar files will be considered; Image tar file will be placed in a well know folder, and kind(er) will load them during the initialization of each node.
+When reading from a local folder, both single file or folder can be used as a arguments for the `--with-images`;
+in case a folder is used, all the image tars existing in such folder are loaded into the node-image-variant,
+thus allowing to pre-loading any image into nodes.
+ 
+Image tar files will be placed in a well know folder, `kind/images` and kind(er) will load them during
+the initialization of each node.
 
-### Replace kubeadm binary
+> the image tar provided to `kinder build node-image-variant` will override existing images tar with the same name;
+> if necessary, the `--image-name-prefix` flag can be used to avoid name conflicts.
+
+### Replace kubeadm/kubelet binary
 
 ```bash
-kinder build node-variant \
+kinder build node-image-variant \
+     --base-image kindest/node:latest \
+     --image kindest/node:PR12345 \
+     --with-kubeadm v1.13.5
+
+kinder build node-image-variant \
      --base-image kindest/node:latest \
      --image kindest/node:PR12345 \
      --with-kubeadm $working_dir/kubernetes/bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm
 ```
 
-> Please note that, replacing the kubeadm binary in the node-images will have effect on nodes that you create in future; If you want to replace the kubeadm binary on existing nodes, you should use `docker cp` or `kinder cp` instead.
+When reading from a local folder, both single file or folder can be used; in case a folder is used, the
+kubeadm binary should exist inside such folder.
+
+Please note that, replacing the kubeadm binary in the node-images will have effect on nodes that you create in future
+If you want to replace the kubeadm binary on existing nodes, you should use `docker cp` or `kinder cp` instead.
+
+Similarly, you can use also the `--with-kubelet` flag for replacing the kubelet binary.
 
 ### Add upgrade packages
 
 ```bash
-kinder build node-variant \
+kinder build node-image-variant \
      --base-image kindest/node:latest \
      --image kindest/node:PR12345 \
-     --with-upgrade-binaries $my-local-packages/v1.12.2/
+     --with-upgrade-artifacts v1.14.0
+
+kinder build node-image-variant \
+     --base-image kindest/node:latest \
+     --image kindest/node:PR12345 \
+     --with-upgrade-artifacts $my-local-packages/v1.12.2/
 ```
 
-Both single file or folder can be used as a arguments for the `--with-upgrade-binaries`, but only binaries will be considered; binaries files will be placed in a well know folder, the kubeadm-upgrade action will use them during the upgrade sequence.
+When reading from a local folder or from a remote repository, a `version` file should exist in the source.
 
-### Run E2E test suites
+Upgrade atrifacts for will be placed in a well know folder, `kinder/upgrade/{version}` that will be used by
+`kinder do kubeadm-upgrade` action.
+
+If necessary, it is possible to add more than one Kubernetes version e.g. for testing upgrade sequences.
+
+### kinder get artifacts
+
+It is also possible to get Kubernetes artifact locally using `kinder get artifacts` from one of the following sources:
+
+- a version, e.g. v1.14.0 or v1.15.0-alpha.0.100+78573805a7292a
+- a release build label, e.g. release/stable, release/stable-1.13, release/latest-14
+- a ci build label, e.g. ci/latest, ci/latest-1.14
+- a remote repository, e.g. http://k8s.mycompany.com/
+- a local folder
+
+Flags `--only-kubeadm`, `--only-kubelet`, `--only-binaries`, and `--only-images` can be used to limit the number of files read from the source.
+
+When reading from upstream builds (version, release label, ci build label), a `version` file will be automatically
+generated in the target folder.
+
+Instead, when reading from a local folder or from a remote repository, a `version` file should exist in the source.
+
+## Run E2E test suites
 
 ### E2E (Kubernetes)
 
