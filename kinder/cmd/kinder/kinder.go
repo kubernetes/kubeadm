@@ -31,6 +31,7 @@ import (
 	kdo "k8s.io/kubeadm/kinder/cmd/kinder/do"
 	kexec "k8s.io/kubeadm/kinder/cmd/kinder/exec"
 	kget "k8s.io/kubeadm/kinder/cmd/kinder/get"
+	ktest "k8s.io/kubeadm/kinder/cmd/kinder/test"
 	kversion "k8s.io/kubeadm/kinder/cmd/kinder/version"
 	"sigs.k8s.io/kind/cmd/kind/delete"
 	"sigs.k8s.io/kind/cmd/kind/export"
@@ -87,6 +88,7 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(kcp.NewCommand())
 	cmd.AddCommand(kdo.NewCommand())
 	cmd.AddCommand(kexec.NewCommand())
+	cmd.AddCommand(ktest.NewCommand())
 
 	return cmd
 }
