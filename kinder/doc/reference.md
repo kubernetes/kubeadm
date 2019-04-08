@@ -202,3 +202,67 @@ kinder build node-variant \
 ```
 
 Both single file or folder can be used as a arguments for the `--with-upgrade-binaries`, but only binaries will be considered; binaries files will be placed in a well know folder, the kubeadm-upgrade action will use them during the upgrade sequence.
+
+### Run E2E test suites
+
+### E2E (Kubernetes)
+
+E2E Kubernetes is a rich set of test aimed at verifying the proper functioning of a Kubernetes cluster.
+
+By default Kinder selects a subset of test the corresponds to the "Conformance" as defined in the
+Kubernetes [test grid](https://github.com/kubernetes/test-infra/tree/master/testgrid/conformance).
+
+```bash
+kinder test e2e
+```
+
+> The test are run on the cluster defined in the current kubeconfig file
+
+The command supports following flags:
+
+- `--kube-root` for setting the folder where the kubernetes sources are stored
+- `--conformance` as a shortcut for instructing the ginkgo test suite run only conformance tests
+- `--parallel` as a shortcut for instructing the ginkgo to run test in parallel
+
+Additional flags are supported for allowing `--ginkgo-flags` and `--test-flags` are supported for
+allowing low level configuration of test runs:
+
+- `--ginkgo-flags` space-separated list of arguments to pass to ginkgo test runner. see
+  [ginkgo doc](https://onsi.github.io/ginkgo/#the-ginkgo-cli) for more detail.
+- `--test-flags` space-separated list of arguments to pass to E2E test suite
+
+Example of usage of those flags are:
+
+```bash
+# dry-run your test
+kinder test e2e --ginkgo-flags "--dryDun=true"
+
+# override the default level of parallelism
+kinder test e2e --parallel --ginkgo-flags "--nodes=25"
+
+# generate a junit report of test results
+kinder test e2e --reporting-flags "--report-dir=/tmp/_artifacts --report-prefix=e2e"
+```
+
+### E2E kubeadm
+
+Similarly to E2E Kubernetes, there is a suite of tests aimed at checking that kubeadm has created
+and properly configured all the ConfigMap, Secrets, RBAC Roles and RoleBinding required for the
+proper functioning of future calls to `kubeadm join` or `kubeadm upgrade`.
+
+This can be achieved by a simple
+
+```bash
+kinder test e2e-kubeadm
+```
+
+> The test are run on the cluster defined in the current kubeconfig file
+
+The command supports following flags:
+
+- `--kube-root` for setting the folder where the kubernetes sources are stored
+- `--single-node` as a shortcut for instructing the ginkgo test suite to skip test labeled with [multi-node]
+- `--automatic-copy-certs` as a shortcut for instructing the ginkgo test suite to skip test labeled with [copy-certs]
+
+As for E2E Kubernetes, also `--ginkgo-flags` and ``--test-flags` are supported for low
+level configuration of test runs.
