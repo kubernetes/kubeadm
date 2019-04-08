@@ -17,99 +17,86 @@ limitations under the License.
 package alter
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"k8s.io/kubeadm/kinder/pkg/extract"
 )
 
-//TODO: use const for paths
-
-// imageBits implements Bits for the copying into the node image additional image tars
+// imageBits implements a bits that allows to add new images tarball in the /kind/images folder into the node image;
+// those images will be automatically loaded into docker when the container/the node will start
 type imageBits struct {
-	srcs []string
+	srcs       []string
+	namePrefix string
 }
 
 var _ bits = &imageBits{}
 
-func newImageBits(args []string) bits {
+func newImageBits(args []string, namePrefix string) bits {
 	return &imageBits{
-		srcs: args,
+		srcs:       args,
+		namePrefix: namePrefix,
 	}
 }
 
-// Paths implements bits.Paths
-func (b *imageBits) Paths() map[string]string {
-	var paths = map[string]string{}
-
-	// for each of the given path
-	for _, src := range b.srcs {
-		// gets the  src descriptor
-		info, err := os.Stat(src)
-		if err != nil {
-			log.Warningf("Error getting file descriptor for %q: %v", src, err)
-		}
-
-		// if src is a Directory
-		if info.IsDir() {
-			// gets all the entries in the folder
-			entries, err := ioutil.ReadDir(src)
-			if err != nil {
-				log.Warningf("Error getting directory content for %q: %v", src, err)
-			}
-
-			// for each entry in the folder
-			for _, entry := range entries {
-				// check if the file is a valid tar file (if not discard)
-				name := entry.Name()
-				if !(filepath.Ext(name) == ".tar" && entry.Mode().IsRegular()) {
-					log.Warningf("Image file %q is not a valid .tar file. Removed from imageBits", name)
-					continue
-				}
-
-				// Add to the path list; the dest path is a subfolder into the alterDir
-				entrySrc := filepath.Join(src, name)
-				entryDest := filepath.Join("images", name)
-				paths[entrySrc] = entryDest
-				log.Debugf("imageBits %s added to paths", entrySrc)
-			}
-			continue
-		}
-
-		// check if the file is a valid tar file (if not discard)
-		if !(filepath.Ext(src) == ".tar" && info.Mode().IsRegular()) {
-			log.Warningf("Image file %q is not a valid .tar file. Removed from imageBits", src)
-		}
-
-		// Add to the path list; the dest path is a subfolder into the alterDir
-		dest := filepath.Join("images", filepath.Base(src))
-		paths[src] = dest
-		log.Debugf("imageBits %s added to paths", src)
+// Get implements bits.Getget
+func (b *imageBits) Get(c *bitsContext) error {
+	// ensure the dest path exists on host/inside the HostBitsPath
+	dst := filepath.Join(c.HostBitsPath(), "images")
+	if err := os.Mkdir(dst, 0777); err != nil {
+		return errors.Wrap(err, "failed to make bits dir")
 	}
 
-	return paths
+	// for each of the given sources
+	for _, src := range b.srcs {
+		// Creates an extractor instance, that will read the binary bit from the src,
+		// that can be one of version/build-label/file or folder containing the binary,
+		// and save it to the dest path (inside HostBitsPath)
+		e := extract.NewExtractor(
+			src, dst,
+			extract.OnlyKubernetesImages(true),
+			extract.WithNamePrefix(b.namePrefix),
+		)
+
+		// if the source is a local repository
+		if extract.GetSourceType(src) == extract.LocalRepositorySource {
+			// sets the extractor for importing all image tarballs existing in the local repository,
+			// not only the kubernetes ones (this will allow to use this function for loading other images)
+			e.SetFiles(extract.AllImagesPattern)
+		}
+
+		// Extracts the image tarballs bit
+		if _, err := e.Extract(); err != nil {
+			return errors.Wrapf(err, "failed to extract %s", src)
+		}
+	}
+
+	return nil
 }
 
 // Install implements bits.Install
-func (b *imageBits) Install(ic *installContext) error {
+func (b *imageBits) Install(c *bitsContext) error {
+
 	// The src path is a subfolder into the alterDir, that is mounted in the
 	// container as /alter
-	src := filepath.Join("/alter", "bits", "images")
+	src := filepath.Join(c.ContainerBitsPath(), "images")
 
 	// The dest path is /kind/images, a well known folder where kind(er) will
 	// search for pre-loaded images during `kind(er) create`
 	dest := filepath.Join("/kind")
 
 	// copy artifacts in
-	if err := ic.Run("rsync", "-r", src, dest); err != nil {
+	if err := c.RunInContainer("rsync", "-r", src, dest); err != nil {
 		log.Errorf("Image alter failed! %v", err)
 		return err
 	}
 
 	// make sure we own the tarballs
 	// TODO: someday we might need a different user ...
-	if err := ic.Run("chown", "-R", "root:root", filepath.Join("/kind", "images")); err != nil {
+	if err := c.RunInContainer("chown", "-R", "root:root", filepath.Join("/kind", "images")); err != nil {
 		log.Errorf("Image alter failed! %v", err)
 		return err
 	}

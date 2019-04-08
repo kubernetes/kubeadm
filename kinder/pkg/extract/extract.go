@@ -32,35 +32,43 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	versionutil "k8s.io/apimachinery/pkg/util/version"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
 const (
 	ciBuildRepository       = "https://storage.googleapis.com/kubernetes-release-dev/ci"
 	releaseBuildURepository = "https://storage.googleapis.com/kubernetes-release/release"
+
+	kubeadmBinary = "kubeadm"
+	kubeletBinary = "kubelet"
+	kubectlBinary = "kubectl"
 )
 
 var (
-	kubeadmBinary = "kubeadm"
-	kubeletBinary = "kubelet"
-	allBinaries   = append([]string{"kubelet", "kubectl"}, kubeadmBinary)
-	allImages     = []string{"kube-apiserver.tar", "kube-controller-manager.tar", "kube-scheduler.tar", "kube-proxy.tar"}
+	allKubernetesBinaries = []string{kubeletBinary, kubectlBinary, kubeadmBinary}
+	allKubernetesImages   = []string{"kube-apiserver.tar", "kube-controller-manager.tar", "kube-scheduler.tar", "kube-proxy.tar"}
+
+	// AllImagesPattern defines a pattern for searching all the images in a folder
+	AllImagesPattern = []string{"*.tar"}
 )
 
+// SourceType defines src types
 type SourceType int
 
 const (
-	// ReleaseLabelOrVersionSource describe a src that should read from releaseBuildURepository
+	// ReleaseLabelOrVersionSource describe a src that is hosted in releaseBuildURepository
 	ReleaseLabelOrVersionSource SourceType = iota + 1
 
-	// CILabelOrVersionSource describe a src that should read from ciBuildRepository
+	// CILabelOrVersionSource describe a src that is hosted in ciBuildRepository
 	CILabelOrVersionSource
 
-	// RemoteRepositorySource describe a src that should read from a remote http/https repository
+	// RemoteRepositorySource describe a src that is hosted in a remote http/https repository
 	RemoteRepositorySource
 
-	// LocalRepositorySource describe a src that should read from repository hosted in a local folder
+	// LocalRepositorySource describe a src that is hosted in local repository
 	LocalRepositorySource
 )
 
@@ -91,6 +99,8 @@ func OnlyKubeadm(onlyKubeadm bool) Option {
 	return func(b *Extractor) {
 		if onlyKubeadm {
 			b.files = []string{kubeadmBinary}
+			// disable addVersionFileToDst when we are reading only a subset of files
+			b.addVersionFileToDst = false
 		}
 	}
 }
@@ -100,25 +110,45 @@ func OnlyKubelet(onlyKubelet bool) Option {
 	return func(b *Extractor) {
 		if onlyKubelet {
 			b.files = []string{kubeletBinary}
+			// disable addVersionFileToDst when we are reading only a subset of files
+			b.addVersionFileToDst = false
 		}
 	}
 }
 
-// OnlyBinaries option instructs the Extractor for retriving kubeadm, kubectl and kubelet binaries only
-func OnlyBinaries(onlyBinaries bool) Option {
+// OnlyKubernetesBinaries option instructs the Extractor for retriving Kubernetes binaries only
+func OnlyKubernetesBinaries(onlyBinaries bool) Option {
 	return func(b *Extractor) {
 		if onlyBinaries {
-			b.files = allBinaries
+			b.files = allKubernetesBinaries
+			// disable addVersionFileToDst when we are reading only a subset of files
+			b.addVersionFileToDst = false
 		}
 	}
 }
 
-// OnlyImages option instructs the Extractor for retriving images tarballs only
-func OnlyImages(onlyImages bool) Option {
+// OnlyKubernetesImages option instructs the Extractor for retriving Kubernetes images tarballs only
+func OnlyKubernetesImages(onlyImages bool) Option {
 	return func(b *Extractor) {
 		if onlyImages {
-			b.files = allImages
+			b.files = allKubernetesImages
+			// disable addVersionFileToDst when we are reading only a subset of files
+			b.addVersionFileToDst = false
 		}
+	}
+}
+
+// WithNamePrefix option instructs the Extractor to adds a prefix to the name of each file before saving to destination
+func WithNamePrefix(namePrefix string) Option {
+	return func(b *Extractor) {
+		b.dstMutator.namePrefix = namePrefix
+	}
+}
+
+// WithVersionFolder option instructs the Extractor to save all files in a folder named like the kubernetes version
+func WithVersionFolder(versionFolder bool) Option {
+	return func(b *Extractor) {
+		b.dstMutator.prependVersionFolder = versionFolder
 	}
 }
 
@@ -128,15 +158,22 @@ type Extractor struct {
 	src string
 	// files is the list of files to extract
 	files []string
-	dst   string
+	// dst folder
+	dst string
+	// dst file name mutator
+	dstMutator fileNameMutator
+	// add version file to dst
+	addVersionFileToDst bool
 }
 
 // NewExtractor returns a new extractor configured with the given options
 func NewExtractor(src, dst string, options ...Option) (extractor *Extractor) {
 	extractor = &Extractor{
-		src:   src,
-		dst:   dst,
-		files: append(allBinaries, allImages...),
+		src:                 src,
+		files:               append(allKubernetesBinaries, allKubernetesImages...),
+		dst:                 dst,
+		dstMutator:          fileNameMutator{},
+		addVersionFileToDst: true,
 	}
 
 	// apply user options
@@ -147,8 +184,10 @@ func NewExtractor(src, dst string, options ...Option) (extractor *Extractor) {
 	return extractor
 }
 
-// extractFunc define a function that implements an extractor method
-type extractFunc func(string, []string, string) (map[string]string, error)
+// SetFiles allows to override the default list of files that the extractor is expected to retrive.
+func (e *Extractor) SetFiles(files []string) {
+	e.files = files
+}
 
 // Extract Kubernetes artifacts from the given source
 func (e *Extractor) Extract() (paths map[string]string, err error) {
@@ -167,10 +206,13 @@ func (e *Extractor) Extract() (paths map[string]string, err error) {
 		errors.Errorf("source %s did not resolve to a valid source type", e.src)
 	}
 
-	return f(e.src, e.files, e.dst)
+	return f(e.src, e.files, e.dst, e.dstMutator, e.addVersionFileToDst)
 }
 
-func extractFromCIBuild(src string, files []string, dst string) (paths map[string]string, err error) {
+// extractFunc define a function that implements an extractor method
+type extractFunc func(string, []string, string, fileNameMutator, bool) (map[string]string, error)
+
+func extractFromCIBuild(src string, files []string, dst string, m fileNameMutator, addVersionFileToDst bool) (paths map[string]string, err error) {
 	// cleanup the src from the prefix, if any
 	src = strings.TrimPrefix(src, "ci/")
 
@@ -183,12 +225,24 @@ func extractFromCIBuild(src string, files []string, dst string) (paths map[strin
 		}
 	}
 
-	// sets the url for downloading the requested ci version and triggers the extraction
+	// saves the version file (if requested)
+	// nb. version file is created so the target folder can be eventually used as a source
+	if err := saveVersionFile(addVersionFileToDst, dst, version, m); err != nil {
+		return nil, errors.Wrapf(err, "error creating version file in %s", dst)
+	}
+
+	// pass the version to the file name mutator
+	// nb. this will allow to save extracted files into a version folder
+	m.SetPrependVersionFolder(version)
+
+	// sets the url for downloading the requested ci version
 	src = fmt.Sprintf("%s/v%s", ciBuildRepository, version)
-	return extractFromHTTP(src, files, dst)
+
+	// read from the src via http, taking care of setting addVersionFileToDst (because it was already saved above)
+	return extractFromHTTP(src, files, dst, m, false)
 }
 
-func extractFromReleaseBuild(src string, files []string, dst string) (paths map[string]string, err error) {
+func extractFromReleaseBuild(src string, files []string, dst string, m fileNameMutator, addVersionFileToDst bool) (paths map[string]string, err error) {
 	// cleanup the source src the prefix, if any
 	src = strings.TrimPrefix(src, "release/")
 
@@ -201,49 +255,162 @@ func extractFromReleaseBuild(src string, files []string, dst string) (paths map[
 		}
 	}
 
-	// sets the url for downloading the requested release version and triggers the extraction
+	// saves the version file (if requested)
+	// nb. version file is created so the target folder can be eventually used as a source
+	if err := saveVersionFile(addVersionFileToDst, dst, version, m); err != nil {
+		return nil, errors.Wrapf(err, "error creating version file in %s", dst)
+	}
+
+	// pass the version to the file name mutator
+	// nb. this will allow to save extracted files into a version folder
+	m.SetPrependVersionFolder(version)
+
+	// sets the url for downloading the requested release version
 	src = fmt.Sprintf("%s/v%s", releaseBuildURepository, version)
 
-	return extractFromHTTP(src, files, dst)
+	// read from the src via http, taking care of setting addVersionFileToDst (because it was already saved above)
+	return extractFromHTTP(src, files, dst, m, false)
 }
 
-func extractFromHTTP(src string, files []string, dst string) (paths map[string]string, err error) {
+func extractFromHTTP(src string, files []string, dst string, m fileNameMutator, addVersionFileToDst bool) (paths map[string]string, err error) {
 	dst, _ = filepath.Abs(dst)
 	if _, err := os.Stat(dst); os.IsNotExist(err) {
 		return nil, errors.Errorf("destination path %s does not exists", dst)
 	}
 
-	// Build the URIs to the image archives and binaries.
-	srcBinDirPath := fmt.Sprintf("%s/bin/linux/amd64", src)
+	// ensure folder required by the fileNameMutator exist
+	// nb. this will allow to save extracted files into a version folder
+	if err := m.EnsureFolder(dst); err != nil {
+		return nil, err
+	}
+
+	// if required, add the version file to the list of files to be copied to dest
+	// nb. version file is created so the target folder can be eventually used as a source
+	if addVersionFileToDst {
+		files = append(files, "version")
+	}
+
+	// in case the source is a Kubernetes build, add bin/OS/ARCH to the src uri
+	if strings.HasPrefix(src, releaseBuildURepository) || strings.HasPrefix(src, ciBuildRepository) {
+		src = fmt.Sprintf("%s/bin/linux/amd64", src)
+	}
 
 	// Download the files.
+	paths = map[string]string{}
 	for _, f := range files {
-		srcFilePath := fmt.Sprintf("%s/%s", srcBinDirPath, f)
-		fmt.Printf("Downloading %s\n", srcFilePath)
-		dstFilePath := path.Join(dst, f)
+		srcFilePath := fmt.Sprintf("%s/%s", src, f)
+		log.Infof("Downloading %s\n", srcFilePath)
+		dstFilePath := path.Join(dst, m.Mutate(f))
 		if err := copyFromURI(srcFilePath, dstFilePath); err != nil {
 			return nil, errors.Wrapf(err, "failed to copy %s to %s", srcFilePath, dstFilePath)
 		}
+		if f == kubeadmBinary || f == kubeletBinary || f == kubectlBinary {
+			os.Chmod(dstFilePath, 0755)
+		}
+		paths[f] = dstFilePath
 	}
+	log.Infof("Downloaded files saved into %s", dst)
 
-	return extractFromLocalDir(dst, files, dst)
+	return paths, nil
 }
 
-func extractFromLocalDir(src string, files []string, dst string) (paths map[string]string, err error) {
+func extractFromLocalDir(src string, files []string, dst string, m fileNameMutator, addVersionFileToDst bool) (paths map[string]string, err error) {
+	// checks if source folder exists
+	src, _ = filepath.Abs(src)
 	if _, err := os.Stat(src); os.IsNotExist(err) {
 		return nil, errors.Errorf("source path %s does not exists", src)
 	}
 
+	// read version file (only if required by the fileNameMutator)
+	if err := m.ReadVersionFile(src); err != nil {
+		return nil, err
+	}
+
+	// checks if target folder exists
+	dst, _ = filepath.Abs(dst)
+	if _, err := os.Stat(dst); os.IsNotExist(err) {
+		return nil, errors.Errorf("destination path %s does not exists", dst)
+	}
+
+	// ensure folder required by the fileNameMutator exist (if any)
+	// nb. this will allow to save extracted files into a version folder
+	if err := m.EnsureFolder(dst); err != nil {
+		return nil, err
+	}
+
+	// if the local repository is a single file
+	if info, err := os.Stat(src); err == nil && !info.IsDir() {
+		// sets the extractor for getting this file only overriding the default file list
+		files = []string{filepath.Base(src)}
+
+		// points the extractor to the upper folder (the extractor expects a folder)
+		parent := filepath.Dir(src)
+		log.Debugf("%s is a file, moving up of one level to %s", src, parent)
+		src = parent
+	} else {
+		// Espanding wildcars defined in the list of files (if any)
+		// NB. this is required because for imageBits we want to allow to extract
+		// all the images in a folder, not only the Kubernetes one
+		files, err = expandWildcards(src, files)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// if required, add the version file to the list of files to be copied to dest
+	// nb. version file is created so the target folder can be eventually used as a source
+	if addVersionFileToDst {
+		files = append(files, "version")
+	}
+
+	// copy files from source to target
 	paths = map[string]string{}
 	for _, f := range files {
 		srcFilePath := path.Join(src, f)
 		if _, err := os.Stat(srcFilePath); err != nil {
 			return nil, errors.Wrapf(err, "cannot access %s at %s", f, srcFilePath)
 		}
-		paths[f] = srcFilePath
+		log.Infof("Copying %s", srcFilePath)
+
+		dstFilePath := path.Join(dst, m.Mutate(f))
+		// NOTE: we use copy not copyfile because copy ensures the dest dir
+		if err := fs.Copy(srcFilePath, dstFilePath); err != nil {
+			return nil, errors.Wrap(err, "failed to copy alter bits")
+		}
+		if f == kubeadmBinary || f == kubeletBinary || f == kubectlBinary {
+			os.Chmod(dstFilePath, 0755)
+		}
+		paths[f] = dstFilePath
 	}
 
+	log.Infof("Copied files saved into %s", dst)
 	return paths, nil
+}
+
+func expandWildcards(src string, files []string) (expandedFiles []string, err error) {
+	for _, f := range files {
+		switch {
+		case strings.Contains(f, "*"):
+			// if file name is a wildcard, search matching files and add them to
+			// the list of files to extract
+			log.Debugf("searching source with wildcard %s\n", f)
+			pattern := filepath.Join(src, f)
+			matches, err := filepath.Glob(pattern)
+			if err != nil {
+				return nil, errors.Errorf("invalid pattern %s", pattern)
+			}
+
+			log.Debugf("%d matches found\n", len(matches))
+			for _, f := range matches {
+				expandedFiles = append(expandedFiles, filepath.Base(f))
+			}
+		default:
+			// otherwise the file name is an actual file to extract; preserve it
+			expandedFiles = append(expandedFiles, f)
+		}
+	}
+
+	return expandedFiles, nil
 }
 
 func resolveLabel(repository, label string) (version *versionutil.Version, err error) {
@@ -254,6 +421,7 @@ func resolveLabel(repository, label string) (version *versionutil.Version, err e
 	if !strings.HasSuffix(uri, ".txt") {
 		uri = uri + ".txt"
 	}
+	log.Debugf("Resolving label %s\n", uri)
 
 	// Do an HTTP GET and read the version from the txt file.
 	_, r, err := httpGet(uri)
@@ -261,18 +429,51 @@ func resolveLabel(repository, label string) (version *versionutil.Version, err e
 		return nil, errors.Wrapf(err, "invalid version URI: %s", uri)
 	}
 	defer r.Close()
-	buf, err := ioutil.ReadAll(r)
+
+	version, err = readVersion(r)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading version from %s", uri)
+	}
+
+	log.Debugf("Label %s resolves to v%s\n", uri, version)
+	return version, nil
+}
+
+func readVersion(r io.Reader) (version *versionutil.Version, err error) {
+	buf, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error reading version")
 	}
 
 	labelValue := url.PathEscape(string(bytes.TrimSpace(buf)))
 	version, err = versionutil.ParseSemantic(labelValue)
 	if err != nil {
-		return nil, errors.Wrapf(err, "label %s returned invalid version: %s", label, labelValue)
+		return nil, errors.Wrapf(err, "invalid version")
 	}
 
 	return version, nil
+}
+
+func saveVersionFile(addVersionFileToDst bool, dst string, version *versionutil.Version, m fileNameMutator) error {
+	if !addVersionFileToDst {
+		return nil
+	}
+
+	versionFile := filepath.Join(dst, m.Mutate("version"))
+	f, err := os.Create(versionFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(fmt.Sprintf("v%s", version))
+	if err != nil {
+		return err
+	}
+
+	log.Info("version file created")
+
+	return nil
 }
 
 func httpGet(uri string) (int64, io.ReadCloser, error) {
@@ -312,4 +513,60 @@ func copyFromURI(src, dst string) error {
 	}
 
 	return nil
+}
+
+type fileNameMutator struct {
+	namePrefix           string
+	prependVersionFolder bool
+	prependFolder        string
+}
+
+func (m *fileNameMutator) Mutate(name string) string {
+	if name == "version" {
+		return name
+	}
+
+	if m.namePrefix != "" {
+		name = fmt.Sprintf("%s-%s", m.namePrefix, name)
+	}
+	if m.prependFolder != "" {
+		name = filepath.Join(m.prependFolder, name)
+	}
+	return name
+}
+
+func (m *fileNameMutator) EnsureFolder(dst string) error {
+	if m.prependFolder != "" {
+		prependFolder := filepath.Join(dst, m.prependFolder)
+		if err := os.Mkdir(prependFolder, 0777); err != nil {
+			return errors.Wrapf(err, "failed to make %s dir", prependFolder)
+		}
+	}
+	return nil
+}
+
+func (m *fileNameMutator) ReadVersionFile(src string) error {
+	if m.prependVersionFolder {
+		versionFile := filepath.Join(src, "version")
+		if _, err := os.Stat(versionFile); os.IsNotExist(err) {
+			return errors.Errorf("%s does not exists. please provide a version file", versionFile)
+		}
+		f, err := os.Open(versionFile)
+		if err != nil {
+			return errors.Wrapf(err, "error reading version from %s", versionFile)
+		}
+		version, err := readVersion(f)
+		if err != nil {
+			return errors.Wrapf(err, "error reading version from %s", versionFile)
+		}
+
+		m.SetPrependVersionFolder(version)
+	}
+	return nil
+}
+
+func (m *fileNameMutator) SetPrependVersionFolder(version *versionutil.Version) {
+	if m.prependVersionFolder {
+		m.prependFolder = fmt.Sprintf("v%s", version)
+	}
 }

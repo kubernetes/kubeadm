@@ -25,21 +25,24 @@ import (
 )
 
 type flagpole struct {
-	Image           string
-	BaseImage       string
-	ImageTars       []string
-	UpgradeBinaries string
-	Kubeadm         string
+	Image            string
+	BaseImage        string
+	ImageTars        []string
+	ImageNamePrefix  string
+	UpgradeArtifacts string
+	Kubeadm          string
+	Kubelet          string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "node-variant",
-		Short: "build the node image variant",
-		Long:  "build the variant for a node image by adding packages, images or replacing the kubeadm binary",
+		Args:    cobra.NoArgs,
+		Use:     "node-image-variant",
+		Aliases: []string{"node-variant", "variant", "nv"},
+		Short:   "build the node image variant",
+		Long:    "build the variant for a node image by adding packages, images or replacing the kubeadm binary",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
@@ -57,17 +60,27 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringSliceVar(
 		&flags.ImageTars, "with-images",
 		nil,
-		"images tar or folder with images tars to be added to the images",
+		"version/build-label/path to images tar or folder with images tars to be added to the images",
 	)
 	cmd.Flags().StringVar(
-		&flags.UpgradeBinaries, "with-upgrade-binaries",
+		&flags.ImageNamePrefix, "image-name-prefix",
 		"",
-		"path to a folder with kubernetes binaries [kubelet, kubeadm, kubectl] to be used for testing the kubeadm-upgrade workflow",
+		"add a name prefix to images tars included in the image",
+	)
+	cmd.Flags().StringVar(
+		&flags.UpgradeArtifacts, "with-upgrade-artifacts",
+		"",
+		"version/build-label/path to a folder with kubernetes binaries & image tarballs to be used for testing the kubeadm-upgrade workflow",
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeadm, "with-kubeadm",
 		"",
-		"override the kubeadm binary existing in the image with the given file",
+		"override the kubeadm binary existing in the image with the given version/build-label/file or folder containing the kubeadm binary",
+	)
+	cmd.Flags().StringVar(
+		&flags.Kubelet, "with-kubelet",
+		"",
+		"override the kubeadm binary existing in the image with the given version/build-label/file or folder containing the kubelet binary",
 	)
 	return cmd
 }
@@ -79,8 +92,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		alter.WithBaseImage(flags.BaseImage),
 		// bits to be added to the image
 		alter.WithImageTars(flags.ImageTars),
-		alter.WithUpgradeBinaries(flags.UpgradeBinaries),
+		alter.WithUpgradeArtifacts(flags.UpgradeArtifacts),
 		alter.WithKubeadm(flags.Kubeadm),
+		alter.WithKubelet(flags.Kubelet),
+		// bits options
+		alter.WithImageNamePrefix(flags.ImageNamePrefix),
 	)
 	if err != nil {
 		return errors.Wrap(err, "error creating alter context")

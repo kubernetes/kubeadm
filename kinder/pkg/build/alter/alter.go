@@ -19,7 +19,6 @@ package alter
 import (
 	"fmt"
 	"os"
-	"path"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,10 +43,11 @@ const AlterContainerLabelKey = "io.k8s.sigs.kinder.alter"
 type Context struct {
 	baseImage           string
 	image               string
-	imagePaths          []string
-	upgradeBinariesPath string
-	kubeadmPath         string
-	bits                []bits
+	imageSrcs           []string
+	imageNamePrefix     string
+	upgradeArtifactsSrc string
+	kubeadmSrc          string
+	kubeletSrc          string
 }
 
 // Option is Context configuration option supplied to NewContext
@@ -68,23 +68,37 @@ func WithBaseImage(image string) Option {
 }
 
 // WithImageTars configures a NewContext to include additional images tars
-func WithImageTars(paths []string) Option {
+func WithImageTars(srcs []string) Option {
 	return func(b *Context) {
-		b.imagePaths = append(b.imagePaths, paths...)
+		b.imageSrcs = append(b.imageSrcs, srcs...)
 	}
 }
 
-// WithUpgradeBinaries configures a NewContext to include binaries for upgrade
-func WithUpgradeBinaries(upgradeBinariesPath string) Option {
+// WithImageNamePrefix configures a NewContext to add a name prefix to included images tars
+func WithImageNamePrefix(namePrefix string) Option {
 	return func(b *Context) {
-		b.upgradeBinariesPath = upgradeBinariesPath
+		b.imageNamePrefix = namePrefix
+	}
+}
+
+// WithUpgradeArtifacts configures a NewContext to include binaries & images for upgrade
+func WithUpgradeArtifacts(src string) Option {
+	return func(b *Context) {
+		b.upgradeArtifactsSrc = src
 	}
 }
 
 // WithKubeadm configures a NewContext to override the kubeadm binary
-func WithKubeadm(path string) Option {
+func WithKubeadm(src string) Option {
 	return func(b *Context) {
-		b.kubeadmPath = path
+		b.kubeadmSrc = src
+	}
+}
+
+// WithKubelet configures a NewContext to override the kubelet binary
+func WithKubelet(src string) Option {
+	return func(b *Context) {
+		b.kubeletSrc = src
 	}
 }
 
@@ -92,26 +106,11 @@ func WithKubeadm(path string) Option {
 // overridden by the options supplied in the order that they are supplied
 func NewContext(options ...Option) (ctx *Context, err error) {
 	// default options
-	ctx = &Context{
-		baseImage: DefaultBaseImage,
-		image:     DefaultBaseImage,
-	}
+	ctx = &Context{}
+
 	// apply user options
 	for _, option := range options {
 		option(ctx)
-	}
-
-	// initialize bits
-	if len(ctx.imagePaths) > 0 {
-		ctx.bits = append(ctx.bits, newImageBits(ctx.imagePaths))
-	}
-
-	if ctx.upgradeBinariesPath != "" {
-		ctx.bits = append(ctx.bits, newUpgradeBinaryBits(ctx.upgradeBinariesPath))
-	}
-
-	if ctx.kubeadmPath != "" {
-		ctx.bits = append(ctx.bits, newKubeadmBits(ctx.kubeadmPath))
 	}
 
 	return ctx, nil
@@ -119,6 +118,24 @@ func NewContext(options ...Option) (ctx *Context, err error) {
 
 // Alter alters the cluster node image
 func (c *Context) Alter() (err error) {
+	// initialize bits
+	var bits []bits
+
+	if c.kubeadmSrc != "" {
+		bits = append(bits, newBinaryBits(c.kubeadmSrc, "kubeadm"))
+	}
+	if c.kubeletSrc != "" {
+		bits = append(bits, newBinaryBits(c.kubeletSrc, "kubelet"))
+	}
+
+	if len(c.imageSrcs) > 0 {
+		bits = append(bits, newImageBits(c.imageSrcs, c.imageNamePrefix))
+	}
+
+	if c.upgradeArtifactsSrc != "" {
+		bits = append(bits, newUpgradeBits(c.upgradeArtifactsSrc))
+	}
+
 	// create tempdir to alter the image in
 	alterDir, err := fs.TempDir("", "kinder-alter-image")
 	if err != nil {
@@ -127,40 +144,38 @@ func (c *Context) Alter() (err error) {
 	defer os.RemoveAll(alterDir)
 	log.Infof("Altering node image in: %s", alterDir)
 
+	// initialize the bits working context
+	bc := &bitsContext{
+		hostBasePath: alterDir,
+	}
+
+	// always create folder for storing bits output
+	bitsDir := bc.HostBitsPath()
+	if err := os.Mkdir(bitsDir, 0777); err != nil {
+		return errors.Wrap(err, "failed to make bits dir")
+	}
+
 	// populate the kubernetes artifacts first
-	if err := c.populateBits(alterDir); err != nil {
+	if err := c.populateBits(bits, bc); err != nil {
 		return err
 	}
 
 	// then the perform the actual docker image alter
-	return c.alterImage(alterDir)
+	return c.alterImage(bits, bc)
 }
 
-func (c *Context) populateBits(alterDir string) error {
+func (c *Context) populateBits(bits []bits, bc *bitsContext) error {
 	log.Info("Starting populate bits ...")
 
-	// always create bits dir
-	bitsDir := path.Join(alterDir, "bits")
-	if err := os.Mkdir(bitsDir, 0777); err != nil {
-		return errors.Wrap(err, "failed to make bits dir")
-	}
-	// copy all bits from their source path to where we will COPY them into
-	// the dockerfile, see images/node/Dockerfile
-	for _, bits := range c.bits {
-		bitPaths := bits.Paths()
-		for src, dest := range bitPaths {
-			realDest := path.Join(bitsDir, dest)
-			log.Debugf("Copying: %s to %s", src, dest)
-			// NOTE: we use copy not copyfile because copy ensures the dest dir
-			if err := fs.Copy(src, realDest); err != nil {
-				return errors.Wrap(err, "failed to copy alter bits")
-			}
+	for _, b := range bits {
+		if err := b.Get(bc); err != nil {
+			return errors.Wrap(err, "failed to copy alter bits")
 		}
 	}
 	return nil
 }
 
-func (c *Context) alterImage(dir string) error {
+func (c *Context) alterImage(bits []bits, bc *bitsContext) error {
 	// alter the image, tagged as tagImageAs, using the our tempdir as the context
 	log.Debug("Starting image alter ...")
 
@@ -170,7 +185,7 @@ func (c *Context) alterImage(dir string) error {
 	// if docker gets proper squash support, we can rm them instead
 	// This also allows the KubeBit implementations to perform programmatic
 	// install in the image
-	containerID, err := c.createAlterContainer(dir)
+	containerID, err := c.createAlterContainer(bc)
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
@@ -182,14 +197,13 @@ func (c *Context) alterImage(dir string) error {
 		return err
 	}
 
-	// install the kube bits
+	// binds the bitsContext the the container
+	bc.BindToContainer(containerID)
+
+	// install the bits that are used to alter the image
 	log.Info("Starting bits install ...")
-	ic := &installContext{
-		basePath:    dir,
-		containerID: containerID,
-	}
-	for _, bits := range c.bits {
-		if err = bits.Install(ic); err != nil {
+	for _, b := range bits {
+		if err = b.Install(bc); err != nil {
 			log.Errorf("Image build Failed! %v", err)
 			return err
 		}
@@ -207,7 +221,7 @@ func (c *Context) alterImage(dir string) error {
 	return nil
 }
 
-func (c *Context) createAlterContainer(alterDir string) (id string, err error) {
+func (c *Context) createAlterContainer(bc *bitsContext) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(c.baseImage, 4)
@@ -217,7 +231,7 @@ func (c *Context) createAlterContainer(alterDir string) (id string, err error) {
 			"-d", // make the client exit while the container continues to run
 			// label the container to make them easier to track
 			"--label", fmt.Sprintf("%s=%s", AlterContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
-			"-v", fmt.Sprintf("%s:/alter", alterDir),
+			"-v", fmt.Sprintf("%s:%s", bc.HostBasePath(), bc.ContainerBasePath()),
 			// the container should hang forever so we can exec in it
 			"--entrypoint=sleep",
 		),

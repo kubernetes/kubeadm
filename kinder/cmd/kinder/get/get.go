@@ -33,8 +33,8 @@ func NewCommand() *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "get",
-		Short: "Gets one of [clusters, nodes, kubeconfig-path, build-artifacts]",
-		Long:  "Gets one of [clusters, nodes, kubeconfig-path, build-artifacts]",
+		Short: "Gets one of [clusters, nodes, kubeconfig-path, artifacts]",
+		Long:  "Gets one of [clusters, nodes, kubeconfig-path, artifacts]",
 	}
 
 	// add kind top level subcommands re-used without changes

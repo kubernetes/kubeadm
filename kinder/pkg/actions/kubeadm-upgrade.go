@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+
 	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
 )
 
@@ -81,12 +83,28 @@ func (b *upgradeAction) Tasks() []kcluster.Task {
 
 func runUpgradeKubeadmBinary(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
 
-	src := filepath.Join("/kinder", "upgrade", "kubeadm")
+	if flags.UpgradeVersion == nil {
+		return errors.New("kubeadm-upgrade actions requires the --upgrade-version parameter to be set")
+	}
+
+	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", flags.UpgradeVersion))
+	src := filepath.Join(srcFolder, "kubeadm")
 	dest := filepath.Join("/usr", "bin", "kubeadm")
 
 	fmt.Println("==> upgrading kubeadm 🚀")
 	if err := kn.Command(
 		"cp", src, dest,
+	).Run(); err != nil {
+		return err
+	}
+
+	fmt.Println("==> pre-loading images required for the upgrade 🚀")
+
+	// load images cached on the node into docker
+	if err := kn.Command(
+		"/bin/bash", "-c",
+		// use xargs to load images in parallel
+		`find `+fmt.Sprintf("%s", srcFolder)+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Run(); err != nil {
 		return err
 	}
@@ -97,12 +115,10 @@ func runUpgradeKubeadmBinary(kctx *kcluster.KContext, kn *kcluster.KNode, flags 
 func runKubeadmUpgrade(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
 	if err := kn.DebugCmd(
 		"==> kubeadm upgrade apply 🚀",
-		"kubeadm", "upgrade", "apply", "-f", flags.UpgradeVersion.String(),
+		"kubeadm", "upgrade", "apply", "-f", fmt.Sprintf("v%s", flags.UpgradeVersion),
 	); err != nil {
 		return err
 	}
-
-	//TODO: check if download config included (and if restart kubelet included)
 
 	return nil
 }
@@ -115,28 +131,26 @@ func runKubeadmUpgradeControlPlane(kctx *kcluster.KContext, kn *kcluster.KNode, 
 		return err
 	}
 
-	//TODO: check if download config included (and if restart kubelet included)
-
 	return nil
 }
 
 func runKubeadmUpgradeWorkers(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
 	if err := kn.DebugCmd(
 		"==> kubeadm upgrade node config 🚀",
-		"kubeadm", "upgrade", "node", "config", "--kubelet-version", flags.UpgradeVersion.String(),
+		"kubeadm", "upgrade", "node", "config", "--kubelet-version", fmt.Sprintf("v%s", flags.UpgradeVersion),
 	); err != nil {
 		return err
 	}
-
-	//TODO: check if restart kubelet included
 
 	return nil
 }
 
 func runUpgradeKubeletKubectl(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
+	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", flags.UpgradeVersion))
+
 	// upgrade kubectl
 	fmt.Println("==> upgrading kubectl 🚀")
-	src := filepath.Join("/kinder", "upgrade", "kubectl")
+	src := filepath.Join(srcFolder, "kubectl")
 	dest := filepath.Join("/usr", "bin", "kubectl")
 
 	if err := kn.Command(
@@ -147,7 +161,7 @@ func runUpgradeKubeletKubectl(kctx *kcluster.KContext, kn *kcluster.KNode, flags
 
 	// upgrade kubelet
 	fmt.Println("==> upgrading kubelet 🚀")
-	src = filepath.Join("/kinder", "upgrade", "kubelet")
+	src = filepath.Join(srcFolder, "kubelet")
 	dest = filepath.Join("/usr", "bin", "kubelet")
 
 	if err := kn.Command(
@@ -165,7 +179,7 @@ func runUpgradeKubeletKubectl(kctx *kcluster.KContext, kn *kcluster.KNode, flags
 
 	//write "/kind/version"
 	if err := kn.Command(
-		"echo", fmt.Sprintf("\"%s\"", flags.UpgradeVersion.String()), ">", "/kind/version",
+		"echo", fmt.Sprintf("\"%s\"", fmt.Sprintf("v%s", flags.UpgradeVersion)), ">", "/kind/version",
 	).Run(); err != nil {
 		return err
 	}

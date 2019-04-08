@@ -16,25 +16,57 @@ limitations under the License.
 
 package alter
 
-import "sigs.k8s.io/kind/pkg/exec"
+import (
+	"path/filepath"
 
-// InstallContext should be implemented by users of Bits
-// to allow installing the bits in a Docker image
-type installContext struct {
-	basePath    string
-	containerID string
+	"sigs.k8s.io/kind/pkg/exec"
+)
+
+// bits defines files/artifacts to be installed into the image being altered
+type bits interface {
+	// Get retrives a set of bits and get them into the temporary folder on the host machine
+	Get(*bitsContext) error
+	// Install should install (deploy) the bits on the image being altered
+	Install(*bitsContext) error
 }
 
-// Returns the base path Paths() were populated relative to
-func (ic *installContext) BasePath() string {
-	return ic.basePath
+// bitsContext provide context for populating a installing bits for the image alter process
+type bitsContext struct {
+	hostBasePath string
+	containerID  string
 }
 
-func (ic *installContext) Run(command string, args ...string) error {
+// HostBasePath returns the path of the temporary folder on the host machine used for the image alter process
+func (c *bitsContext) HostBasePath() string {
+	return c.hostBasePath
+}
+
+// HostBitsPath returns the path of the temporary folder on the host machine used for staging bits before install
+func (c *bitsContext) HostBitsPath() string {
+	return filepath.Join(c.HostBasePath(), "bits")
+}
+
+// ContainerBasePath returns the path of the temporary folder on the container used for the image alter process
+func (c *bitsContext) ContainerBasePath() string {
+	return "/alter"
+}
+
+// ContainerBitsPath returns the path of the temporary folder on the container used for staging bits before install
+func (c *bitsContext) ContainerBitsPath() string {
+	return filepath.Join(c.ContainerBasePath(), "bits")
+}
+
+// BindToContainer binds the current bitsContext to the containerused for altering the image
+func (c *bitsContext) BindToContainer(containerID string) {
+	c.containerID = containerID
+}
+
+// RunInContainer a command on the container used for altering the image
+func (c *bitsContext) RunInContainer(command string, args ...string) error {
 	cmd := exec.Command(
 		"docker",
 		append(
-			[]string{"exec", ic.containerID, command},
+			[]string{"exec", c.containerID, command},
 			args...,
 		)...,
 	)
@@ -42,25 +74,14 @@ func (ic *installContext) Run(command string, args ...string) error {
 	return cmd.Run()
 }
 
-func (ic *installContext) CombinedOutputLines(command string, args ...string) ([]string, error) {
+// CombinedOutputLinesInContainer for a command executed on the container used for altering the image
+func (c *bitsContext) CombinedOutputLinesInContainer(command string, args ...string) ([]string, error) {
 	cmd := exec.Command(
 		"docker",
 		append(
-			[]string{"exec", ic.containerID, command},
+			[]string{"exec", c.containerID, command},
 			args...,
 		)...,
 	)
 	return exec.CombinedOutputLines(cmd)
-}
-
-// bits provides the locations of Kubernetes Binaries / Images
-// needed on the cluster nodes
-type bits interface {
-	// Paths returns a map of path on host machine to desired path in the alter folder
-	// Note: if Images are populated to images/, the cluster provisioning
-	// will load these prior to calling kubeadm
-	Paths() map[string]string
-	// Install should install (deploy) the bits on the node, assuming paths
-	// have been populated
-	Install(*installContext) error
 }
