@@ -90,8 +90,8 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	e := kextract.NewExtractor(src, dst,
 		kextract.OnlyKubeadm(flags.OnlyKubeadm),
 		kextract.OnlyKubelet(flags.OnlyKubelet),
-		kextract.OnlyBinaries(flags.OnlyBinaries),
-		kextract.OnlyImages(flags.OnlyImages),
+		kextract.OnlyKubernetesBinaries(flags.OnlyBinaries),
+		kextract.OnlyKubernetesImages(flags.OnlyImages),
 	)
 
 	// Extracts the artifacts from the source
