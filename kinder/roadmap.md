@@ -18,9 +18,9 @@ High level goals for kinder v0.1 include:
       - [x] Provide pre built developer-workflow for kubeadm upgrades
       - [x] reset
    - [x] Allow build of node-image variants
-      - [x] add pre-loaded images to a node-image
-      - [x] replace the kubeadm binary into a node-image
-      - [x] add Kubernetes binaries for a second Kubernetes versions (target for upgrades)
+      - [x] add pre-loaded images to a node-image
+      - [x] replace the kubeadm binary into a node-image
+      - [x] add Kubernetes binaries for a second Kubernetes versions (target for upgrades)
    - [x] Allow test of kubeadm cluster variations
       - [x] external etcd
       - [x] kube-dns
@@ -31,8 +31,8 @@ High level goals for kinder v0.1 include:
    - [x] Provide smoke test action
 
 - [ ] Be a temporary, kubeadm-project CI glue on top of kind
-   - [ ] Provide get Kubernetes artifacts command(s)
-   - [ ] Allow build of node-image variants using Kubernetes artifacts from different sources
+   - [x] Provide get Kubernetes artifacts command(s)
+   - [x] Allow build of node-image variants using Kubernetes artifacts from different sources
    - [x] Provide E2E run command(s)
    - [ ] Provide test command that automates complex test scenarios composed by many steps/stages
 

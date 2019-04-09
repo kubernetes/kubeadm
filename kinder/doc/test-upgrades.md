@@ -15,15 +15,14 @@ image both vX and vY:
 e.g. assuming vY artifacts stored in $artifacts
 
 ```bash
-kinder build node-variant --base-image kindest/node:vX --image kindest/node:vX.to.Y \
-    --with-upgrade-binaries $artifacts/binaries \
-    --with-images $artifacts/images
+kinder build node-image-variant --base-image kindest/node:vX --image kindest/node:vX.to.Y \
+    --with-upgrade-artifacts $artifacts/binaries
 ```
 
-> vY images will be saved in `/kind/images` folder; kind will pre-load all the images in
-> this folder when the node container starts-
+> `kinder build node-image-variant` accepts in input a version, a release or ci build label,
+> a remote repository or a local folder. see [Kinder reference](doc/reference.md) for more info.
 
-> vY binaries will be saved in the `/kinder/upgrades` folder; those binaries will be used
+> vY artifacts will be saved in the `/kinder/upgrades/vy` folder; those binaries will be used
 > by the kinder `kubeadm-upgrade` action.
 
 ## Creating and initializing the cluster

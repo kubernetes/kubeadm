@@ -70,7 +70,8 @@ kinder allows kubeadm contributors to exploit this feature by implementing the `
 
 - Adding new pre-loaded images that will be made available on all nodes at cluster creation time
 - Replacing the kubeadm binary installed in the image, e.g. with a locally build version of kubeadm
-- Adding binaries for a second Kubernetes version to be used for upgrade testing
+- Replacing the kubelet binary installed in the cluster, e.g. with a locally build version of kubelet
+- Adding a second Kubernetes version to be used for upgrade testing
 
 e.g. if you want to test a kubeadm version already built locally:
 
@@ -97,7 +98,7 @@ Additionally, the `kinder create` command gives you shortcuts for testing differ
 - Flag `--control-plane-nodes`
 - Flag `--worker-nodes`
 
-Similarly, `kinder create` command gives you also shortcuts for testing Kubernetes cluster variants:
+Similarly, `kinder create` command gives you also shortcuts for testing different kubeadm cluster configurations:
 
 - Flag `--kube-dns`
 - Flag `--external-etcd`

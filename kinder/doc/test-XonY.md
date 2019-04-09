@@ -15,9 +15,12 @@ with kubeadm vX
 e.g. assuming vX artifacts stored in $artifacts
 
 ```bash
-kinder build node-variant --base-image kindest/node:vY --image kindest/node:vX.on.Y \
-    --with-kubeadm $artifacts/binaries/kubeadm
+kinder build node-image-variant --base-image kindest/node:vY --image kindest/node:vX.on.Y \
+    --with-kubeadm $artifacts/vY/kubeadm
 ```
+
+> `kinder build node-image-variant` accepts in input a version, a release or ci build label,
+> a remote repository or a local folder. see [Kinder reference](doc/reference.md) for more info.
 
 See [Prepare for tests](prepare-for-tests.md) for more detail
 
