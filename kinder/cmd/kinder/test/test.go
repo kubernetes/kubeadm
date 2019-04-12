@@ -22,6 +22,7 @@ import (
 
 	ke2e "k8s.io/kubeadm/kinder/cmd/kinder/test/e2e"
 	ke2ekubeadm "k8s.io/kubeadm/kinder/cmd/kinder/test/e2ekubeadm"
+	kworkflow "k8s.io/kubeadm/kinder/cmd/kinder/test/workflow"
 )
 
 // NewCommand returns a new cobra.Command for running E2E tests on cluster
@@ -29,10 +30,11 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "test",
-		Short: "Runs e2e test or e2e-kubeadm on a Kubernetes cluster",
-		Long:  "Runs e2e test or e2e-kubeadm on a Kubernetes cluster",
+		Short: "Runs a test workflow or e2e/e2e-kubeadm test suites on a Kubernetes cluster",
+		Long:  "Runs a test workflow or e2e/e2e-kubeadm test suites on a Kubernetes cluster",
 	}
 	cmd.AddCommand(ke2e.NewCommand())
 	cmd.AddCommand(ke2ekubeadm.NewCommand())
+	cmd.AddCommand(kworkflow.NewCommand())
 	return cmd
 }

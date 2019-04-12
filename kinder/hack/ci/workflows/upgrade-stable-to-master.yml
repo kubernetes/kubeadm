@@ -1,0 +1,127 @@
+# upgrade stable to master workflow ...
+version: 1
+summary: |
+  this workflow creates a Kubernetes cluster using release/stable version
+  and then upgrade it to ci/latest release
+vars:
+  stable: v1.13.4
+  latest: v1.14.0
+  controlPlaneNodes: 1
+  workerNodes: 2
+tasks:
+- description: | 
+    pulls kindest/node image with Kubernetes version release/stable 
+    from the docker registry
+  cmd: docker 
+  args:
+    - pull
+    - kindest/node:{{ .vars.stable }}
+- description: | 
+    creates a node-image-variant by adding a Kubernetes version ci/latest
+    to be used later when executing kinder do kubeadm-upgrade
+  cmd: kinder 
+  args:
+    - build 
+    - node-image-variant 
+    - --base-image=kindest/node:{{ .vars.stable }}
+    - --image=kindest/node:test
+    #- --with-upgrade-artifacts=tmp/{{ .vars.latest }}/
+    - --with-upgrade-artifacts={{ .vars.latest }}
+    - --loglevel=debug
+#- description: | 
+#    adds new etcd image
+#  cmd: kinder 
+#  args:
+#    - build 
+#    - node-image-variant 
+#    - --base-image=kindest/node:test
+#    - --image=kindest/node:test
+#    - --with-images tmp/etcd/etcd-3.3.10.tar
+#    - --loglevel=debug
+- description: | 
+    create a set of nodes ready for hosting the Kubernetes cluster
+  cmd: kinder 
+  args:
+    - create 
+    - cluster
+    - --image=kindest/node:test
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+- description: | 
+    Initializes the Kubernetes cluster with version release/stable 
+    by starting the boostrap control-plane nodes
+  cmd: kinder 
+  args:
+    - do 
+    - kubeadm-init
+- description: | 
+    Join the other nodes to the Kubernetes cluster
+  cmd: kinder 
+  args:
+    - do 
+    - kubeadm-join
+- description: | 
+    Waits for all the pods to start
+    NB. this is a temporary hack while we implement a more robust solution as part of
+        kinder do kubeadm-init/kubeadm-join
+  cmd: sleep 
+  args:
+    - 30
+- description: | 
+    Runs kubeadm e2e test on the cluster with version release/stable 
+  cmd: kinder 
+  args:
+    - test 
+    - e2e-kubeadm
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-before-upgrade
+- description: | 
+    upgrades the cluster to ci/latest release
+  cmd: kinder 
+  args:
+    - do 
+    - kubeadm-upgrade
+    - --upgrade-version={{ .vars.latest }}
+  timeout: 10m
+- description: | 
+    Waits for all the pods to restart
+    NB. this is a temporary hack while we implement a more robust solution as part of
+        kinder do kubeadm-upgrade
+  cmd: sleep 
+  args:
+    - 30
+- description: | 
+    Runs kubeadm e2e test on the cluster with version ci/latest 
+  cmd: kinder 
+  args:
+    - test 
+    - e2e-kubeadm
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-upgrade
+- description: | 
+    Runs kubeadm e2e test on the cluster with version ci/latest 
+  cmd: kinder 
+  args:
+    - test 
+    - e2e
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-upgrade
+- description: | 
+    Runs kubeadm e2e test on the cluster with version release/stable 
+  cmd: kinder
+  args:
+    - export
+    - logs
+    - "{{ .env.ARTIFACTS }}"
+  force: true
+- description: | 
+    Exec kubeadm reset before the cluster
+  cmd: kinder 
+  args:
+    - do 
+    - kubeadm-reset
+  force: true
+- description: | 
+    Deletes the cluster
+  cmd: kinder 
+  args:
+    - delete 
+    - cluster
+  force: true
