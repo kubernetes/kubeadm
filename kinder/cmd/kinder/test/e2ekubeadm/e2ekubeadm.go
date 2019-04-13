@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	ktest "k8s.io/kubeadm/kinder/pkg/test"
+	ke2e "k8s.io/kubeadm/kinder/pkg/test/e2e"
 )
 
 type flagpole struct {
@@ -57,7 +57,7 @@ func NewCommand() *cobra.Command {
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// Create a map with the flag/values to pass to the ginkgo test runner
-	ginkgoFlags, err := ktest.NewGinkgoFlags(flags.GinkgoFlags)
+	ginkgoFlags, err := ke2e.NewGinkgoFlags(flags.GinkgoFlags)
 	if err != nil {
 		return err
 	}
@@ -73,16 +73,16 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 
 	// Create a map with the flag/values to pass to e2e.test
-	testFlags, err := ktest.NewSuiteFlags(flags.TestFlags)
+	testFlags, err := ke2e.NewSuiteFlags(flags.TestFlags)
 	if err != nil {
 		return err
 	}
 
 	// creates a KubeadmTestRunner with the desired options and run it
-	testRunner, err := ktest.NewKubeadmTestRunner(
-		ktest.KubeRoot(flags.KubeRoot),
-		ktest.WithGinkgoFlags(ginkgoFlags),
-		ktest.WithSuiteFlags(testFlags),
+	testRunner, err := ke2e.NewKubeadmTestRunner(
+		ke2e.KubeRoot(flags.KubeRoot),
+		ke2e.WithGinkgoFlags(ginkgoFlags),
+		ke2e.WithSuiteFlags(testFlags),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed create test runner")
