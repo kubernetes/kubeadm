@@ -65,7 +65,7 @@ func (b *joinAction) Tasks() []kcluster.Task {
 }
 
 func runJoinWorkers(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
-	// get the join addres
+	// get the join address
 	joinAddress, err := getJoinAddress(kctx)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func runJoinWorkersPhases(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcl
 		return errors.Wrapf(err, "join phases can't be used")
 	}
 
-	// get the join addres
+	// get the join address
 	joinAddress, err := getJoinAddress(kctx)
 	if err != nil {
 		return err
@@ -142,7 +142,7 @@ func runJoinControlPlane(kctx *kcluster.KContext, kn *kcluster.KNode, flags kclu
 		}
 	}
 
-	// get the join addres
+	// get the join address
 	joinAddress, err := getJoinAddress(kctx)
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func runJoinControlPlanePhases(kctx *kcluster.KContext, kn *kcluster.KNode, flag
 		}
 	}
 
-	// get the join addres
+	// get the join address
 	joinAddress, err := getJoinAddress(kctx)
 	if err != nil {
 		return err

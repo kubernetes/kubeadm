@@ -242,7 +242,7 @@ kinder build node-image-variant \
 
 When reading from a local folder or from a remote repository, a `version` file should exist in the source.
 
-Upgrade atrifacts for will be placed in a well know folder, `kinder/upgrade/{version}` that will be used by
+Upgrade artifacts for will be placed in a well know folder, `kinder/upgrade/{version}` that will be used by
 `kinder do kubeadm-upgrade` action.
 
 If necessary, it is possible to add more than one Kubernetes version e.g. for testing upgrade sequences.

@@ -101,7 +101,7 @@ func postInit(kctx *kcluster.KContext, kn *kcluster.KNode) error {
 	return nil
 }
 
-// getJoinAddress return the join addres that is the control plane endpoint in case the cluster has
+// getJoinAddress return the join address that is the control plane endpoint in case the cluster has
 // an external load balancer in front of the control-plane nodes, otherwise the address of the
 // boostrap control plane node.
 func getJoinAddress(kctx *kcluster.KContext) (string, error) {
