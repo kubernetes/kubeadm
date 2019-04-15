@@ -126,6 +126,7 @@ func (n *KNode) DebugCmd(message string, command string, args ...string) error {
 	return nil
 }
 
+// CombinedOutputLines returns the combined output lines from stdout and stderr
 func (n *KNode) CombinedOutputLines(command string, args ...string) (lines []string, err error) {
 	cmd := n.Command(command, args...)
 	return exec.CombinedOutputLines(cmd)

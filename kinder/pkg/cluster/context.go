@@ -200,7 +200,7 @@ func (c *KContext) ExternalLoadBalancer() *KNode {
 	return c.externalLoadBalancer
 }
 
-//TODO: Refactor how we are exposing this flags
+// ActionFlags TODO: Refactor how we are exposing this flags
 type ActionFlags struct {
 	UsePhases      bool
 	UpgradeVersion *version.Version
