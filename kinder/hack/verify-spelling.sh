@@ -41,7 +41,7 @@ pushd "${TMP_DIR}" > /dev/null
 go mod init
 popd > /dev/null
 
-# build misspell
+# build mispell
 BIN_PATH="${TMP_DIR}/cmd/misspell"
 pushd "${BIN_PATH}" > /dev/null
 echo "Building misspell..."
