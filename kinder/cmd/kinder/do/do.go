@@ -20,6 +20,7 @@ package do
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -35,6 +36,7 @@ type flagpole struct {
 	UsePhases      bool
 	UpgradeVersion string
 	CopyCerts      bool
+	Wait           time.Duration
 }
 
 // NewCommand returns a new cobra.Command for exec
@@ -59,7 +61,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&flags.UsePhases, "use-phases", false, "use the kubeadm phases subcommands insted of the the kubeadm top-level commands")
 	cmd.Flags().StringVar(&flags.UpgradeVersion, "upgrade-version", "", "defines the target upgrade version (it should match the version of upgrades binaries)")
 	cmd.Flags().BoolVar(&flags.CopyCerts, "automatic-copy-certs", false, "use automatic copy certs instead of manual copy certs when joining new control-plane nodes")
-
+	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(5*time.Minute), "Wait for cluster state to converge after action")
 	return cmd
 }
 
@@ -67,6 +69,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	actionFlags := kcluster.ActionFlags{
 		UsePhases: flags.UsePhases,
 		CopyCerts: flags.CopyCerts,
+		Wait:      flags.Wait,
 	}
 
 	//TODO: upgrade version mandatory for updates

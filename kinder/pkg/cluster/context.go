@@ -19,6 +19,7 @@ package cluster
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -205,6 +206,7 @@ type ActionFlags struct {
 	UsePhases      bool
 	UpgradeVersion *version.Version
 	CopyCerts      bool
+	Wait           time.Duration
 }
 
 // Do actions on kubernetes-in-docker cluster

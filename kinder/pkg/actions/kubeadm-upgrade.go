@@ -120,10 +120,21 @@ func runKubeadmUpgrade(kctx *kcluster.KContext, kn *kcluster.KNode, flags kclust
 		return err
 	}
 
+	if err := waitControlPlaneUpgraded(kctx, kn, flags); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func runKubeadmUpgradeControlPlane(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
+	// waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
+	// please note that this is a temporary workaround for a problem we are observing on upgrades while
+	// executing node upgrades immediately after control-plane upgrade.
+	if err := waitKubeletHasRBAC(kctx, kn, flags); err != nil {
+		return err
+	}
+
 	if err := kn.DebugCmd(
 		"==> kubeadm upgrade node experimental-control-plane 🚀",
 		"kubeadm", "upgrade", "node", "experimental-control-plane",
@@ -131,10 +142,21 @@ func runKubeadmUpgradeControlPlane(kctx *kcluster.KContext, kn *kcluster.KNode, 
 		return err
 	}
 
+	if err := waitControlPlaneUpgraded(kctx, kn, flags); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func runKubeadmUpgradeWorkers(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
+	// waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
+	// please note that this is a temporary workaround for a problem we are observing on upgrades while
+	// executing node upgrades immediately after control-plane upgrade.
+	if err := waitKubeletHasRBAC(kctx, kn, flags); err != nil {
+		return err
+	}
+
 	if err := kn.DebugCmd(
 		"==> kubeadm upgrade node config 🚀",
 		"kubeadm", "upgrade", "node", "config", "--kubelet-version", fmt.Sprintf("v%s", flags.UpgradeVersion),
@@ -181,6 +203,10 @@ func runUpgradeKubeletKubectl(kctx *kcluster.KContext, kn *kcluster.KNode, flags
 	if err := kn.Command(
 		"echo", fmt.Sprintf("\"%s\"", fmt.Sprintf("v%s", flags.UpgradeVersion)), ">", "/kind/version",
 	).Run(); err != nil {
+		return err
+	}
+
+	if err := waitKubeletUpgraded(kctx, kn, flags); err != nil {
 		return err
 	}
 
