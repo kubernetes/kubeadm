@@ -50,7 +50,7 @@ func copyKubeConfigToHost(kctx *kcluster.KContext, kn *kcluster.KNode) error {
 
 // executes postInit tasks, including copying the admin.conf file to the host,
 // installing the CNI plugin, and eventually remove the master taint
-func postInit(kctx *kcluster.KContext, kn *kcluster.KNode) error {
+func postInit(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
 
 	if err := copyKubeConfigToHost(
 		kctx, kn,
@@ -80,15 +80,11 @@ func postInit(kctx *kcluster.KContext, kn *kcluster.KNode) error {
 	if err := addDefaultStorageClass(node); err != nil {
 		return errors.Wrap(err, "failed to add default storage class")
 	}
-
-	// Wait for the control plane node to reach Ready status.
-	isReady := nodes.WaitForReady(node, time.Now().Add(ec.waitForReady))
-	if ec.waitForReady > 0 {
-		if !isReady {
-			log.Warn("timed out waiting for control plane to be ready")
-		}
-	}
 	*/
+
+	if err := waitNewControlPlaneNodeReady(kctx, kn, flags); err != nil {
+		return err
+	}
 
 	fmt.Printf(
 		"Cluster creation complete. You can now use the cluster with:\n\n"+

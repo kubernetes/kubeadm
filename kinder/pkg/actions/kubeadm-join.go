@@ -78,6 +78,10 @@ func runJoinWorkers(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.
 		return err
 	}
 
+	if err := waitNewWorkerNodeReady(kctx, kn, flags); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -123,6 +127,10 @@ func runJoinWorkersPhases(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcl
 	//	return err
 	//}
 
+	if err := waitNewWorkerNodeReady(kctx, kn, flags); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -160,6 +168,10 @@ func runJoinControlPlane(kctx *kcluster.KContext, kn *kcluster.KNode, flags kclu
 		"==> kubeadm join control plane 🚀",
 		"kubeadm", joinArgs...,
 	); err != nil {
+		return err
+	}
+
+	if err := waitNewControlPlaneNodeReady(kctx, kn, flags); err != nil {
 		return err
 	}
 
@@ -227,6 +239,10 @@ func runJoinControlPlanePhases(kctx *kcluster.KContext, kn *kcluster.KNode, flag
 		"==> kubeadm join phase control-plane-join all 🚀",
 		"kubeadm", "join", "phase", "control-plane-join", "all", "--experimental-control-plane",
 	); err != nil {
+		return err
+	}
+
+	if err := waitNewControlPlaneNodeReady(kctx, kn, flags); err != nil {
 		return err
 	}
 

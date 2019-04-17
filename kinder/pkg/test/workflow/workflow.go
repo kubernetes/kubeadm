@@ -118,13 +118,17 @@ func NewWorkflow(file string) (*Workflow, error) {
 	// For each task
 	for i, t := range w.Tasks {
 		// if a task name is not defined, assign a default task name
+		// otherwise prepend a prefix in order to get task logs ordered
 		if t.Name == "" {
 			t.Name = fmt.Sprintf("task-%d", i)
+		} else {
+			t.Name = fmt.Sprintf("task-%d-%s", i, t.Name)
 		}
 
 		// if a timeout is not defined, assign a default one
+		// nb. we are assigning a fairly long timeout to avoid flakes in testgrid
 		if t.Timeout == 0 {
-			t.Timeout = time.Duration(1 * time.Minute)
+			t.Timeout = time.Duration(5 * time.Minute)
 		}
 
 		// check if the task defines a cmd

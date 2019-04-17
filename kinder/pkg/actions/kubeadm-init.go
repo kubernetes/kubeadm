@@ -78,7 +78,7 @@ func runInit(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionF
 	}
 
 	if err := postInit(
-		kctx, kn,
+		kctx, kn, flags,
 	); err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func runInitPhases(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.A
 	}
 
 	if err := postInit(
-		kctx, kn,
+		kctx, kn, flags,
 	); err != nil {
 		return err
 	}
