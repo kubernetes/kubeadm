@@ -9,14 +9,16 @@ vars:
   controlPlaneNodes: 1
   workerNodes: 2
 tasks:
-- description: | 
+- name: pull-node-image
+  description: | 
     pulls kindest/node image with Kubernetes version release/stable 
     from the docker registry
   cmd: docker 
   args:
     - pull
     - kindest/node:{{ .vars.stable }}
-- description: | 
+- name: add-kubernetes
+  description: | 
     creates a node-image-variant by adding a Kubernetes version ci/latest
     to be used later when executing kinder do kubeadm-upgrade
   cmd: kinder 
@@ -28,7 +30,8 @@ tasks:
     #- --with-upgrade-artifacts=tmp/{{ .vars.latest }}/
     - --with-upgrade-artifacts={{ .vars.latest }}
     - --loglevel=debug
-#- description: | 
+#- name: add-etcd
+#  description: | 
 #    adds new etcd image
 #  cmd: kinder 
 #  args:
@@ -36,9 +39,10 @@ tasks:
 #    - node-image-variant 
 #    - --base-image=kindest/node:test
 #    - --image=kindest/node:test
-#    - --with-images tmp/etcd/etcd-3.3.10.tar
+#    - --with-images=tmp/etcd/etcd-3.3.10.tar
 #    - --loglevel=debug
-- description: | 
+- name: create-cluster
+  description: | 
     create a set of nodes ready for hosting the Kubernetes cluster
   cmd: kinder 
   args:
@@ -47,78 +51,74 @@ tasks:
     - --image=kindest/node:test
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
-- description: | 
+- name: init
+  description: | 
     Initializes the Kubernetes cluster with version release/stable 
     by starting the boostrap control-plane nodes
   cmd: kinder 
   args:
     - do 
     - kubeadm-init
-- description: | 
+- name: join
+  description: | 
     Join the other nodes to the Kubernetes cluster
   cmd: kinder 
   args:
     - do 
     - kubeadm-join
-- description: | 
-    Waits for all the pods to start
-    NB. this is a temporary hack while we implement a more robust solution as part of
-        kinder do kubeadm-init/kubeadm-join
-  cmd: sleep 
-  args:
-    - 30
-- description: | 
+- name: e2e-kubeadm-before
+  description: | 
     Runs kubeadm e2e test on the cluster with version release/stable 
   cmd: kinder 
   args:
     - test 
     - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-before-upgrade
-- description: | 
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=01-e2e-kubeadm-before-upgrade
+- name: upgrade
+  description: | 
     upgrades the cluster to ci/latest release
   cmd: kinder 
   args:
     - do 
     - kubeadm-upgrade
     - --upgrade-version={{ .vars.latest }}
-  timeout: 10m
-- description: | 
-    Waits for all the pods to restart
-    NB. this is a temporary hack while we implement a more robust solution as part of
-        kinder do kubeadm-upgrade
-  cmd: sleep 
-  args:
-    - 30
-- description: | 
+- name: e2e-kubeadm-after
+  description: | 
     Runs kubeadm e2e test on the cluster with version ci/latest 
   cmd: kinder 
   args:
     - test 
     - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-upgrade
-- description: | 
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=02-e2e-kubeadm-after-upgrade
+- name: e2e-after
+  description: | 
     Runs kubeadm e2e test on the cluster with version ci/latest 
   cmd: kinder 
   args:
     - test 
     - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-upgrade
-- description: | 
-    Runs kubeadm e2e test on the cluster with version release/stable 
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=03-e2e-after-upgrade
+    - --parallel
+  timeout: 25m
+- name: get-logs
+  description: | 
+    Collects all the test logs
   cmd: kinder
   args:
     - export
     - logs
     - "{{ .env.ARTIFACTS }}"
   force: true
-- description: | 
-    Exec kubeadm reset before the cluster
+- name: reset
+  description: | 
+    Exec kubeadm reset
   cmd: kinder 
   args:
     - do 
     - kubeadm-reset
   force: true
-- description: | 
+- name: delete
+  description: | 
     Deletes the cluster
   cmd: kinder 
   args:

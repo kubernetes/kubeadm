@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 
 	ke2e "k8s.io/kubeadm/kinder/pkg/test/e2e"
+	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 type flagpole struct {
@@ -32,6 +33,8 @@ type flagpole struct {
 	TestGridConformance bool
 	GinkgoFlags         string
 	TestFlags           string
+	Name                string
+	kubeconfig          string
 }
 
 // NewCommand returns a new cobra.Command for e2e
@@ -52,6 +55,9 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&flags.Parallel, "parallel", false, "if set, instruct ginkgo for running tests in parallel")
 	cmd.Flags().StringVar(&flags.GinkgoFlags, "ginkgo-flags", "", "Space-separated list of arguments to pass to ginkgo test runner")
 	cmd.Flags().StringVar(&flags.TestFlags, "test-flags", "", "Space-separated list of arguments to pass to e2e_kubeadm test")
+
+	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
+	cmd.Flags().StringVar(&flags.kubeconfig, "kubeconfig", "", "The kubeconfig file to use when talking to the cluster. If the flag is not set, this value will be set to the location of the kubeconfig for the kind cluster pointed by name")
 	return cmd
 }
 
@@ -88,8 +94,30 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// instruct e2e.test to do not ssh into nodes and dump logs
-	testFlags["disable-log-dump"] = "true"
+	// if not explicitly set, gets the kubeconfig file for the selected kind cluster
+	if flags.kubeconfig == "" {
+		// Check if the cluster name already exists
+		known, err := cluster.IsKnown(flags.Name)
+		if err != nil {
+			return err
+		}
+		if !known {
+			return errors.Errorf("a cluster with the name %q does not exists", flags.Name)
+		}
+
+		// create a cluster context from current nodes a gets the kubeconfig file
+		ctx := cluster.NewContext(flags.Name)
+		flags.kubeconfig = ctx.KubeConfigPath()
+	}
+	// instruct e2e.test to use the kubeconfig file (if not already set into test-flags)
+	if _, ok := testFlags["kubeconfig"]; !ok {
+		testFlags["kubeconfig"] = flags.kubeconfig
+	}
+
+	// instruct e2e.test to do not ssh into nodes and dump logs (if not already set into test-flags)
+	if _, ok := testFlags["disable-log-dump"]; !ok {
+		testFlags["disable-log-dump"] = "true"
+	}
 
 	// creates a NewKubernetesTestRunner with the desired options and run it
 	testRunner, err := ke2e.NewKubernetesTestRunner(
