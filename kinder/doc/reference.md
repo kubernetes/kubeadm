@@ -29,7 +29,7 @@ as a shortcut for creating different cluster topologies. e.g.
 ```bash
 # create a cluster with two worker nodes
 kinder create cluster --worker-nodes=2
-  
+
 # create a cluster with two control-pane nodes
 kinder create cluster ---control-plane-nodes=2
 ```
@@ -197,7 +197,7 @@ kinder build node-image-variant \
 When reading from a local folder, both single file or folder can be used as a arguments for the `--with-images`;
 in case a folder is used, all the image tars existing in such folder are loaded into the node-image-variant,
 thus allowing to pre-loading any image into nodes.
- 
+
 Image tar files will be placed in a well know folder, `kind/images` and kind(er) will load them during
 the initialization of each node.
 

@@ -4,6 +4,6 @@ approvers:
 - fabriziopandini
 - neolit123
 reviewers:
-labels: 
+labels:
 - area/kubeadm
 - sig/cluster-lifecycle
