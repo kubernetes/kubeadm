@@ -29,6 +29,12 @@ res=0
 
 # run all verify scripts, optionally skipping any of them
 
+if [[ "${VERIFY_WHITESPACE:-true}" == "true" ]]; then
+  echo "[*] Verifying whitespace..."
+  hack/verify-whitespace.sh || res=1
+  cd "${REPO_PATH}"
+fi
+
 if [[ "${VERIFY_SPELLING:-true}" == "true" ]]; then
   echo "[*] Verifying spelling..."
   hack/verify-spelling.sh || res=1
