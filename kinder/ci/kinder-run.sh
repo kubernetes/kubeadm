@@ -46,6 +46,9 @@ popd
 # this is needed so that the workflow runner can easy call "kinder ..." commands.
 export PATH="${PATH}:${ROOT_PATH}"
 
+# set an optional default name for the cluster created by kinder
+export KINDER_CLUSTER_NAME="kinder-test"
+
 # determine if the passed config is by name or file path
 if [[ "$1" != *".yaml" ]] && [[ "$1" != *"/"* ]]; then
   echo "Using $1.yaml from the default workflow path..."

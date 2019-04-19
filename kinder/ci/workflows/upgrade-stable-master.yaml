@@ -8,7 +8,6 @@ vars:
   latest: v1.14.0
   controlPlaneNodes: 1
   workerNodes: 2
-  clusterName: kinder-test
 tasks:
 - name: pull-node-image
   description: |
@@ -50,7 +49,7 @@ tasks:
   args:
     - create
     - cluster
-    - --name={{ .vars.clusterName }}
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
     - --image=kindest/node:test
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
@@ -128,4 +127,5 @@ tasks:
   args:
     - delete
     - cluster
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
   force: true
