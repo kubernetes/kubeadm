@@ -84,4 +84,4 @@ Please note that `kinder build node-image-variant` accepts in input:
 
 It is also possible to get Kubernetes artifact locally using `kinder get artifacts`.
 
-See [Kinder reference](doc/reference.md) for more detail
+See [Kinder reference](doc/reference.md) for more detail.

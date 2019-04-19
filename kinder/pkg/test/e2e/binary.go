@@ -65,7 +65,15 @@ func getOrBuildBinary(kubeRoot, name, target string) (string, error) {
 func findKubeRoot() (root string, err error) {
 	goroot := os.Getenv("GOPATH")
 	if goroot == "" {
-		return "", errors.New("unable to get GOPATH env variable. Please provide Kubernetes path source using the --kube-root flag")
+		cmd := exec.Command("go", "env", "GOPATH")
+		lines, err := exec.CombinedOutputLines(cmd)
+		if err != nil {
+			return "", err
+		}
+		goroot = lines[0]
+		if goroot == "" {
+			return "", errors.New("unable to get GOPATH env variable. Please provide Kubernetes path source using the --kube-root flag")
+		}
 	}
 
 	kubeRoot := filepath.Join(goroot, "src", "k8s.io", "kubernetes")

@@ -10,98 +10,101 @@ vars:
   workerNodes: 2
 tasks:
 - name: pull-node-image
-  description: | 
-    pulls kindest/node image with Kubernetes version release/stable 
+  description: |
+    pulls kindest/node image with Kubernetes version release/stable
     from the docker registry
-  cmd: docker 
+  cmd: docker
   args:
     - pull
     - kindest/node:{{ .vars.stable }}
 - name: add-kubernetes
-  description: | 
+  description: |
     creates a node-image-variant by adding a Kubernetes version ci/latest
     to be used later when executing kinder do kubeadm-upgrade
-  cmd: kinder 
+  cmd: kinder
   args:
-    - build 
-    - node-image-variant 
+    - build
+    - node-image-variant
     - --base-image=kindest/node:{{ .vars.stable }}
     - --image=kindest/node:test
     #- --with-upgrade-artifacts=tmp/{{ .vars.latest }}/
     - --with-upgrade-artifacts={{ .vars.latest }}
     - --loglevel=debug
+  timeout: 10m
 #- name: add-etcd
-#  description: | 
+#  description: |
 #    adds new etcd image
-#  cmd: kinder 
+#  cmd: kinder
 #  args:
-#    - build 
-#    - node-image-variant 
+#    - build
+#    - node-image-variant
 #    - --base-image=kindest/node:test
 #    - --image=kindest/node:test
 #    - --with-images=tmp/etcd/etcd-3.3.10.tar
 #    - --loglevel=debug
 - name: create-cluster
-  description: | 
+  description: |
     create a set of nodes ready for hosting the Kubernetes cluster
-  cmd: kinder 
+  cmd: kinder
   args:
-    - create 
+    - create
     - cluster
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
     - --image=kindest/node:test
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
+  timeout: 10m
 - name: init
-  description: | 
-    Initializes the Kubernetes cluster with version release/stable 
+  description: |
+    Initializes the Kubernetes cluster with version release/stable
     by starting the boostrap control-plane nodes
-  cmd: kinder 
+  cmd: kinder
   args:
-    - do 
+    - do
     - kubeadm-init
 - name: join
-  description: | 
+  description: |
     Join the other nodes to the Kubernetes cluster
-  cmd: kinder 
+  cmd: kinder
   args:
-    - do 
+    - do
     - kubeadm-join
 - name: e2e-kubeadm-before
-  description: | 
-    Runs kubeadm e2e test on the cluster with version release/stable 
-  cmd: kinder 
+  description: |
+    Runs kubeadm e2e test on the cluster with version release/stable
+  cmd: kinder
   args:
-    - test 
+    - test
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=01-e2e-kubeadm-before-upgrade
 - name: upgrade
-  description: | 
+  description: |
     upgrades the cluster to ci/latest release
-  cmd: kinder 
+  cmd: kinder
   args:
-    - do 
+    - do
     - kubeadm-upgrade
     - --upgrade-version={{ .vars.latest }}
 - name: e2e-kubeadm-after
-  description: | 
-    Runs kubeadm e2e test on the cluster with version ci/latest 
-  cmd: kinder 
+  description: |
+    Runs kubeadm e2e test on the cluster with version ci/latest
+  cmd: kinder
   args:
-    - test 
+    - test
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=02-e2e-kubeadm-after-upgrade
 - name: e2e-after
-  description: | 
-    Runs kubeadm e2e test on the cluster with version ci/latest 
-  cmd: kinder 
+  description: |
+    Runs kubeadm e2e test on the cluster with version ci/latest
+  cmd: kinder
   args:
-    - test 
+    - test
     - e2e
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=03-e2e-after-upgrade
     - --parallel
   timeout: 25m
 - name: get-logs
-  description: | 
+  description: |
     Collects all the test logs
   cmd: kinder
   args:
@@ -110,18 +113,19 @@ tasks:
     - "{{ .env.ARTIFACTS }}"
   force: true
 - name: reset
-  description: | 
+  description: |
     Exec kubeadm reset
-  cmd: kinder 
+  cmd: kinder
   args:
-    - do 
+    - do
     - kubeadm-reset
   force: true
 - name: delete
-  description: | 
+  description: |
     Deletes the cluster
-  cmd: kinder 
+  cmd: kinder
   args:
-    - delete 
+    - delete
     - cluster
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
   force: true
