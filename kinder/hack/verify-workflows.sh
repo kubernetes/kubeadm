@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# CI script to run go vet over our code
-set -o errexit
 set -o nounset
 set -o pipefail
 
@@ -23,9 +21,30 @@ source "$(dirname "$0")/utils.sh"
 # cd to the root path
 cd_root_path
 
-# run go vet
+# create a temporary directory
+TMP_DIR=$(mktemp -d)
+
+# cleanup
+exitHandler() (
+  echo "Cleaning up..."
+  rm -rf "${TMP_DIR}"
+)
+trap exitHandler EXIT
+
+# build the verify-workflow binary
+echo "Building verify-workflow..."
 export GO111MODULE=on
-go vet ./cmd/...
-go vet ./pkg/...
-go vet ./ci/tools/...
-go vet ./
+BIN="${TMP_DIR}/verify-workflow"
+go build -o "${BIN}" ./ci/tools/verify-workflow.go
+
+# verify files
+echo "Verifying workflow files..."
+ERR="0"
+FILES="$(git ls-files | grep ci/workflows)"
+while read -r file; do
+    "${BIN}" "${file}" || ERR="1"
+done <<< "$FILES"
+
+if [[ "${ERR}" == "1" ]]; then
+    exit 1
+fi
