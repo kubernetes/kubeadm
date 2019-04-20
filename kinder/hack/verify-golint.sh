@@ -47,6 +47,6 @@ go build -mod=vendor -o ./golint/golint ./golint
 # run the binary
 cd "${REPO_PATH}"
 echo "Running golint..."
-find . -name "*.go" | \
+git ls-files | grep "\.go" | \
   grep -v "\\/vendor\\/" | \
   xargs -L1 "${TMP_DIR}/golint/golint" -set_exit_status

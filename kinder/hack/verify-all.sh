@@ -59,6 +59,12 @@ if [[ "${VERIFY_GOVET:-true}" == "true" ]]; then
   cd "${REPO_PATH}"
 fi
 
+if [[ "${VERIFY_WORKFLOWS:-true}" == "true" ]]; then
+  echo "[*] Verifying workflows..."
+  hack/verify-workflows.sh || res=1
+  cd "${REPO_PATH}"
+fi
+
 if [[ "${VERIFY_DEPS:-true}" == "true" ]]; then
   echo "[*] Verifying deps..."
   hack/verify-deps.sh || res=1
