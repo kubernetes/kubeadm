@@ -59,4 +59,4 @@ fi
 
 # run the workflow
 KINDER_FLAGS=""
-kinder test workflow "${WORKFLOW_PATH}" "${KINDER_FLAGS}"
+kinder test workflow "${WORKFLOW_PATH}" "${KINDER_FLAGS}" --verbose
