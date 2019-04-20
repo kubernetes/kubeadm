@@ -287,6 +287,7 @@ func cleanup(cmd *exec.Cmd) {
 		}
 	}()
 
+	/* temporary disabled to better investigate test-grid failures
 	pgid, err := syscall.Getpgid(cmd.Process.Pid)
 	if err != nil {
 		cmd.Process.Kill()
@@ -297,6 +298,7 @@ func cleanup(cmd *exec.Cmd) {
 	}
 
 	syscall.Kill(-pgid, syscall.SIGTERM)
+	*/
 
 	cmd.Process.Kill()
 }
