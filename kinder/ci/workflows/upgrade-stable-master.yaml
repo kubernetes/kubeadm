@@ -62,6 +62,7 @@ tasks:
   args:
     - do
     - kubeadm-init
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
 - name: join
   description: |
     Join the other nodes to the Kubernetes cluster
@@ -69,6 +70,7 @@ tasks:
   args:
     - do
     - kubeadm-join
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
 - name: e2e-kubeadm-before
   description: |
     Runs kubeadm e2e test on the cluster with version release/stable
@@ -77,6 +79,7 @@ tasks:
     - test
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=01-e2e-kubeadm-before-upgrade
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
 - name: upgrade
   description: |
     upgrades the cluster to ci/latest release
@@ -85,6 +88,7 @@ tasks:
     - do
     - kubeadm-upgrade
     - --upgrade-version={{ .vars.latest }}
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
 - name: e2e-kubeadm-after
   description: |
     Runs kubeadm e2e test on the cluster with version ci/latest
@@ -93,6 +97,7 @@ tasks:
     - test
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=02-e2e-kubeadm-after-upgrade
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
 - name: e2e-after
   description: |
     Runs kubeadm e2e test on the cluster with version ci/latest
@@ -102,6 +107,7 @@ tasks:
     - e2e
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=03-e2e-after-upgrade
     - --parallel
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
   timeout: 25m
 - name: get-logs
   description: |
@@ -111,6 +117,7 @@ tasks:
     - export
     - logs
     - "{{ .env.ARTIFACTS }}"
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
   force: true
 - name: reset
   description: |
@@ -119,6 +126,7 @@ tasks:
   args:
     - do
     - kubeadm-reset
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
   force: true
 - name: delete
   description: |
