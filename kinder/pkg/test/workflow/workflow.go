@@ -206,6 +206,7 @@ func (w *Workflow) Run(dryRun, verbose, exitOnError bool, artifacts string) (err
 		tcmds = append(tcmds, tcmd)
 	}
 
+	foundError := false
 	// Executes taskCmds
 	for _, tcmd := range tcmds {
 		fmt.Printf("# %s\n", tcmd.Name)
@@ -214,10 +215,11 @@ func (w *Workflow) Run(dryRun, verbose, exitOnError bool, artifacts string) (err
 		if !dryRun {
 			err := taskCmdRunner.Run(tcmd, artifacts, verbose)
 			if err != nil {
+				foundError = true
 				fmt.Printf(" %v\n\n", err)
 
 				if exitOnError {
-					return nil
+					return err
 				}
 
 				continue
@@ -233,9 +235,13 @@ func (w *Workflow) Run(dryRun, verbose, exitOnError bool, artifacts string) (err
 
 		if err := taskCmdRunner.DumpJUnitRunner(artifacts); err != nil {
 			fmt.Printf("%v\n", err)
-			return nil
+			return err
 		}
 		fmt.Printf("see junit-runner.xml and task logs files for more details\n\n")
+	}
+
+	if foundError {
+		return errors.New("failed executing the workflow")
 	}
 	return nil
 }
