@@ -128,7 +128,7 @@ func waitFor(kctx *kcluster.KContext, kn *kcluster.KNode, timeout time.Duration,
 					break
 				}
 				// add a little delay before retry
-				time.Sleep(500)
+				time.Sleep(250 * time.Millisecond)
 			}
 		}()
 	}
