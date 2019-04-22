@@ -44,7 +44,7 @@ type taskCmdRunner struct {
 
 // junitTestSuite implements junit TestSuite standard object
 type junitTestSuite struct {
-	XMLName  xml.Name `xml:"junitTestSuite"`
+	XMLName  xml.Name `xml:"testsuite"`
 	Failures int      `xml:"failures,attr"`
 	Tests    int      `xml:"tests,attr"`
 	Time     float64  `xml:"time,attr"`
@@ -53,7 +53,7 @@ type junitTestSuite struct {
 
 // junitTestCase implements junit TestCase standard object
 type junitTestCase struct {
-	XMLName   xml.Name `xml:"junitTestCase"`
+	XMLName   xml.Name `xml:"testcase"`
 	ClassName string   `xml:"classname,attr"`
 	Name      string   `xml:"name,attr"`
 	Time      float64  `xml:"time,attr"`
