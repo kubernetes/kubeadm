@@ -26,6 +26,7 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
+	kextract "k8s.io/kubeadm/kinder/pkg/extract"
 )
 
 // taskCmd defines a command that will execute the action defined in task action
@@ -82,10 +83,15 @@ func newTaskCmdBuilder(w *Workflow) (c *taskCmdBuilder, err error) {
 	return c, nil
 }
 
+// defines a list of custom utility functions that can be used in workflow templates
+var funcMap = template.FuncMap{
+	"resolve": kextract.ResolveLabel, // e.g. used in templates >> stable: '{{ resolve "release/stable" }}' or {{ "ci/latest" | resolve }}
+}
+
 // expand takes a string that might contain a golang template and process it
 // using Vars and Env variables as a context
 func (c *taskCmdBuilder) expand(text string) (string, error) {
-	templ, err := template.New("").Option("missingkey=error").Parse(text)
+	templ, err := template.New("").Option("missingkey=error").Funcs(funcMap).Parse(text)
 	if err != nil {
 		return "", errors.Wrapf(err, "%q is not a valid expression", text)
 	}

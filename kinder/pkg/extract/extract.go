@@ -203,7 +203,7 @@ func (e *Extractor) Extract() (paths map[string]string, err error) {
 	case LocalRepositorySource:
 		f = extractFromLocalDir
 	default:
-		errors.Errorf("source %s did not resolve to a valid source type", e.src)
+		return nil, errors.Errorf("source %s did not resolve to a valid source type", e.src)
 	}
 
 	return f(e.src, e.files, e.dst, e.dstMutator, e.addVersionFileToDst)
@@ -569,4 +569,28 @@ func (m *fileNameMutator) SetPrependVersionFolder(version *versionutil.Version) 
 	if m.prependVersionFolder {
 		m.prependFolder = fmt.Sprintf("v%s", version)
 	}
+}
+
+// ResolveLabel provide a utility func for resolving a label
+func ResolveLabel(src string) (version string, err error) {
+	var repository string
+	switch GetSourceType(src) {
+	case ReleaseLabelOrVersionSource:
+		src = strings.TrimPrefix(src, "release/")
+
+		repository = releaseBuildURepository
+	case CILabelOrVersionSource:
+		src = strings.TrimPrefix(src, "ci/")
+
+		repository = ciBuildRepository
+	default:
+		return "", errors.Errorf("source %s did not resolve to a valid label", src)
+	}
+
+	v, err := resolveLabel(repository, src)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("v%s", v.String()), nil
 }
