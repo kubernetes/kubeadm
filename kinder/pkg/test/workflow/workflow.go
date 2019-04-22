@@ -120,9 +120,9 @@ func NewWorkflow(file string) (*Workflow, error) {
 		// if a task name is not defined, assign a default task name
 		// otherwise prepend a prefix in order to get task logs ordered
 		if t.Name == "" {
-			t.Name = fmt.Sprintf("task-%d", i)
+			t.Name = fmt.Sprintf("task-%02d", i)
 		} else {
-			t.Name = fmt.Sprintf("task-%d-%s", i, t.Name)
+			t.Name = fmt.Sprintf("task-%02d-%s", i, t.Name)
 		}
 
 		// if a timeout is not defined, assign a default one
