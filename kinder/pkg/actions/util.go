@@ -61,7 +61,8 @@ func postInit(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.Action
 	if err := kn.DebugCmd(
 		"==> install cni 🗻",
 		"/bin/sh", "-c", //use shell to get $(...) resolved into the container
-		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
+		"kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml && "+
+			"kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml",
 	); err != nil {
 		return err
 	}
