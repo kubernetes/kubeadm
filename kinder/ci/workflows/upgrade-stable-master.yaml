@@ -71,6 +71,14 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .env.KINDER_CLUSTER_NAME }}
+- name: cluster-info-before
+  description: |
+    Runs cluster-info on the cluster before upgrade
+  cmd: kinder
+  args:
+    - do
+    - cluster-info
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
 - name: e2e-kubeadm-before
   description: |
     Runs kubeadm e2e test on the cluster with version release/stable
@@ -80,6 +88,17 @@ tasks:
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=01-e2e-kubeadm-before-upgrade
     - --name={{ .env.KINDER_CLUSTER_NAME }}
+- name: e2e-bofore
+  description: |
+    Runs kubeadm e2e test on the cluster with version ci/latest
+  cmd: kinder
+  args:
+    - test
+    - e2e
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=03-e2e-after-upgrade
+    - --parallel
+    - --name={{ .env.KINDER_CLUSTER_NAME }}
+  timeout: 25m
 - name: upgrade
   description: |
     upgrades the cluster to ci/latest release
@@ -98,17 +117,14 @@ tasks:
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=02-e2e-kubeadm-after-upgrade
     - --name={{ .env.KINDER_CLUSTER_NAME }}
-- name: e2e-after
+- name: cluster-info-after
   description: |
-    Runs kubeadm e2e test on the cluster with version ci/latest
+    Runs cluster-info on the cluster after upgrade
   cmd: kinder
   args:
-    - test
-    - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=03-e2e-after-upgrade
-    - --parallel
+    - do
+    - cluster-info
     - --name={{ .env.KINDER_CLUSTER_NAME }}
-  timeout: 25m
 - name: get-logs
   description: |
     Collects all the test logs
