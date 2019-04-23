@@ -76,7 +76,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		// see https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/e2e-tests.md
 		// for description of test labels
 		ginkgoFlags.AddFocusRegex(regexp.QuoteMeta("[Conformance]"))
-		ginkgoFlags.AddSkipRegex("Alpha|Kubectl|\\[(Disruptive|Feature:[^\\]]+|Flaky)\\]")
+		ginkgoFlags.AddSkipRegex("Aggregator|Alpha|Kubectl|\\[(Disruptive|Feature:[^\\]]+|Flaky)\\]")
 	}
 
 	// if --parallel is set, adds well know flag/values for instructing ginkgo for running tests in parallel
