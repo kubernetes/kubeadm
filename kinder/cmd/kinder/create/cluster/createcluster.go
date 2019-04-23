@@ -191,6 +191,8 @@ func NewConfig(controlPlanes, workers int32, kubeDNS bool, externalEtcdIP string
 	if externalEtcdIP != "" {
 		controlPlaneNodes.KubeadmConfigPatches = append(controlPlaneNodes.KubeadmConfigPatches, fmt.Sprintf(externalEtcdPatch, externalEtcdIP))
 	}
+	// enable Calico
+	controlPlaneNodes.KubeadmConfigPatches = append(controlPlaneNodes.KubeadmConfigPatches, calicoPatch)
 
 	latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, controlPlaneNodes)
 	// if requester or more than one control-plane node(s), add an external load balancer
@@ -229,3 +231,10 @@ etcd:
   external:
     endpoints:
     - http://%s:2379`
+
+const calicoPatch = `apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+metadata:
+  name: config
+networking:
+  podSubnet: "192.168.0.0/16"`
