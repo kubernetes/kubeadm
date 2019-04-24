@@ -32,7 +32,7 @@ in summary:
 
 ```bash
 # create a cluster (choose the desired number of control-plane/worker nodes)
-kinder create cluster --image kindest/node:vX.to.Y --control-plane-nodes 1 --workers-nodes 0
+kinder create cluster --image kindest/node:vX.to.Y --control-plane-nodes 1 --worker-nodes 0
 
 # initialize the bootstrap control plane
 kinder do kubeadm-init
