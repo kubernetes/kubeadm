@@ -161,12 +161,14 @@ kinder cp \
 
 > Please note that,  `docker cp` or `kinder cp`  allows you to replace the kubeadm binary on existing nodes. If you want to replace the kubeadm binary on nodes that you create in future, please check altering node images paragraph
 
-## Altering node images
+## Altering images
 
 Kind can be extremely efficient when the node image contains all the necessary artifacts.
 
-kinder allows kubeadm contributor to exploit this feature by implementing the `kinder build node-image-variant` command, that takes a node-image and allows to build variants by:
+kinder allows kubeadm contributor to exploit this feature by implementing the `kinder build node-image-variant` command, that takes a node-image (or a bare base image) and allows to build variants by:
 
+- Adding a Kubernetes version to be used for initializing the cluster (as an alternative to `build node-image
+  --type`(s) already supported by kind)
 - Adding new pre-loaded images that will be made available on all nodes at cluster creation time
 - Replacing the kubeadm binary installed in the cluster, e.g. with a locally build version of kubeadm
 - Replacing the kubelet binary installed in the cluster, e.g. with a locally build version of kubelet
@@ -177,8 +179,30 @@ kinder allows kubeadm contributor to exploit this feature by implementing the `k
 - a version, e.g. v1.14.0 or v1.15.0-alpha.0.100+78573805a7292a
 - a release build label, e.g. release/stable, release/stable-1.13, release/latest-14
 - a ci build label, e.g. ci/latest, ci/latest-1.14
-- a remote repository, e.g. http://k8s.mycompany.com/
+- a remote repository, e.g. <http://k8s.mycompany.com/>
 - a local folder, as shown in the examples above.
+
+### Add init packages
+
+```bash
+kinder build node-image-variant \
+     --base-image kindest/base:latest \
+     --image kindest/node:PR12345 \
+     --with-init-artifacts v1.14.0
+
+kinder build node-image-variant \
+     --base-image kindest/base:latest \
+     --image kindest/node:PR12345 \
+     --with-init-artifacts $my-local-packages/v1.12.2/
+```
+
+When reading from a local folder or from a remote repository, a `version` file should exist in the source.
+
+Init artifacts will be placed in a well know folders, `kind/bin` and `kind/images`, and `kubelet` service
+will be configured, thus making the container derived from the image ready for `kinder do kubeadm-init`
+action (or for direct invocation of `kubeadm init`).
+
+If necessary, it is possible to add more than one Kubernetes version e.g. for testing upgrade sequences.
 
 ### Add images
 
@@ -243,7 +267,7 @@ kinder build node-image-variant \
 When reading from a local folder or from a remote repository, a `version` file should exist in the source.
 
 Upgrade artifacts for will be placed in a well know folder, `kinder/upgrade/{version}` that will be used by
-`kinder do kubeadm-upgrade` action.
+`kinder do kubeadm-upgrade` action (or for direct invocation of `kubeadm upgrade`).
 
 If necessary, it is possible to add more than one Kubernetes version e.g. for testing upgrade sequences.
 
@@ -254,7 +278,7 @@ It is also possible to get Kubernetes artifact locally using `kinder get artifac
 - a version, e.g. v1.14.0 or v1.15.0-alpha.0.100+78573805a7292a
 - a release build label, e.g. release/stable, release/stable-1.13, release/latest-14
 - a ci build label, e.g. ci/latest, ci/latest-1.14
-- a remote repository, e.g. http://k8s.mycompany.com/
+- a remote repository, e.g. <http://k8s.mycompany.com/>
 - a local folder
 
 Flags `--only-kubeadm`, `--only-kubelet`, `--only-binaries`, and `--only-images` can be used to limit the number of files read from the source.
