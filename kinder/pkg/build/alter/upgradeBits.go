@@ -26,7 +26,7 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/extract"
 )
 
-// upgradeBits implements Bits implements a bits that allows to add new upgrade binaries & images /kinder/upgrade folder into the node image;
+// upgradeBits Bits implements bits that allows to add Kubernetes binaries & images to the /kinder/upgrade folder into the node image;
 // those artifact will be used by the kinder do kubeadm-upgrade script
 type upgradeBits struct {
 	src string
@@ -50,7 +50,7 @@ func (b *upgradeBits) Get(c *bitsContext) error {
 
 	// Creates an extractor instance, that will read binaries & images required from upgrades from the src,
 	// where source can be one of version/build-label/folder containing the  binaries & images,
-	// and save it to the HostBitsPath/version
+	// and save it to the dst folder
 	e := extract.NewExtractor(
 		b.src, dst,
 		extract.WithVersionFolder(true),

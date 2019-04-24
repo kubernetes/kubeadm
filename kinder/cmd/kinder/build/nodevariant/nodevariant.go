@@ -27,6 +27,7 @@ import (
 type flagpole struct {
 	Image            string
 	BaseImage        string
+	InitArtifacts    string
 	ImageTars        []string
 	ImageNamePrefix  string
 	UpgradeArtifacts string
@@ -55,7 +56,12 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
 		node.DefaultImage,
-		"name:tag of the base image to use for the build",
+		"name:tag of the base image to use for the build; this can be a kindest/base image or kindest/node image",
+	)
+	cmd.Flags().StringVar(
+		&flags.InitArtifacts, "with-init-artifacts",
+		"",
+		"version/build-label/path to a folder with Kubernetes binaries & image tarballs to be used for the kubeadm init workflow",
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.ImageTars, "with-images",
@@ -70,7 +76,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(
 		&flags.UpgradeArtifacts, "with-upgrade-artifacts",
 		"",
-		"version/build-label/path to a folder with kubernetes binaries & image tarballs to be used for testing the kubeadm-upgrade workflow",
+		"version/build-label/path to a folder with Kubernetes binaries & image tarballs to be used for testing the kubeadm-upgrade workflow",
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeadm, "with-kubeadm",
@@ -91,10 +97,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		alter.WithImage(flags.Image),
 		alter.WithBaseImage(flags.BaseImage),
 		// bits to be added to the image
-		alter.WithImageTars(flags.ImageTars),
-		alter.WithUpgradeArtifacts(flags.UpgradeArtifacts),
+		alter.WithInitArtifacts(flags.InitArtifacts),
 		alter.WithKubeadm(flags.Kubeadm),
 		alter.WithKubelet(flags.Kubelet),
+		alter.WithImageTars(flags.ImageTars),
+		alter.WithUpgradeArtifacts(flags.UpgradeArtifacts),
 		// bits options
 		alter.WithImageNamePrefix(flags.ImageNamePrefix),
 	)

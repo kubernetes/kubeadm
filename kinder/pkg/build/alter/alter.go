@@ -43,6 +43,7 @@ const AlterContainerLabelKey = "io.k8s.sigs.kinder.alter"
 type Context struct {
 	baseImage           string
 	image               string
+	initArtifactsSrc    string
 	imageSrcs           []string
 	imageNamePrefix     string
 	upgradeArtifactsSrc string
@@ -52,6 +53,13 @@ type Context struct {
 
 // Option is Context configuration option supplied to NewContext
 type Option func(*Context)
+
+// WithInitArtifacts configures a NewContext to include binaries & images for init
+func WithInitArtifacts(src string) Option {
+	return func(b *Context) {
+		b.initArtifactsSrc = src
+	}
+}
 
 // WithImage configures a NewContext to tag the built image with `image`
 func WithImage(image string) Option {
@@ -120,6 +128,10 @@ func NewContext(options ...Option) (ctx *Context, err error) {
 func (c *Context) Alter() (err error) {
 	// initialize bits
 	var bits []bits
+
+	if c.initArtifactsSrc != "" {
+		bits = append(bits, newInitBits(c.initArtifactsSrc))
+	}
 
 	if c.kubeadmSrc != "" {
 		bits = append(bits, newBinaryBits(c.kubeadmSrc, "kubeadm"))
