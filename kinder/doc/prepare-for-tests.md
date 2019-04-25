@@ -67,7 +67,7 @@ Please note that `kinder build node-image-variant` accepts as input:
 
 It is also possible to get Kubernetes artifacts locally using `kinder get artifacts`.
 
-See [Kinder reference](doc/reference.md) for more detail.
+See [Kinder reference](reference.md) for more detail.
 
 ## Customize a node-image
 
@@ -110,4 +110,4 @@ Please note that `kinder build node-image-variant` accepts as input:
 
 It is also possible to get Kubernetes artifacts locally using `kinder get artifacts`.
 
-See [Kinder reference](doc/reference.md) for more detail.
+See [Kinder reference](reference.md) for more detail.

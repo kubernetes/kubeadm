@@ -20,7 +20,7 @@ kinder build node-image-variant --base-image kindest/node:vX --image kindest/nod
 ```
 
 > `kinder build node-image-variant` accepts in input a version, a release or ci build label,
-> a remote repository or a local folder. see [Kinder reference](doc/reference.md) for more info.
+> a remote repository or a local folder. see [Kinder reference](reference.md) for more info.
 
 > vY artifacts will be saved in the `/kinder/upgrades/vy` folder; those binaries will be used
 > by the kinder `kubeadm-upgrade` action.
