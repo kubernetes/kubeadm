@@ -1,47 +1,41 @@
-# upgrade stable to master workflow ...
 version: 1
 summary: |
   this workflow creates a Kubernetes cluster using release/stable version
   and then upgrade it to ci/latest release
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-all#kubeadm-kinder-upgrade-stable-master
+  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml
+  config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
 vars:
-  stable: v1.13.4
-  latest: v1.14.0
+  stable: "{{ resolve `release/stable` }}"
+  latest: "{{ resolve `ci/latest` }}"
   controlPlaneNodes: 1
   workerNodes: 2
+  baseImage: kindest/base:v20190403-1ebf15f
+  image: kindest/node:test
+  clusterName: kinder-upgrade
 tasks:
-- name: pull-node-image
+- name: pull-base-image
   description: |
-    pulls kindest/node image with Kubernetes version release/stable
-    from the docker registry
+    pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
   cmd: docker
   args:
     - pull
-    - kindest/node:{{ .vars.stable }}
-- name: add-kubernetes
+    - "{{ .vars.baseImage }}"
+- name: add-kubernetes-releases
   description: |
-    creates a node-image-variant by adding a Kubernetes version ci/latest
-    to be used later when executing kinder do kubeadm-upgrade
+    creates a node-image-variant by adding a Kubernetes version release/stable
+    and Kubernetes version ci/latest to be used later when executing
+    kinder do kubeadm-init and kinder do kubeadm-upgrade
   cmd: kinder
   args:
     - build
     - node-image-variant
-    - --base-image=kindest/node:{{ .vars.stable }}
-    - --image=kindest/node:test
-    #- --with-upgrade-artifacts=tmp/{{ .vars.latest }}/
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-upgrade-artifacts={{ .vars.stable }}
     - --with-upgrade-artifacts={{ .vars.latest }}
     - --loglevel=debug
   timeout: 10m
-#- name: add-etcd
-#  description: |
-#    adds new etcd image
-#  cmd: kinder
-#  args:
-#    - build
-#    - node-image-variant
-#    - --base-image=kindest/node:test
-#    - --image=kindest/node:test
-#    - --with-images=tmp/etcd/etcd-3.3.10.tar
-#    - --loglevel=debug
 - name: create-cluster
   description: |
     create a set of nodes ready for hosting the Kubernetes cluster
@@ -49,11 +43,11 @@ tasks:
   args:
     - create
     - cluster
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
-    - --image=kindest/node:test
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
-  timeout: 10m
+  timeout: 5m
 - name: init
   description: |
     Initializes the Kubernetes cluster with version release/stable
@@ -62,7 +56,8 @@ tasks:
   args:
     - do
     - kubeadm-init
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
 - name: join
   description: |
     Join the other nodes to the Kubernetes cluster
@@ -70,7 +65,8 @@ tasks:
   args:
     - do
     - kubeadm-join
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
 - name: cluster-info-before
   description: |
     Runs cluster-info on the cluster before upgrade
@@ -78,7 +74,7 @@ tasks:
   args:
     - do
     - cluster-info
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
 - name: e2e-kubeadm-before
   description: |
     Runs kubeadm e2e test on the cluster with version release/stable
@@ -87,7 +83,7 @@ tasks:
     - test
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=01-e2e-kubeadm-before-upgrade
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
 - name: upgrade
   description: |
     upgrades the cluster to ci/latest release
@@ -96,7 +92,8 @@ tasks:
     - do
     - kubeadm-upgrade
     - --upgrade-version={{ .vars.latest }}
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
 - name: e2e-kubeadm-after
   description: |
     Runs kubeadm e2e test on the cluster with version ci/latest
@@ -105,7 +102,7 @@ tasks:
     - test
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=02-e2e-kubeadm-after-upgrade
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
 - name: cluster-info-after
   description: |
     Runs cluster-info on the cluster after upgrade
@@ -113,7 +110,7 @@ tasks:
   args:
     - do
     - cluster-info
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
 - name: e2e-after
   description: |
     Runs kubeadm e2e test on the cluster with version ci/latest
@@ -123,7 +120,7 @@ tasks:
     - e2e
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=03-e2e-after-upgrade
     - --parallel
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
   timeout: 25m
 - name: get-logs
   description: |
@@ -132,9 +129,11 @@ tasks:
   args:
     - export
     - logs
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --loglevel=debug
+    - --name={{ .vars.clusterName }}
     - "{{ .env.ARTIFACTS }}"
   force: true
+  timeout: 5m
 - name: reset
   description: |
     Exec kubeadm reset
@@ -142,7 +141,7 @@ tasks:
   args:
     - do
     - kubeadm-reset
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
   force: true
 - name: delete
   description: |
@@ -151,5 +150,5 @@ tasks:
   args:
     - delete
     - cluster
-    - --name={{ .env.KINDER_CLUSTER_NAME }}
+    - --name={{ .vars.clusterName }}
   force: true
