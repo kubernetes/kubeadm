@@ -22,7 +22,7 @@ Main flags supported by the command are:
 - `--conformance` as a shortcut for instructing the ginkgo test suite run only conformance tests
 - `--parallel` as a shortcut for instructing the ginkgo to run test in parallel
 
-See [Kinder reference](doc/reference.md) for more options
+See [Kinder reference](reference.md) for more options
 
 ## E2E kubeadm
 
@@ -44,4 +44,4 @@ Main flags supported by the command are:
 - `--single-node` as a shortcut for instructing the ginkgo test suite to skip test labeled with [multi-node]
 - `--automatic-copy-certs` as a shortcut for instructing the ginkgo test suite to skip test labeled with [copy-certs]
 
-See [Kinder reference](doc/reference.md) for more options
+See [Kinder reference](reference.md) for more options
