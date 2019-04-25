@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -74,6 +77,9 @@ type Task struct {
 	// Cmd to execute; it can be a literal or a template
 	Cmd string
 
+	// Import defines a path of a workflow file to import into the current workflow
+	Import string
+
 	// Args allows to set Cmd arguments; args can be a literal or a template
 	Args []string
 
@@ -115,6 +121,11 @@ func NewWorkflow(file string) (*Workflow, error) {
 		return nil, errors.Errorf("invalid taskfile %s: at least one task should be defined", file)
 	}
 
+	// Detect and resolve imports by expanding imported workflows into the top level workflow
+	if err := w.expandImports(file); err != nil {
+		return nil, err
+	}
+
 	// For each task
 	for i, t := range w.Tasks {
 		// if a task name is not defined, assign a default task name
@@ -137,9 +148,75 @@ func NewWorkflow(file string) (*Workflow, error) {
 		}
 	}
 
-	// TODO: detect and resolve includes by expanding the top level Workflow
-
 	return &w, nil
+}
+
+// expandImports imports a secondary workflow into the top level Workflow
+func (w *Workflow) expandImports(file string) error {
+	tasks := w.Tasks
+	w.Tasks = Tasks{}
+	for i, t := range tasks {
+		// check if the task does not defines an import, preserve it as it is
+		if t.Import == "" {
+			w.Tasks = append(w.Tasks, t)
+			continue
+		}
+
+		// otherwise it is an import task
+		// ensure the import task does not have other settings
+		if t.Dir != "" {
+			return errors.Errorf("invalid workflow file %s: task #%d - dir setting can't be combined with import directive", file, i+1)
+		}
+		if t.Cmd != "" {
+			return errors.Errorf("invalid workflow file %s: task #%d - cmd setting can't be combined with import directive", file, i+1)
+		}
+		if len(t.Args) != 0 {
+			return errors.Errorf("invalid workflow file %s: task #%d - args setting can't be combined with import directive", file, i+1)
+		}
+		if t.Force != false {
+			return errors.Errorf("invalid workflow file %s: task #%d - force setting can't be combined with import directive", file, i+1)
+		}
+		if t.Timeout != 0 {
+			return errors.Errorf("invalid workflow file %s: task #%d - timeout setting can't be combined with import directive", file, i+1)
+		}
+
+		// reads the Import file
+		// TODO: implement a check for avoinding circular imports
+		path, _ := filepath.Abs(t.Import)
+		wx, err := NewWorkflow(path)
+		if err != nil {
+			return errors.Wrapf(err, "error importing workflow file %s", path)
+		}
+
+		// merge the vars from the import file into the parent file
+		// in case of conflicts, vars in the parent file will shadow vars in the import file
+		for k, v := range wx.Vars {
+			if _, ok := w.Vars[k]; !ok {
+				w.Vars[k] = v
+				continue
+			}
+			log.Warnf("var %s in workflow file %s is shadowed by var %[1]s in parent workflow file %[3]s", k, path, file)
+		}
+
+		// merge the env vars from the import file into the parent file
+		// in case of conflicts, env vars in the parent file will shadow env vars in the import file
+		for k, v := range wx.Env {
+			if _, ok := w.Env[k]; !ok {
+				w.Env[k] = v
+				continue
+			}
+			log.Warnf("env var %s in workflow file %s is shadowed by env var %[1]s in parent workflow file %[3]s", k, path, file)
+		}
+
+		// import all tasks from the import file into the parent file, removing task name prefix
+		re := regexp.MustCompile(`^task\-\d{2}\-?`)
+		for _, tx := range wx.Tasks {
+			tx.Name = re.ReplaceAllString(tx.Name, "")
+			w.Tasks = append(w.Tasks, tx)
+		}
+	}
+
+	return nil
 }
 
 // Run executes a workflow
