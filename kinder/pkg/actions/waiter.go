@@ -18,6 +18,7 @@ package actions
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func waitNewControlPlaneNodeReady(kctx *kcluster.KContext, kn *kcluster.KNode, f
 
 // waitControlPlaneUpgraded waits for a control plane node reaching the target state after upgrade
 func waitControlPlaneUpgraded(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
-	version := flags.UpgradeVersion.String()
+	version := KubernetesVersionToImageTag(flags.UpgradeVersion.String())
 
 	fmt.Printf("==> Waiting for control-plane Pods to restart with the new version (timeout %s) 📦\n", flags.Wait)
 	if pass := waitFor(kctx, kn, flags.Wait,
@@ -270,4 +271,15 @@ func kubectlOutput(kn *kcluster.KNode, args ...string) string {
 	}
 
 	return lines[0]
+}
+
+// KubernetesVersionToImageTag is helper function that replaces all
+// non-allowed symbols in tag strings with underscores.
+// Image tag can only contain lowercase and uppercase letters, digits,
+// underscores, periods and dashes.
+// Current usage is for CI images where all of symbols except '+' are valid,
+// but function is for generic usage where input can't be always pre-validated.
+func KubernetesVersionToImageTag(version string) string {
+	allowed := regexp.MustCompile(`[^-a-zA-Z0-9_\.]`)
+	return allowed.ReplaceAllString(version, "_")
 }
