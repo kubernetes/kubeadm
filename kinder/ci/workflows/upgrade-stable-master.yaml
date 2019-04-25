@@ -32,7 +32,7 @@ tasks:
     - node-image-variant
     - --base-image={{ .vars.baseImage }}
     - --image={{ .vars.image }}
-    - --with-upgrade-artifacts={{ .vars.stable }}
+    - --with-init-artifacts={{ .vars.stable }}
     - --with-upgrade-artifacts={{ .vars.latest }}
     - --loglevel=debug
   timeout: 10m
