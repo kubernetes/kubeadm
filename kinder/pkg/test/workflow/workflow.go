@@ -89,6 +89,9 @@ type Task struct {
 
 	// Timeout for the current task, by default
 	Timeout time.Duration
+
+	// IgnoreError sets a task to be recorded as successful even if it is actually failed
+	IgnoreError bool `yaml:"ignoreError"`
 }
 
 // NewWorkflow creates a new workflow as defined in a workflow file
@@ -178,6 +181,9 @@ func (w *Workflow) expandImports(file string) error {
 		}
 		if t.Timeout != 0 {
 			return errors.Errorf("invalid workflow file %s: task #%d - timeout setting can't be combined with import directive", file, i+1)
+		}
+		if t.IgnoreError != false {
+			return errors.Errorf("invalid workflow file %s: task #%d - ignoreError setting can't be combined with import directive", file, i+1)
 		}
 
 		// reads the Import file

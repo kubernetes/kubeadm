@@ -134,6 +134,10 @@ tasks:
     - "{{ .env.ARTIFACTS }}"
   force: true
   timeout: 5m
+  # kind export log is know to be flaky, so we are temporary ignoring errors in order
+  # to make the test pass in case everything else passed
+  # see https://github.com/kubernetes-sigs/kind/issues/456
+  ignoreError: true
 - name: reset
   description: |
     Exec kubeadm reset
