@@ -141,8 +141,8 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 	// - the timeout is reached
 	select {
 	case err := <-result:
-		// if the command completed without errors, record the test case success and exits
-		if err == nil {
+		// if the command completed without an error or if we are ignoring errors, record the test case success and exit
+		if err == nil || t.IgnoreError {
 			// record test case timeout as success
 			return c.registerTestCase(t.Name,
 				withDuration(time.Since(start)),
