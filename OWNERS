@@ -19,8 +19,7 @@ reviewers:
 - neolit123
 - rosti
 - yagonobre
-- ereslibre 
+- ereslibre
 # Might want to add @xiangpengzhao, @stealthybox, @kargakis, @jamiehannaford, @krousey and/or @dmmcquay back in the future
-labels: 
-- area/kubeadm
+labels:
 - sig/cluster-lifecycle
