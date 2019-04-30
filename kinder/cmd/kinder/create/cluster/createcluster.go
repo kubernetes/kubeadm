@@ -27,7 +27,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	kalter "k8s.io/kubeadm/kinder/pkg/build/alter"
 	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
+	kextract "k8s.io/kubeadm/kinder/pkg/extract"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
@@ -49,6 +51,7 @@ type flagpole struct {
 	Name                 string
 	Config               string
 	ImageName            string
+	InitVersion          string
 	Workers              int32
 	ControlPlanes        int32
 	KubeDNS              bool
@@ -82,6 +85,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&flags.KubeDNS, kubeDNSFLagName, false, "setup kubeadm for installing kube-dns instead of CoreDNS")
 	cmd.Flags().BoolVar(&flags.ExternalEtcd, externalEtcdFlagName, false, "create an external etcd and setup kubeadm for using it")
 	cmd.Flags().BoolVar(&flags.ExternalLoadBalancer, externalLoadBalancerFlagName, false, "add an external load balancer to the cluster (implicit if number of control-plane nodes>1)")
+	cmd.Flags().StringVar(&flags.InitVersion, "init-version", "", "defines the Kubernetes version that will be used for kubeadm init (if empty, kinder will try to detect the initVersion from image labels or consider the current stable as the default)")
 	return cmd
 }
 
@@ -120,7 +124,23 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	cfg := NewConfig(flags.ControlPlanes, flags.Workers, flags.KubeDNS, externalEtcdIP, flags.ExternalLoadBalancer)
+	// get the init version.
+	// if it is not specified as a flag override, the init version is read from the
+	// image metadata/image labels, otherwise a release/stable is used as a default
+	initVersion := flags.InitVersion
+	if initVersion == "" {
+		initVersion, err = getInitVersionFromImage(flags.ImageName)
+		if err != nil {
+			return errors.Wrap(err, "failed to get the Kubernetes init version")
+		}
+	}
+
+	// gets the kind config, which is prebuild by kinder in accordance to the CLI flags
+	cfg, err := NewConfig(initVersion, flags.ControlPlanes, flags.Workers, flags.KubeDNS, flags.ExternalLoadBalancer, externalEtcdIP)
+	if err != nil {
+		return errors.Wrap(err, "error initializing the cluster cfg")
+	}
+
 	// override the config with the one from file, if specified
 	if flags.Config != "" {
 		// load the config
@@ -175,13 +195,31 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// NewConfig returns the default config according to requested number of control-plane
-// and worker nodes
-func NewConfig(controlPlanes, workers int32, kubeDNS bool, externalEtcdIP string, externalLoadBalancer bool) *config.Cluster {
-	var latestPublicConfig = &v1alpha2.Config{}
+// getInitVersionFromImage the init version from the image metadata/image labels,
+// otherwise a release/stable is used as a default
+// TODO: get image version from the image tag as a first fallback, then use release/stable as as second fallback
+func getInitVersionFromImage(image string) (string, error) {
+	v, err := kalter.GetImageVersion(image)
+	if err != nil || v == "" {
+		log.Debug("Image initVersion label not set, trying to get release/stable release")
+		return kextract.ResolveLabel("release/stable")
+	}
+
+	return v, nil
+}
+
+// NewConfig returns the default config according to requested number of control-plane and worker nodes
+func NewConfig(initVersion string, controlPlanes, workers int32, kubeDNS bool, externalLoadBalancer bool, externalEtcdIP string) (*config.Cluster, error) {
+	// get the kubeadm config patches for the Kubernetes initVersion
+	kubeDNSPatch, calicoPatch, externalEtcdPatch, err := kcluster.GetKubeadmConfigPatches(initVersion)
+	if err != nil {
+		return nil, err
+	}
 
 	// create default config according to requested number of control-plane and worker nodes
-	// adds the control-plane node(s)
+	var latestPublicConfig = &v1alpha2.Config{}
+
+	// adds the control-plane node(s) and releated kubeadm config patchs
 	controlPlaneNodes := v1alpha2.Node{Role: v1alpha2.ControlPlaneRole, Replicas: &controlPlanes}
 
 	controlPlaneNodes.KubeadmConfigPatches = []string{}
@@ -191,10 +229,11 @@ func NewConfig(controlPlanes, workers int32, kubeDNS bool, externalEtcdIP string
 	if externalEtcdIP != "" {
 		controlPlaneNodes.KubeadmConfigPatches = append(controlPlaneNodes.KubeadmConfigPatches, fmt.Sprintf(externalEtcdPatch, externalEtcdIP))
 	}
-	// enable Calico
+
 	controlPlaneNodes.KubeadmConfigPatches = append(controlPlaneNodes.KubeadmConfigPatches, calicoPatch)
 
 	latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, controlPlaneNodes)
+
 	// if requester or more than one control-plane node(s), add an external load balancer
 	if externalLoadBalancer || controlPlanes > 1 {
 		latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, v1alpha2.Node{Role: v1alpha2.ExternalLoadBalancerRole})
@@ -213,28 +252,5 @@ func NewConfig(controlPlanes, workers int32, kubeDNS bool, externalEtcdIP string
 	encoding.Scheme.Convert(latestPublicConfig, cfg, nil)
 
 	// unmarshal the file content into a `kind` Config
-	return cfg
+	return cfg, nil
 }
-
-const kubeDNSPatch = `apiVersion: kubeadm.k8s.io/v1beta1
-kind: ClusterConfiguration
-metadata:
-  name: config
-dns:
-  type: "kube-dns"`
-
-const externalEtcdPatch = `apiVersion: kubeadm.k8s.io/v1beta1
-kind: ClusterConfiguration
-metadata:
-  name: config
-etcd:
-  external:
-    endpoints:
-    - http://%s:2379`
-
-const calicoPatch = `apiVersion: kubeadm.k8s.io/v1beta1
-kind: ClusterConfiguration
-metadata:
-  name: config
-networking:
-  podSubnet: "192.168.0.0/16"`

@@ -187,8 +187,13 @@ func (w *Workflow) expandImports(file string) error {
 		}
 
 		// reads the Import file
+		// if path are relative, consider as a base path the folder where the importing file is located.
 		// TODO: implement a check for avoinding circular imports
-		path, _ := filepath.Abs(t.Import)
+		path := t.Import
+		if !filepath.IsAbs(path) {
+			base := filepath.Dir(file)
+			path = filepath.Join(base, path)
+		}
 		wx, err := NewWorkflow(path)
 		if err != nil {
 			return errors.Wrapf(err, "error importing workflow file %s", path)
@@ -201,7 +206,7 @@ func (w *Workflow) expandImports(file string) error {
 				w.Vars[k] = v
 				continue
 			}
-			log.Warnf("var %s in workflow file %s is shadowed by var %[1]s in parent workflow file %[3]s", k, path, file)
+			log.Infof("var %s in workflow file %s is shadowed by var %[1]s in parent workflow file %[3]s", k, path, file)
 		}
 
 		// merge the env vars from the import file into the parent file
@@ -211,7 +216,7 @@ func (w *Workflow) expandImports(file string) error {
 				w.Env[k] = v
 				continue
 			}
-			log.Warnf("env var %s in workflow file %s is shadowed by env var %[1]s in parent workflow file %[3]s", k, path, file)
+			log.Infof("env var %s in workflow file %s is shadowed by env var %[1]s in parent workflow file %[3]s", k, path, file)
 		}
 
 		// import all tasks from the import file into the parent file, removing task name prefix

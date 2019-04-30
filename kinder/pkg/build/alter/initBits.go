@@ -49,15 +49,28 @@ func (b *initBits) Get(c *bitsContext) error {
 		return errors.Wrap(err, "failed to make bits dir")
 	}
 
-	// Creates an extractor instance, that will read binaries & images required from upgrades from the src,
+	// Creates an extractor instance, that will read binaries & images required for init from the src,
 	// where source can be one of version/build-label/folder containing the  binaries & images,
 	// and save it to the dst folder
 	e := extract.NewExtractor(
 		b.src, dst,
 	)
 
-	// Extracts the binary bit
+	// Extracts the binaries & images
 	_, err := e.Extract()
+
+	// read the extracted version file
+	versionFile := filepath.Join(c.HostBitsPath(), "init", "version")
+	versionData, err := ioutil.ReadFile(versionFile)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read version file %s", versionFile)
+	}
+
+	// stores the version as a image metadata using a label
+	// this allows to simplify the UX at init time, avoiding the need of
+	// specifying an additional flag in the most common use cases
+	c.labels[alterVersionLabelKey] = string(versionData)
+
 	return err
 }
 

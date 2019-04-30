@@ -69,12 +69,19 @@ func runInfo(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionF
 		return err
 	}
 
-	ip, err := kn.IP()
-	if err != nil {
-		return errors.Wrap(err, "Error getting node ip")
-	}
-
 	if kctx.ExternalEtcd() == nil {
+		// Gets the IP address where local etcd is listening for clients
+		// NB. before v1.13 local etcd is listening on local host; after v1.13
+		// local etcd is listening on the advertise address
+		// TODO: remove after v1.12 goes out of support
+		ip := "127.0.0.1"
+		if err := atLeastKubeadm(kn, "v1.13.0-0"); err == nil {
+			ip, err = kn.IP()
+			if err != nil {
+				return errors.Wrap(err, "Error getting node ip")
+			}
+		}
+
 		if err := kn.DebugCmd(
 			"\n==> List etcd members 📦",
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "exec", "-n=kube-system", fmt.Sprintf("etcd-%s", kn.Name()),
