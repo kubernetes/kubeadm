@@ -35,9 +35,6 @@ const DefaultBaseImage = "kindest/node:latest"
 // DefaultImage is the default name:tag for the alter image
 const DefaultImage = DefaultBaseImage
 
-// AlterContainerLabelKey is applied to each altered container
-const AlterContainerLabelKey = "io.k8s.sigs.kinder.alter"
-
 // Context is used to alter the kind node image, and contains
 // alter configuration
 type Context struct {
@@ -159,6 +156,9 @@ func (c *Context) Alter() (err error) {
 	// initialize the bits working context
 	bc := &bitsContext{
 		hostBasePath: alterDir,
+		labels: map[string]string{
+			alterContainerLabelKey: time.Now().Format(time.RFC3339Nano),
+		},
 	}
 
 	// always create folder for storing bits output
@@ -237,15 +237,23 @@ func (c *Context) createAlterContainer(bc *bitsContext) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(c.baseImage, 4)
+
+	// define docker default args
+	args := []string{
+		"-d", // make the client exit while the container continues to run
+		"-v", fmt.Sprintf("%s:%s", bc.HostBasePath(), bc.ContainerBasePath()),
+		// the container should hang forever so we can exec in it
+		"--entrypoint=sleep",
+	}
+	// adds args for setting additional label/image metadata
+	for k, v := range bc.labels {
+		args = append(args, "--label", fmt.Sprintf("%s=%s", k, v))
+	}
+
 	id, err = docker.Run(
 		c.baseImage,
 		docker.WithRunArgs(
-			"-d", // make the client exit while the container continues to run
-			// label the container to make them easier to track
-			"--label", fmt.Sprintf("%s=%s", AlterContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
-			"-v", fmt.Sprintf("%s:%s", bc.HostBasePath(), bc.ContainerBasePath()),
-			// the container should hang forever so we can exec in it
-			"--entrypoint=sleep",
+			args...,
 		),
 		docker.WithContainerArgs(
 			"infinity", // sleep infinitely to keep the container around

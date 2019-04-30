@@ -34,6 +34,7 @@ type bits interface {
 type bitsContext struct {
 	hostBasePath string
 	containerID  string
+	labels       map[string]string
 }
 
 // HostBasePath returns the path of the temporary folder on the host machine used for the image alter process
