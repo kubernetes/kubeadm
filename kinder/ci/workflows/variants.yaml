@@ -1,0 +1,183 @@
+version: 1
+summary: |
+  This workflow implements a sequence of tasks used test that kinder can manage supported kubeadm config variants.
+vars:
+  baseImage: kindest/base:v20190403-1ebf15f
+  image: kindest/node:test
+  clusterName: kinder-variants
+  stable: "{{ resolve `release/stable` }}"
+tasks:
+- name: pull-base-image
+  description: |
+    pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
+  cmd: docker
+  args:
+    - pull
+    - "{{ .vars.baseImage }}"
+- name: add-init-version
+  description: |
+    Creates a node-image-variant by adding Kubernetes version "stable"
+    to be used when executing "kinder do kubeadm-init"
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.stable }}
+    - --loglevel=debug
+  timeout: 5m
+#
+# Kube-DNS
+#
+- name: create-kube-dns
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "stable" and Kube-dns instead of CoreDNS
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes=1
+    - --worker-nodes=0
+    - --kube-dns
+  timeout: 10m
+- name: init-kube-dns
+  description: |
+    Initializes the cluster with Kubernetes version "stable" and Kube-dns instead of CoreDNS
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: delete-kube-dns
+  description: |
+    Deletes the cluster with Kubernetes version "stable" and Kube-dns instead of CoreDNS
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+#
+# External-etcd
+#
+- name: create-external-etcd
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "stable" and an external-etcd
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes=1
+    - --worker-nodes=0
+    - --external-etcd
+  timeout: 10m
+- name: init-external-etcd
+  description: |
+    Initializes the cluster with Kubernetes version "stable" and an external-etcd
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: delete-external-etcd
+  description: |
+    Deletes the cluster with Kubernetes version "stable" and an external-etcd
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+#
+# HA
+#
+- name: create-ha1
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes=3
+    - --worker-nodes=1
+  timeout: 5m
+- name: init-ha1
+  description: |
+    Initializes the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 10m
+- name: join-ha1
+  description: |
+    Initializes the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-join
+    - --name={{ .vars.clusterName }}
+  timeout: 10m
+- name: delete-ha1
+  description: |
+    Deletes the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+#
+# HA with automatic certificate copy
+#
+- name: create-ha2
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes=3
+    - --worker-nodes=1
+  timeout: 5m
+- name: init-ha2
+  description: |
+    Initializes the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+    - --automatic-copy-certs
+  timeout: 10m
+- name: join-ha2
+  description: |
+    Initializes the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-join
+    - --name={{ .vars.clusterName }}
+    - --automatic-copy-certs
+  timeout: 10m
+#
+# final cleanup
+#
+- name: delete
+  description: |
+    final cleanup
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+  force: true

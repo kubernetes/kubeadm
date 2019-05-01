@@ -1,0 +1,252 @@
+version: 1
+summary: |
+  This workflow implements a sequence of tasks used test that kinder can create cluster for the supported init versions.
+vars:
+  controlPlaneNodes: 1
+  workerNodes: 0
+  baseImage: kindest/base:v20190403-1ebf15f
+  image: kindest/node:test
+  clusterName: kinder-init
+  stableMinus3: "{{ resolve `release/stable-1.11` }}"
+  stableMinus2: "{{ resolve `release/stable-1.12` }}"
+  stableMinus1: "{{ resolve `release/stable-1.13` }}"
+  stable: "{{ resolve `release/stable` }}"
+  master: "{{ resolve `ci/latest` }}"
+tasks:
+- name: pull-base-image
+  description: |
+    pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
+  cmd: docker
+  args:
+    - pull
+    - "{{ .vars.baseImage }}"
+#
+# Stable minus 3 (release/stable1-11)
+#
+- name: add-stable-3
+  description: |
+    Creates a node-image-variant by adding Kubernetes version "stable -3/minor"
+    to be used when executing "kinder do kubeadm-init"
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.stableMinus3 }}
+    - --loglevel=debug
+  timeout: 5m
+- name: create-stable-3
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "stable -3/minor"
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+  timeout: 5m
+- name: init-3
+  description: |
+    Initializes the cluster with Kubernetes version "stable -3/minor"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: delete-3
+  description: |
+    Deletes the cluster with Kubernetes version "stable -3/minor"
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+#
+# Stable minus 2 (release/stable1-12)
+#
+- name: add-stable-2
+  description: |
+    creates a node-image-variant by adding Kubernetes version "stable" -2 minor
+    to be used when executing "kinder do kubeadm-init"
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.stableMinus2 }}
+    - --loglevel=debug
+  timeout: 5m
+- name: create-stable-2
+  description: |
+    Creates a node-image-variant by adding Kubernetes version "stable -2/minor"
+    to be used when executing "kinder do kubeadm-init"
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+  timeout: 5m
+- name: init-2
+  description: |
+    Initializes the cluster with Kubernetes version "stable -2/minor"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: delete-2
+  description: |
+    Deletes the cluster with Kubernetes version "stable -2/minor"
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+#
+# Stable minus 1 (release/stable1-13)
+#
+- name: add-stable-1
+  description: |
+    Creates a node-image-variant by adding Kubernetes version "stable -1/minor"
+    to be used when executing "kinder do kubeadm-init"
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.stableMinus1 }}
+    - --loglevel=debug
+  timeout: 5m
+- name: create-stable-1
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "stable -1/minor"
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+  timeout: 5m
+- name: init-1
+  description: |
+    Initializes the cluster with Kubernetes version "stable -1/minor"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: delete-1
+  description: |
+    Deletes the cluster with Kubernetes version "stable -2/minor"
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+#
+# Stable (release/stable, v1.14)
+#
+- name: add-stable
+  description: |
+    Creates a node-image-variant by adding Kubernetes version "stable"
+    to be used when executing "kinder do kubeadm-init"
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.stable }}
+    - --loglevel=debug
+  timeout: 5m
+- name: create-stable
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+  timeout: 5m
+- name: init-stable
+  description: |
+    Initializes the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: delete-stable
+  description: |
+    Deletes the cluster with Kubernetes version "stable"
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+#
+# Master (ci/latest, v1.15)
+#
+- name: add-master
+  description: |
+    Creates a node-image-variant by adding Kubernetes version "master (ci/latest)"
+    to be used when executing "kinder do kubeadm-init"
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.master }}
+    - --loglevel=debug
+  timeout: 5m
+- name: create-master
+  description: |
+    Create a set of nodes ready for hosting the cluster with Kubernetes version "master (ci/latest)"
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+  timeout: 5m
+- name: init-master
+  description: |
+    Initializes the cluster with Kubernetes version "master (ci/latest)"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+#
+# final cleanup
+#
+- name: delete
+  description: |
+    final cleanup
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+  force: true
