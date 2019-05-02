@@ -5,14 +5,16 @@ summary: |
 vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
-  initVersion: "{{ resolve `release/stable` }}"
-  upgradeVersion: "{{ resolve `ci/latest` }}"
+  initVersion: v1.12.8
+  upgradeVersion: v1.13.5
   controlPlaneNodes: 1
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-upgrade
 tasks:
+# Important! this workflow differs from upgrade-stable-master because
+# e2-kubeadm is not run (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
 - name: pull-base-image
   description: |
     pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
@@ -74,15 +76,6 @@ tasks:
     - do
     - cluster-info
     - --name={{ .vars.clusterName }}
-- name: e2e-kubeadm-before
-  description: |
-    Runs kubeadm e2e test on the cluster with version "initVersion"
-  cmd: kinder
-  args:
-    - test
-    - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=01-e2e-kubeadm-before-upgrade
-    - --name={{ .vars.clusterName }}
 - name: upgrade
   description: |
     upgrades the cluster to Kubernetes "upgradeVersion"
@@ -93,15 +86,6 @@ tasks:
     - --upgrade-version={{ .vars.upgradeVersion }}
     - --name={{ .vars.clusterName }}
   timeout: 5m
-- name: e2e-kubeadm-after
-  description: |
-    Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"
-  cmd: kinder
-  args:
-    - test
-    - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=02-e2e-kubeadm-after-upgrade
-    - --name={{ .vars.clusterName }}
 - name: cluster-info-after
   description: |
     Runs cluster-info on the cluster after upgrade
