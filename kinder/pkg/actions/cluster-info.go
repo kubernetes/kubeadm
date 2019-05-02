@@ -19,8 +19,6 @@ package actions
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
 )
 
@@ -70,23 +68,14 @@ func runInfo(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionF
 	}
 
 	if kctx.ExternalEtcd() == nil {
-		// Gets the IP address where local etcd is listening for clients
-		// NB. before v1.13 local etcd is listening on local host; after v1.13
-		// local etcd is listening on the advertise address
-		// TODO: remove after v1.12 goes out of support
-		ip := "127.0.0.1"
-		if err := atLeastKubeadm(kn, "v1.13.0-0"); err == nil {
-			ip, err = kn.IP()
-			if err != nil {
-				return errors.Wrap(err, "Error getting node ip")
-			}
-		}
-
+		// NB. before v1.13 local etcd is listening on localhost only; after v1.13
+		// local etcd is listening on localhost and on the advertise address; we are
+		// using localhost to accommodate both the use cases
 		if err := kn.DebugCmd(
 			"\n==> List etcd members 📦",
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "exec", "-n=kube-system", fmt.Sprintf("etcd-%s", kn.Name()),
 			"--",
-			"etcdctl", fmt.Sprintf("--endpoints=https://%s:2379", ip),
+			"etcdctl", fmt.Sprintf("--endpoints=https://127.0.0.1:2379"),
 			"--ca-file=/etc/kubernetes/pki/etcd/ca.crt", "--cert-file=/etc/kubernetes/pki/etcd/peer.crt", "--key-file=/etc/kubernetes/pki/etcd/peer.key",
 			"member", "list",
 		); err != nil {
