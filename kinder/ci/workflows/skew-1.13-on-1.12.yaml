@@ -1,0 +1,11 @@
+version: 1
+summary: |
+  This workflow tests the proper functioning of kubeadm version v1.13 with Kubernetes v1.12
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-all#kubeadm-kinder-1.13-on-1.12
+  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-X-on-Y.yaml
+  config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
+vars:
+  kubeadmVersion: "{{ resolve `ci/latest-1.13` }}"
+  kubernetesVersion: "{{ resolve `ci/latest-1.12` }}"
+tasks:
+- import: skew-x-on-y-tasks.yaml

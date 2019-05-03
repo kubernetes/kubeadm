@@ -1,19 +1,20 @@
-# IMPORTANT! this workflow is imported by upgrade* workflows.
+# IMPORTANT! this workflow is imported by x-on-y.* workflows.
 version: 1
 summary: |
-  This workflow implements a sequence of tasks used test kubeadm upgrades.
+  This workflow implements a sequence of tasks used test the proper functioning
+  of kubeadm version X with Kubernetes Y = X-1/minor.
 vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
-  initVersion: v1.12.8
-  upgradeVersion: v1.13.5
+  kubeadmVersion: v1.13.5
+  kubernetesVersion: v1.12.8
   controlPlaneNodes: 1
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
-  clusterName: kinder-upgrade
+  clusterName: kinder-xony
 tasks:
-# Important! this workflow differs from upgrade-stable-master because
+# Important! this workflow differs from stable-on-master because
 # e2-kubeadm is not run (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
 - name: pull-base-image
   description: |
@@ -24,17 +25,16 @@ tasks:
     - "{{ .vars.baseImage }}"
 - name: add-kubernetes-versions
   description: |
-    creates a node-image-variant by adding Kubernetes version "initVersion"
-    to be used when executing "kinder do kubeadm-init" and Kubernetes
-    version "upgradeVersion" to be used afterwards when executing "kinder do kubeadm-upgrade"
+    creates a node-image-variant by adding a Kubernetes version and
+    and a different Kubernetes version
   cmd: kinder
   args:
     - build
     - node-image-variant
     - --base-image={{ .vars.baseImage }}
     - --image={{ .vars.image }}
-    - --with-init-artifacts={{ .vars.initVersion }}
-    - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
+    - --with-init-artifacts={{ .vars.kubernetesVersion }}
+    - --with-kubeadm={{ .vars.kubeadmVersion }}
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -68,40 +68,22 @@ tasks:
     - kubeadm-join
     - --name={{ .vars.clusterName }}
   timeout: 5m
-- name: cluster-info-before
+- name: cluster-info
   description: |
-    Runs cluster-info on the cluster before upgrade
+    Runs cluster-info
   cmd: kinder
   args:
     - do
     - cluster-info
     - --name={{ .vars.clusterName }}
-- name: upgrade
+- name: e2e
   description: |
-    upgrades the cluster to Kubernetes "upgradeVersion"
-  cmd: kinder
-  args:
-    - do
-    - kubeadm-upgrade
-    - --upgrade-version={{ .vars.upgradeVersion }}
-    - --name={{ .vars.clusterName }}
-  timeout: 5m
-- name: cluster-info-after
-  description: |
-    Runs cluster-info on the cluster after upgrade
-  cmd: kinder
-  args:
-    - do
-    - cluster-info
-    - --name={{ .vars.clusterName }}
-- name: e2e-after
-  description: |
-    Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"
+    Runs kubeadm e2e test
   cmd: kinder
   args:
     - test
     - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-upgrade
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=05-e2e
     - --parallel
     - --name={{ .vars.clusterName }}
   timeout: 25m

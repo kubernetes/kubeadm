@@ -29,8 +29,7 @@ might be eventually repeated across all/a subset of the Kubernetes versions in s
 
 ### Upgrade tests
 
-Upgrade tests are meant to verify the proper functioning of the `kubeadm upgrade` workflow. More
-specifically the following upgrade tests are verified:
+Upgrade tests are meant to verify the proper functioning of the `kubeadm upgrade` workflow. Following upgrade tests are verified:
 
 | from                                         | e.g.              | to                                     | e.g.             |
 | -------------------------------------------- | ----------------- | -------------------------------------- | ---------------- |
@@ -44,13 +43,13 @@ others ci-->latest). Define if/how to rationalize
 
 ### X on Y tests
 
-X on Y tests are meant to verify the proper functioning of kubeadm version X with Kubernetes Y = X-1/minor.
-More specifically following X on Y tests are verified:
+X on Y tests are meant to verify the proper functioning of kubeadm version X with Kubernetes Y = X-1/minor. Following X on Y tests are implemented:
 
-| kubeadm (X) | e.g. | Kubernetes (Y) | e.g. |
-| ----------- | ---- | -------------- | ---- |
-|             |      |                |      |
-|             |      |                |      |
-|             |      |                |      |
-|             |      |                |      |
-|             |      |                |      |
+| kubeadm (X)                            | e.g.             | Kubernetes (Y)                         | e.g.              |
+| -------------------------------------- | ---------------- | -------------------------------------- | ----------------- |
+| master<br />(ci/latest)                | v1.15.0-alpha... | current<br />(release/stable)          | v1.14.1           |
+| current<br />(ci/latest-1.14)          | v1.14.1-alpha... | current -1/minor<br />(ci/latest-1.13) | V1.13.6-alpha...  |
+| current -1/minor<br />(ci/latest-1.13) | V1.13.6-alpha... | current -2/minor<br />(ci/latest-1.12) | V1.12.9-alpha...  |
+| current -2/minor<br />(ci/latest-1.12) | V1.12.9-alpha... | current -3/minor<br />(ci/latest-1.11) | V1.11.10-alpha... |
+
+TODO: currently tests are not consistent with regards to the selection of from/to versions (some ci on stable, others ci on ci). Define if/how to rationalize
