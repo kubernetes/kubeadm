@@ -1,0 +1,127 @@
+version: 1
+summary: |
+  This workflow tests the proper functioning of kubeadm version master with Kubernetes stable
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-all#kubeadm-kinder-1.14-on-1.13
+  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-X-on-Y.yaml
+  config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
+vars:
+  kubeadmVersion: "{{ resolve `ci/latest` }}"
+  kubernetesVersion: "{{ resolve `release/stable` }}"
+tasks:
+# Important! this worflow is using locally defined task instead of the shared skew-x-on-y-tasks.yaml
+# because e2e-kubeadm is executed (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
+- name: pull-base-image
+  description: |
+    pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
+  cmd: docker
+  args:
+    - pull
+    - "{{ .vars.baseImage }}"
+- name: add-kubernetes-versions
+  description: |
+    creates a node-image-variant by adding a Kubernetes version and
+    and a different Kubernetes version
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.kubernetesVersion }}
+    - --with-kubeadm={{ .vars.kubeadmVersion }}
+    - --loglevel=debug
+  timeout: 10m
+- name: create-cluster
+  description: |
+    create a set of nodes ready for hosting the Kubernetes cluster
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+  timeout: 5m
+- name: init
+  description: |
+    Initializes the Kubernetes cluster with version "initVersion"
+    by starting the boostrap control-plane nodes
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: join
+  description: |
+    Join the other nodes to the Kubernetes cluster
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-join
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: cluster-info
+  description: |
+    Runs cluster-info
+  cmd: kinder
+  args:
+    - do
+    - cluster-info
+    - --name={{ .vars.clusterName }}
+- name: e2e-kubeadm
+  description: |
+    Runs kubeadm e2e test
+  cmd: kinder
+  args:
+    - test
+    - e2e-kubeadm
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-upgrade
+    - --name={{ .vars.clusterName }}
+- name: e2e
+  description: |
+    Runs kubeadm e2e test
+  cmd: kinder
+  args:
+    - test
+    - e2e
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=05-e2e
+    - --parallel
+    - --name={{ .vars.clusterName }}
+  timeout: 25m
+- name: get-logs
+  description: |
+    Collects all the test logs
+  cmd: kinder
+  args:
+    - export
+    - logs
+    - --loglevel=debug
+    - --name={{ .vars.clusterName }}
+    - "{{ .env.ARTIFACTS }}"
+  force: true
+  timeout: 5m
+  # kind export log is know to be flaky, so we are temporary ignoring errors in order
+  # to make the test pass in case everything else passed
+  # see https://github.com/kubernetes-sigs/kind/issues/456
+  ignoreError: true
+- name: reset
+  description: |
+    Exec kubeadm reset
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-reset
+    - --name={{ .vars.clusterName }}
+  force: true
+- name: delete
+  description: |
+    Deletes the cluster
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+  force: true
+
