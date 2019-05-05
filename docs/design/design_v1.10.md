@@ -193,7 +193,7 @@ Common properties for the control plane components:
 - Leader election is enabled for both the controller-manager and the scheduler.
 - Controller-manager and the scheduler will reference kubeconfig files with their respective, unique identities.
 - All static Pods get any extra flags specified by the user.
-- All static Pods get any extra extra Volumes specified by the user (Host path).
+- All static Pods get any extra Volumes specified by the user (Host path).
 
 Please note that:
 
