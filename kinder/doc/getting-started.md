@@ -5,8 +5,8 @@ This document assumes vX the Kubernetes release to be tested.
 See [Prepare for tests](prepare-for-tests.md) for how to create a node-image for Kubernetes vX.
 
 ```bash
-# create a cluster with eventually some worker node
-kinder create cluster --image kindest/node:vX --workers-nodes 0
+# create a cluster with eventually two worker nodes
+kinder create cluster --image kindest/node:vX --worker-nodes 2
 
 # initialize the bootstrap control plane
 kinder do kubeadm-init
