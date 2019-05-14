@@ -14,22 +14,25 @@ The following folder contains all the SIG Cluster Lifecycle (the SIG that mainta
 Please note that this document will only cover details on the `kubeadm*.yaml` files.
 
 For example, let's have a look at this file:
-[kubeadm.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm.yaml)
+[kubeadm.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kind.yaml)
 
 It contains a list of jobs such as:
 ```
-- name: ci-kubernetes-e2e-kubeadm-gce-master
+- name: ci-kubernetes-e2e-kubeadm-kind-master
   interval: 2h
   ...
 ```
 
-In this case, `ci-kubernetes-e2e-kubeadm-gce-master` is a test job that runs every 2 hours and it also has a set of parameters defined for it. This document will only cover some of them.
+In this case, `ci-kubernetes-e2e-kubeadm-kind-master` is a test job that runs every 2 hours and it also has a set of parameters defined for it. This document will only cover some of them.
 
 Important to note here is that testgrid jobs have a docker `image` that contains all the tools needed to run tests. Among them, one of the most relevant ones, is the tool that will be used for the deployment of the cluster.
 
-For this example job the `deployment` tool is called [kubernetes-anywhere](https://github.com/kubernetes/kubernetes-anywhere) (with integration in [this file](https://github.com/kubernetes/test-infra/blob/master/kubetest/anywhere.go)) and the `image` is called `gcr.io/k8s-testimages/e2e-kubeadm:...`. As a very high level summary, the way this works is when a job is invoked all the job parameters are passed to a CLI tool called `kubetest`, which then instantiates the job container and then the deployment tool inside it.
+For this example job the `deployment` tool is called [kind](https://github.com/kubernetes-sigs/kind) (with integration in [this file](https://github.com/kubernetes/test-infra/blob/master/kubetest/kind/kind.go)) and the `image` is called `*kubekins:...`. As a very high level summary, the way this works is when a job is invoked all the job parameters are passed to a CLI tool called `kubetest`, which then instantiates the job container and then the deployment tool inside it.
 
-Please note that there are plans for replacing kubernetes-anywhere with a new tool based on the [Cluster API](https://github.com/kubernetes-sigs/cluster-api).
+The SIG also uses another deployment tool called [kinder](https://github.com/kubernetes/kubeadm/kinder). kinder is based on kind and it's used for upgrades and version skew tests, but it does not require kubetest integration.
+
+Kinder uses test workflow files that run sequences of tasks, such as "upgrade", "run e2e conformance tests", "run e2e kubeadm tests".
+An example of such a workflow file can be seen [here](https://github.com/kubernetes/kubeadm/blob/master/kinder/ci/workflows/upgrade-stable-master.yaml).
 
 ### The testgrid configuration
 
@@ -39,25 +42,26 @@ The configuration file itself is located [here](https://github.com/kubernetes/te
 
 A dashboard is defined like so:
 ```
-- name: sig-cluster-lifecycle-all
+- name: sig-cluster-lifecycle-kubeadm
   dashboard_tab:
-  - name: kubeadm-gce-1.10
-    test_group_name: ci-kubernetes-e2e-kubeadm-gce-1-10
-  - name: kubeadm-gce-1.11
-    test_group_name: ci-kubernetes-e2e-kubeadm-gce-1-11
-  ...
+# kubeadm-kind tests
+  - name: kubeadm-kind-...
+    test_group_name: ci-kubernetes-e2e-kubeadm-kind-...
+    ...
+  - name: kubeadm-kind-...
+    test_group_name: ci-kubernetes-e2e-kubeadm-kind-...
 ```
 
 What the above does is defining a dashboard called `sig-cluster-lifecycle-all` and placing inside a couple of tests defined by `name` and linking to a `test_group_name`. Some items may also have a `description`.
 
-Note that `test_group_name` represents the actual test name (as in the [kubeadm.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm.yaml) example earlier), while `name` is only what is shown on the website as an alias.
+Note that `test_group_name` represents the actual test name (as in the [kubeadm-kind.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kind.yaml) example earlier), while `name` is only what is shown on the website as an alias.
 
 Tests can exist in multiple dashboards at once. For example a test defined like:
 ```
-- name: kubeadm-gce-1.12
-  test_group_name: ci-kubernetes-e2e-kubeadm-gce-1-12
+- name: kubeadm-kind-1-12
+  test_group_name: ci-kubernetes-e2e-kubeadm-kind-1-12
 ```
-can exists in both the `sig-cluster-lifecycle-all` and `sig-release-master-blocking` dashboards. Essentially both tests would show details about the same test job called `ci-kubernetes-e2e-kubeadm-gce-1-12`.
+can exists in both the `sig-cluster-lifecycle-all` and `sig-release-master-blocking` dashboards. Essentially both tests would show details about the same test job called `ci-kubernetes-e2e-kubeadm-kind-1-12`.
 
 ### Updates to kubeadm tests
 
@@ -68,40 +72,33 @@ The operation can be broken down in 3 steps:
 2) Updating testgrid to reflect the changes.
 3) Finalizing the changes.
 
+There is work in progress in test-infra on tools that can hopefully automate this process.
+
 #### Updating test jobs
 
 This document will cover information on how to perform updates on these 3 files:
-- [kubeadm.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm.yaml "kubeadm.yaml")
+- [kubeadm-kind.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kind.yaml "kubeadm-kind.yaml")
 
 Holds test jobs where the kubeadm version matches the Kubernetes control-plane and the kubelet versions.
 
-- [kubeadm-upgrade.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-upgrade.yaml "kubeadm-upgrade.yaml")
+- [kubeadm-kinder-upgrade.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml "kubeadm-kinder-upgrade.yaml")
 
 Holds test jobs that perform a upgrade from version X to version Y (usually `Y = X + 1`).
 
-- [kubeadm-x-on-y.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-x-on-y.yaml "kubeadm-x-on-y.yaml")
+- [kubeadm-kinder-x-on-y.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-x-on-y.yaml "kubeadm-kinder-x-on-y.yaml")
 
-Holds test jobs that run kubeadm version Y, on a control plane and kubelet version X,
-as kubeadm does support `Y = X + 1`
+Holds test jobs that run kubeadm version X, on a control plane and kubelet version Y,
+as kubeadm does support `Y = X - 1`
 
 The files can be found in the [sig-cluster-lifecycle](https://github.com/kubernetes/test-infra/tree/master/config/jobs/kubernetes/sig-cluster-lifecycle) folder.
 
 The idea is to remove old test jobs and add new ones. If Kubernetes 1.15 is about to be released soon, this means that the `15 - 3 = 12` MINOR version would go outside of the support skew of the project. `1.12` jobs have to be removed and `1.15` jobs have to be added. The project would support version `15 - 2 = 13` as the minimum.
 
 - If there are `1.12 -> 1.13` upgrade jobs leave them, because upgrades to `1.13` still have to be supported.
-- Remove `1.12 on 1.13` jobs.
+- Remove `1.13 on 1.12` jobs.
 - Remove plain `1.12` jobs.
 - Add upgrade jobs for `1.14 -> 1.15` and `1.14 on 1.15` jobs.
 - Add plain `1.15` jobs.
-
-Each job contains some versioned labels and branches passed as properties, that are not going to be outlined in this document, but they need updates too:
-- `release-1.14`
-- `release/latest-1.14`
-- `ci/latest-bazel-1.14`
-- `latest-bazel-1.14`
-- ...
-
-Example PRs can be found [here](https://github.com/kubernetes/test-infra/pull/9219) and [here](https://github.com/kubernetes/test-infra/pull/8142).
 
 #### Updating testgrid to reflect the changes
 
@@ -115,40 +112,17 @@ Following the `1.15` example from earlier, a job called `ci-kubernetes-e2e-kubea
 
 Removed:
 ```
-- name: kubeadm-gce-1.12
-  test_group_name: ci-kubernetes-e2e-kubeadm-gce-1-12
+- name: kubeadm-kind-1-12
+  test_group_name: ci-kubernetes-e2e-kubeadm-kind-1-12
 ```
 
 Added:
 ```
-- name: kubeadm-gce-1.15
-  test_group_name: ci-kubernetes-e2e-kubeadm-gce-1-15
+- name: kubeadm-kind-1-15
+  test_group_name: ci-kubernetes-e2e-kubeadm-kind-1-15
 ```
 
-Example PRs can be found [here](https://github.com/kubernetes/test-infra/pull/9219) and [here](https://github.com/kubernetes/test-infra/pull/8142).
-
-#### Adding release blocking jobs
-
-Late in the Kubernetes release cycle a new branch is created for the new release in the `kubernetes/kubernetes` repository. Following our `1.15` example the branch would be called `release-1.15`. In testgrid, a couple of new dashboards are created and maintained by SIG Release. These dashboards are:
-- `sig-release-1.15-all`
-- `sig-release-1.15-blocking`
-
-The kubeadm project has to add some jobs to these dashboards which are important for the Kubernetes release. The `sig-release-1.15-blocking` dashboard in particular would contain jobs, that might delay a new `1.15` release if they are not passing (red).
-
-The list of `blocking` jobs for the `1.15` example would be:
-- `ci-kubernetes-e2e-kubeadm-gce-1-14-on-1-15`
-- `ci-kubernetes-e2e-kubeadm-gce-1-15`
-
-The list of `all` jobs for the `1.15` example would be:
-- `ci-kubernetes-e2e-kubeadm-gce-1-14-on-1-15`
-- `ci-kubernetes-e2e-kubeadm-gce-1-15`
-- `ci-kubernetes-e2e-kubeadm-gce-upgrade-1-14-1-15`
-
-[Here](https://github.com/kubernetes/test-infra/pull/9529/files) is an example DIFF of a GitHub PR that makes the outlined changes.
-
-Note that these release dashboards remain until version `1.15` goes outside of the support skew, or that would be when `1.18` is released.
-
-#### Finalizing the changes.
+#### Finalizing the changes
 
 Once you have made the above test-infra changes, you need to run a certain script to reflect the changes in generated configuration. For that you can call the following command:
 
@@ -169,6 +143,54 @@ Note that test-infra requires [Bazel](https://bazel.build/).
 
 At this point you can commit your changes and send a GitHub PR against the test-infra repository.
 
+#### Job run frequency
+
+Different kubeadm test jobs run on a different frequency of time.
+
+Jobs against the `master` kubernetes/kubernetes branch
+run more often, e.g `ci-kubernetes-e2e-kubeadm-kind-master`, `ci-kubernetes-e2e-kubeadm-kinder-master-on-stable` and `ci-kubernetes-e2e-kubeadm-kinder-upgrade-stable-master` run every 2 hours. Given the `master` branch receives a lot
+of updates it's important to catch problems more often.
+
+Test jobs for the older branches, e.g. `ci-kubernetes-e2e-kubeadm-kind-(master-1)`,
+`ci-kubernetes-e2e-kubeadm-kinder-(master-1)-on-(master-2)` and `ci-kubernetes-e2e-kubeadm-kinder-upgrade-(master-2)-(master-1)`
+run every 12 hours. The older maintained kubernetes/kubernetes branches receive less updates, so less frequent job runs there
+are sufficient.
+
+#### Email alerts
+
+Test job failures can trigger email alerts. This can be configured when a job is added in a testgrid dashboard.
+For example:
+
+```
+- name: kubeadm-kind-master
+    test_group_name: ci-kubernetes-e2e-kubeadm-kind-master
+    alert_options:
+      alert_mail_to_addresses: kubernetes-sig-cluster-lifecycle@googlegroups.com
+    alert_stale_results_hours: 8
+    num_failures_to_alert: 4 # Runs every 2h. Alert when it's been failing for 8 hours
+```
+
+- `alert_mail_to_addresses` should be set to `kubernetes-sig-cluster-lifecycle@googlegroups.com`
+in the case of SIG Cluster Lifecycle. This is a mailing list (Google Group) that will receive the alert.
+- `alert_stale_results_hours` means an alert will be sent in case the job is in a stale state and is not reporting new status
+after N hours. Usually a restart by a test-infra "on-call" operator is required in such cases.
+- `num_failures_to_alert` sets the N failed runs ("red runs") after which an alert will be sent.
+
+Jobs that runs against the `master` kubernetes/kubernetes branch should send email alerts more often (e.g. 8 hours), while
+jobs for the older branches should report less often (e.g. 24 hours).
+
+#### Release blocking jobs
+
+Certain test jobs maintained by SIG Cluster Lifecycle can be present in release blocking or informing dashboards, such as:
+https://k8s-testgrid.appspot.com/sig-release-master-informing
+
+These test jobs are of higher importance as they can block a Kubernetes release in case they are failing.
+Such dashboards are managed by SIG Release, but SIG Cluster Lifecycle can propose changes by adding or removing test jobs,
+preferably near the beginning of a release cycle.
+
 #### Resources
 
-- Here is a pair-programming [video session](https://www.youtube.com/watch?v=aTGbdPU0fE8) between Lucas Käldström and Hippie Hacker covering the same process for the Kubernetes 1.11 release.
+- Here is a pair-programming [video session](https://www.youtube.com/watch?v=aTGbdPU0fE8) between Lucas Käldström and Hippie Hacker covering the same process for the Kubernetes 1.11 release (outdated).
+- Example PRs can be found at the following links (outdated):
+  - https://github.com/kubernetes/test-infra/pull/9219
+  - https://github.com/kubernetes/test-infra/pull/8142
