@@ -54,6 +54,11 @@ func newUpgradeAction() kcluster.Action {
 func (b *upgradeAction) Tasks() []kcluster.Task {
 	return []kcluster.Task{
 		{
+			Description: "Pre-Load upgrade images ⛵",
+			TargetNodes: "@cp1",
+			Run:         runPreLoadUpgradeImages,
+		},
+		{
 			Description: "Upgrade the kubeadm binary ⛵",
 			TargetNodes: "@all",
 			Run:         runUpgradeKubeadmBinary,
@@ -81,11 +86,34 @@ func (b *upgradeAction) Tasks() []kcluster.Task {
 	}
 }
 
-func runUpgradeKubeadmBinary(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
+func runPreLoadUpgradeImages(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
 
 	if flags.UpgradeVersion == nil {
 		return errors.New("kubeadm-upgrade actions requires the --upgrade-version parameter to be set")
 	}
+
+	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", flags.UpgradeVersion))
+
+	// load images cached on the node into docker
+	// this should be executed on all nodes before running kubeadm upgrade apply in order to
+	// get everything in place when kubeadm creates pre-pull daemonsets
+	for _, n := range kctx.ControlPlanes() {
+		fmt.Printf("==> pre-loading images required for the upgrade on node %s 🚀\n", n.Name())
+
+		if err := n.Command(
+			"/bin/bash", "-c",
+			// use xargs to load images in parallel
+			`find `+fmt.Sprintf("%s", srcFolder)+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
+		).Run(); err != nil {
+			// even if this errors out, we continue because kubeadm will try to download
+			fmt.Printf("Error pre-loading images required for the upgrade on node %s: %v 🚀\n", n.Name(), err)
+		}
+	}
+
+	return nil
+}
+
+func runUpgradeKubeadmBinary(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
 
 	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", flags.UpgradeVersion))
 	src := filepath.Join(srcFolder, "kubeadm")
@@ -94,17 +122,6 @@ func runUpgradeKubeadmBinary(kctx *kcluster.KContext, kn *kcluster.KNode, flags 
 	fmt.Println("==> upgrading kubeadm 🚀")
 	if err := kn.Command(
 		"cp", src, dest,
-	).Run(); err != nil {
-		return err
-	}
-
-	fmt.Println("==> pre-loading images required for the upgrade 🚀")
-
-	// load images cached on the node into docker
-	if err := kn.Command(
-		"/bin/bash", "-c",
-		// use xargs to load images in parallel
-		`find `+fmt.Sprintf("%s", srcFolder)+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Run(); err != nil {
 		return err
 	}
