@@ -32,7 +32,7 @@ func GetKubeadmConfigPatches(initVersion string) (string, string, string, error)
 	}
 
 	// select the patches for the kubeadm config version
-	log.Infof("Preparing kubeadm config patches for %s version", initConfigVersion)
+	log.Infof("Preparing patches for kubeadm config %s (K8s/kubeadm initVersion %s)", initConfigVersion, initVersion)
 	switch initConfigVersion {
 	case "v1beta2":
 		return kubeDNSPatchv1beta2, calicoPatchv1beta2, externalEtcdPatchv1beta2, nil
