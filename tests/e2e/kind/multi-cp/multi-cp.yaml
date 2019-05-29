@@ -1,0 +1,9 @@
+# a single control-plane cluster with 3 workers
+kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha2
+nodes:
+- role: external-load-balancer
+- role: control-plane
+  replicas: 2
+- role: worker
+  replicas: 3
