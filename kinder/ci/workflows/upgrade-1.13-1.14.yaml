@@ -7,6 +7,6 @@ summary: |
 vars:
   initVersion: "{{ resolve `ci/latest-1.13` }}"
   upgradeVersion: "{{ resolve `release/latest-1.14` }}"
-  controlPlaneNodes: 2
+  controlPlaneNodes: 3
 tasks:
 - import: upgrade-tasks.yaml
