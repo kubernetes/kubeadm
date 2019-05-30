@@ -20,6 +20,7 @@ package cluster
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"k8s.io/apimachinery/pkg/util/version"
 	kalter "k8s.io/kubeadm/kinder/pkg/build/alter"
 	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
 	kextract "k8s.io/kubeadm/kinder/pkg/extract"
@@ -196,12 +198,19 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 }
 
 // getInitVersionFromImage the init version from the image metadata/image labels,
-// otherwise a release/stable is used as a default
-// TODO: get image version from the image tag as a first fallback, then use release/stable as as second fallback
+// otherwise get image version from the image tag as a first fallback, then use release/stable as as second fallback
 func getInitVersionFromImage(image string) (string, error) {
 	v, err := kalter.GetImageVersion(image)
 	if err != nil || v == "" {
-		log.Debug("Image initVersion label not set, trying to get release/stable release")
+		log.Debug("Image initVersion label not set, reading initVersion from image tag")
+		x := regexp.MustCompile(`:(.*)`).FindStringSubmatch(image)
+		if len(x) == 2 {
+			if _, err := version.ParseSemantic(x[1]); err == nil {
+				return x[1], nil
+			}
+		}
+
+		log.Debug("Failed to read initVersion from image name, using release/stable release")
 		return kextract.ResolveLabel("release/stable")
 	}
 
