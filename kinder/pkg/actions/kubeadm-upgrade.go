@@ -152,11 +152,21 @@ func runKubeadmUpgradeControlPlane(kctx *kcluster.KContext, kn *kcluster.KNode, 
 		return err
 	}
 
-	if err := kn.DebugCmd(
-		"==> kubeadm upgrade node experimental-control-plane 🚀",
-		"kubeadm", "upgrade", "node", "experimental-control-plane",
-	); err != nil {
-		return err
+	// starting from v1.15 there is a unique command for upgrading nodes (after kubeadm upgrade apply was executed on a first control-plane node)
+	if err := atLeastKubeadm(kn, "v1.15.0-0"); err == nil {
+		if err := kn.DebugCmd(
+			"==> kubeadm upgrade node 🚀",
+			"kubeadm", "upgrade", "node",
+		); err != nil {
+			return err
+		}
+	} else {
+		if err := kn.DebugCmd(
+			"==> kubeadm upgrade node experimental-control-plane 🚀",
+			"kubeadm", "upgrade", "node", "experimental-control-plane",
+		); err != nil {
+			return err
+		}
 	}
 
 	if err := waitControlPlaneUpgraded(kctx, kn, flags); err != nil {
@@ -174,11 +184,21 @@ func runKubeadmUpgradeWorkers(kctx *kcluster.KContext, kn *kcluster.KNode, flags
 		return err
 	}
 
-	if err := kn.DebugCmd(
-		"==> kubeadm upgrade node config 🚀",
-		"kubeadm", "upgrade", "node", "config", "--kubelet-version", fmt.Sprintf("v%s", flags.UpgradeVersion),
-	); err != nil {
-		return err
+	// starting from v1.15 there is a unique command for upgrading nodes (after kubeadm upgrade apply was executed on a first control-plane node)
+	if err := atLeastKubeadm(kn, "v1.15.0-0"); err == nil {
+		if err := kn.DebugCmd(
+			"==> kubeadm upgrade node 🚀",
+			"kubeadm", "upgrade", "node",
+		); err != nil {
+			return err
+		}
+	} else {
+		if err := kn.DebugCmd(
+			"==> kubeadm upgrade node config 🚀",
+			"kubeadm", "upgrade", "node", "config", "--kubelet-version", fmt.Sprintf("v%s", flags.UpgradeVersion),
+		); err != nil {
+			return err
+		}
 	}
 
 	return nil

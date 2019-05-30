@@ -156,8 +156,14 @@ func runJoinControlPlane(kctx *kcluster.KContext, kn *kcluster.KNode, flags kclu
 		return err
 	}
 
+	// before v1.15, control-plane require the experimental prefix
+	controlPlaneFlag := "--control-plane"
+	if err := atLeastKubeadm(kn, "v1.15.0-0"); err != nil {
+		controlPlaneFlag = "--experimental-control-plane"
+	}
+
 	joinArgs := []string{
-		"join", joinAddress, "--experimental-control-plane", "--token", Token, "--discovery-token-unsafe-skip-ca-verification", "--ignore-preflight-errors=all",
+		"join", joinAddress, controlPlaneFlag, "--token", Token, "--discovery-token-unsafe-skip-ca-verification", "--ignore-preflight-errors=all",
 	}
 	if flags.CopyCerts {
 		joinArgs = append(joinArgs,
@@ -198,8 +204,14 @@ func runJoinControlPlanePhases(kctx *kcluster.KContext, kn *kcluster.KNode, flag
 		return err
 	}
 
+	// before v1.15, control-plane require the experimental prefix
+	controlPlaneFlag := "--control-plane"
+	if err := atLeastKubeadm(kn, "v1.15.0-0"); err != nil {
+		controlPlaneFlag = "--experimental-control-plane"
+	}
+
 	preflightArgs := []string{
-		"join", "phase", "preflight", joinAddress, "--experimental-control-plane", "--token", Token, "--discovery-token-unsafe-skip-ca-verification", "--ignore-preflight-errors=all",
+		"join", "phase", "preflight", joinAddress, controlPlaneFlag, "--token", Token, "--discovery-token-unsafe-skip-ca-verification", "--ignore-preflight-errors=all",
 	}
 	if flags.CopyCerts {
 		preflightArgs = append(preflightArgs,
@@ -214,7 +226,7 @@ func runJoinControlPlanePhases(kctx *kcluster.KContext, kn *kcluster.KNode, flag
 	}
 
 	prepareArgs := []string{
-		"join", "phase", "control-plane-prepare", "all", joinAddress, "--experimental-control-plane", "--discovery-token", Token, "--discovery-token-unsafe-skip-ca-verification",
+		"join", "phase", "control-plane-prepare", "all", joinAddress, controlPlaneFlag, "--discovery-token", Token, "--discovery-token-unsafe-skip-ca-verification",
 	}
 	if flags.CopyCerts {
 		prepareArgs = append(prepareArgs,
@@ -237,7 +249,7 @@ func runJoinControlPlanePhases(kctx *kcluster.KContext, kn *kcluster.KNode, flag
 
 	if err := kn.DebugCmd(
 		"==> kubeadm join phase control-plane-join all 🚀",
-		"kubeadm", "join", "phase", "control-plane-join", "all", "--experimental-control-plane",
+		"kubeadm", "join", "phase", "control-plane-join", "all", controlPlaneFlag,
 	); err != nil {
 		return err
 	}
