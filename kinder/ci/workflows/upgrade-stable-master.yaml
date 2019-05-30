@@ -7,14 +7,16 @@ summary: |
 vars:
   initVersion: "{{ resolve `release/stable` }}"
   upgradeVersion: "{{ resolve `ci/latest` }}"
-  controlPlaneNodes: 1
+  controlPlaneNodes: 2
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-upgrade
 tasks:
 # Important! this worflow is using locally defined task instead of the shared upgrade-task.yaml
-# because e2e-kubeadm is executed after the upgrade (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
+# because:
+# - e2e-kubeadm is executed after the upgrade (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
+# - it uses the automatic copy certs feature, available in kubeadm since v1.14
 - name: pull-base-image
   description: |
     pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
@@ -58,6 +60,7 @@ tasks:
     - do
     - kubeadm-init
     - --name={{ .vars.clusterName }}
+    - --automatic-copy-certs
   timeout: 5m
 - name: join
   description: |
@@ -67,6 +70,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
+    - --automatic-copy-certs
   timeout: 5m
 - name: cluster-info-before
   description: |
