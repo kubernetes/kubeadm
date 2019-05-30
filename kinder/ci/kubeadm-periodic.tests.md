@@ -27,6 +27,19 @@ might be eventually repeated across all/a subset of the Kubernetes versions in s
 
 ### Regular tests
 
+Kubeadm regular test are meant to create a cluster with `kubeadm init`, `kubeadm join` and then verify cluster
+conformance. Following regular tests are verified using kind (no need of kinder customization so far):
+
+| Version          | e.g.   |                                                              |
+| ---------------- | ------ | ------------------------------------------------------------ |
+| master<br />(master branch) | v1.15.0-alpha...  | The release under current development                        |
+| current<br />(release-1.14 branch) | v1.14.2-alpha...  | Current GA release                                           |
+| current -1/minor<br />(release-1.13 branch)  | V1.13.6-alpha...  | Former GA release, still officially supported                |
+| current -2/minor<br />(release-1.12 branch)  | V1.12.10-alpha...  | First release out of support, but test are preserved for one additional release cycle (one cycle after going out of support) |
+
+NB. currently kind tests are build Kubernetes from the selected branch. This is slightly different from what
+kinder is doing, that is to use an existing CI/Release build.
+
 ### Upgrade tests
 
 Upgrade tests are meant to verify the proper functioning of the `kubeadm upgrade` workflow. Following upgrade tests are verified:
