@@ -7,7 +7,7 @@ summary: |
 vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
   kubernetesVersion: "{{ resolve `release/stable` }}"
-  controlPlaneNodes: 2
+  controlPlaneNodes: 3
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
