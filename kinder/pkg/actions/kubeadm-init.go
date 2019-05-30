@@ -64,8 +64,13 @@ func runInit(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionF
 			return errors.Wrapf(err, "--automatic-copy-certs can't be used")
 		}
 
+		// before v1.15, upload-certs require the experimental prefix
+		uploadCertsFlag := "--upload-certs"
+		if err := atLeastKubeadm(kn, "v1.15.0-0"); err != nil {
+			uploadCertsFlag = "--experimental-upload-certs"
+		}
 		initArgs = append(initArgs,
-			"--experimental-upload-certs",
+			uploadCertsFlag,
 			fmt.Sprintf("--certificate-key=%s", CertificateKey),
 		)
 	}
@@ -149,10 +154,15 @@ func runInitPhases(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.A
 			return errors.Wrapf(err, "--automatic-copy-certs can't be used")
 		}
 
+		uploadCertsFlag := "--upload-certs"
+		if err := atLeastKubeadm(kn, "v1.15.0-0"); err != nil {
+			uploadCertsFlag = "--experimental-upload-certs"
+		}
+
 		if err := kn.DebugCmd(
 			"==> kubeadm init phase upload-certs 🚀",
 			"kubeadm", "init", "phase", "upload-certs", "--config=/kind/kubeadm.conf",
-			"--experimental-upload-certs", fmt.Sprintf("--certificate-key=%s", CertificateKey),
+			uploadCertsFlag, fmt.Sprintf("--certificate-key=%s", CertificateKey),
 		); err != nil {
 			return err
 		}
