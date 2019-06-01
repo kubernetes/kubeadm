@@ -18,6 +18,7 @@ package actions
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
@@ -41,6 +42,13 @@ func (b *initAction) Tasks() []kcluster.Task {
 			Description: "Starting Kubernetes using kubeadm init (this may take a minute) ☸",
 			TargetNodes: "@cp1",
 			Run: func(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionFlags) error {
+				// kind does not support v1Beta2 config yet, so kinder automatically
+				// migrates v1Beta1 config to v1Beta2 in case of kubeadm >= v1.15
+				if err := atLeastKubeadm(kn, "v1.15.0-0"); err == nil {
+					if err := migrateConfigToV1beta2(kn); err != nil {
+						return err
+					}
+				}
 				switch flags.UsePhases {
 				case true:
 					return runInitPhases(kctx, kn, flags)
@@ -64,15 +72,18 @@ func runInit(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.ActionF
 			return errors.Wrapf(err, "--automatic-copy-certs can't be used")
 		}
 
-		// before v1.15, upload-certs require the experimental prefix
-		uploadCertsFlag := "--upload-certs"
-		if err := atLeastKubeadm(kn, "v1.15.0-0"); err != nil {
-			uploadCertsFlag = "--experimental-upload-certs"
+		// with v1.15, we can use the --upload-certs flag only, because the certificate key is included in the InitConfiguration
+		// before v1.15, --upload-certs requires the experimental prefix and the certificate key must be passed as a flag
+		if err := atLeastKubeadm(kn, "v1.15.0-0"); err == nil {
+			initArgs = append(initArgs,
+				"--upload-certs",
+			)
+		} else {
+			initArgs = append(initArgs,
+				"--experimental-upload-certs",
+				fmt.Sprintf("--certificate-key=%s", CertificateKey),
+			)
 		}
-		initArgs = append(initArgs,
-			uploadCertsFlag,
-			fmt.Sprintf("--certificate-key=%s", CertificateKey),
-		)
 	}
 
 	if err := kn.DebugCmd(
@@ -154,17 +165,24 @@ func runInitPhases(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.A
 			return errors.Wrapf(err, "--automatic-copy-certs can't be used")
 		}
 
-		uploadCertsFlag := "--upload-certs"
-		if err := atLeastKubeadm(kn, "v1.15.0-0"); err != nil {
-			uploadCertsFlag = "--experimental-upload-certs"
-		}
-
-		if err := kn.DebugCmd(
-			"==> kubeadm init phase upload-certs 🚀",
-			"kubeadm", "init", "phase", "upload-certs", "--config=/kind/kubeadm.conf",
-			uploadCertsFlag, fmt.Sprintf("--certificate-key=%s", CertificateKey),
-		); err != nil {
-			return err
+		// with v1.15, we can use the --upload-certs flag only, because the certificate key is included in the InitConfiguration
+		// before v1.15, --upload-certs requires the experimental prefix and the certificate key must be passed as a flag
+		if err := atLeastKubeadm(kn, "v1.15.0-0"); err == nil {
+			if err := kn.DebugCmd(
+				"==> kubeadm init phase upload-certs 🚀",
+				"kubeadm", "init", "phase", "upload-certs", "--config=/kind/kubeadm.conf",
+				"--upload-certs",
+			); err != nil {
+				return err
+			}
+		} else {
+			if err := kn.DebugCmd(
+				"==> kubeadm init phase upload-certs 🚀",
+				"kubeadm", "init", "phase", "upload-certs", "--config=/kind/kubeadm.conf",
+				"--experimental-upload-certs", fmt.Sprintf("--certificate-key=%s", CertificateKey),
+			); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -195,5 +213,40 @@ func runInitPhases(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.A
 		return err
 	}
 
+	return nil
+}
+
+func migrateConfigToV1beta2(kn *kcluster.KNode) error {
+	fmt.Printf("==> Migrating kubeadm config from v1beta1 to v1beta2 🖥\n\n")
+	// reads v1beta1 config from the node
+	lines, err := kn.CombinedOutputLines(
+		"cat", "/kind/kubeadm.conf",
+	)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read /kind/kubeadm.conf")
+	}
+
+	// changes config version and adds the certificateKey field
+	var v1Beta2Config string
+	for _, l := range lines {
+		if strings.Contains(l, "kubeadm.k8s.io/v1beta1") {
+			l = strings.Replace(l, "kubeadm.k8s.io/v1beta1", "kubeadm.k8s.io/v1beta2", -1)
+		}
+
+		if l == "kind: InitConfiguration" {
+			v1Beta2Config = fmt.Sprintf("%scertificateKey: \"%s\"\n", v1Beta2Config, CertificateKey)
+		}
+
+		v1Beta2Config = fmt.Sprintf("%s%s\n", v1Beta2Config, l)
+	}
+
+	// writes v1beta2 config back to the node
+	if err := kn.Command(
+		"cp", "/dev/stdin", "/kind/kubeadm.conf",
+	).SetStdin(
+		strings.NewReader(v1Beta2Config),
+	).Run(); err != nil {
+		return errors.Wrapf(err, "failed to write /kind/kubeadm.conf")
+	}
 	return nil
 }
