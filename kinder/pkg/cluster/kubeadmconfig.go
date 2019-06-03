@@ -70,7 +70,8 @@ func getKubeadmConfigVersion(initVersion string) (string, error) {
 		return "v1beta1", nil
 	}
 
-	return "v1beta2", nil
+	// kind does not support v1Beta2 config yet
+	return "v1beta1", nil
 }
 
 const kubeDNSPatchv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2

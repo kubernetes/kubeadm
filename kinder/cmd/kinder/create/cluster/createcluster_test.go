@@ -37,34 +37,34 @@ func TestNewConfig(t *testing.T) {
 			TestName:             "Default",
 			initVersion:          "v1.15.0",
 			controlPlanes:        1,
-			expectedPatchVersion: "kubeadm.k8s.io/v1beta2",
+			expectedPatchVersion: "kubeadm.k8s.io/v1beta1", // kind does not support v1Beta2 config yet
 		},
 		{
 			TestName:             "More workers",
 			initVersion:          "v1.15.0",
 			controlPlanes:        1,
 			workers:              2,
-			expectedPatchVersion: "kubeadm.k8s.io/v1beta2",
+			expectedPatchVersion: "kubeadm.k8s.io/v1beta1", // kind does not support v1Beta2 config yet
 		},
 		{
 			TestName:             "More control-planes",
 			initVersion:          "v1.15.0",
 			controlPlanes:        2,
-			expectedPatchVersion: "kubeadm.k8s.io/v1beta2",
+			expectedPatchVersion: "kubeadm.k8s.io/v1beta1", // kind does not support v1Beta2 config yet
 		},
 		{
 			TestName:             "Kube dns",
 			initVersion:          "v1.15.0",
 			controlPlanes:        1,
 			kubeDNS:              true,
-			expectedPatchVersion: "kubeadm.k8s.io/v1beta2",
+			expectedPatchVersion: "kubeadm.k8s.io/v1beta1", // kind does not support v1Beta2 config yet
 		},
 		{
 			TestName:             "External etcd",
 			initVersion:          "v1.15.0",
 			controlPlanes:        1,
 			externalEtcdIP:       "https://1.2.3.4:5678",
-			expectedPatchVersion: "kubeadm.k8s.io/v1beta2",
+			expectedPatchVersion: "kubeadm.k8s.io/v1beta1", // kind does not support v1Beta2 config yet
 		},
 		{
 			TestName:             "initVersion v1.14",
