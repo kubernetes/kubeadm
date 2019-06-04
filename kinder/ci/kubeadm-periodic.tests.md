@@ -66,3 +66,13 @@ X on Y tests are meant to verify the proper functioning of kubeadm version X wit
 | current -2/minor<br />(ci/latest-1.12) | V1.12.9-alpha... | current -3/minor<br />(ci/latest-1.11) | V1.11.10-alpha... |
 
 TODO: currently tests are not consistent with regards to the selection of from/to versions (some ci on stable, others ci on ci). Define if/how to rationalize
+
+### External etcd with secret copy tests
+
+Kubeadm external etcd tests are meant to create a cluster with `kubeadm init`, `kubeadm join` using an external etcd cluster, using
+kubeadm secret copy feature among control planes and then verify the cluster conformance.
+
+| Version          | e.g.   |                                                              |
+| ---------------- | ------ | ------------------------------------------------------------ |
+| master<br />(master branch) | v1.15.0-alpha...  | The release under current development |
+| current<br />(release-1.14 branch) | v1.14.2-alpha...  | Current GA release |
