@@ -94,10 +94,11 @@ func runPreLoadUpgradeImages(kctx *kcluster.KContext, kn *kcluster.KNode, flags 
 
 	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", flags.UpgradeVersion))
 
-	// load images cached on the node into docker
-	// this should be executed on all nodes before running kubeadm upgrade apply in order to
-	// get everything in place when kubeadm creates pre-pull daemonsets
-	for _, n := range kctx.ControlPlanes() {
+	// load images cached on the node into CRI engine
+	// this should be executed on all nodes before running kubeadm upgrade in order to
+	// get everything in place when kubeadm creates pre-pull daemonsets or upgrades the kube-proxy daemonset.
+	// (if not so, kubeadm blocks in case of images not available on public registry, like e.g. pre-release images)
+	for _, n := range kctx.KubernetesNodes() {
 		fmt.Printf("==> pre-loading images required for the upgrade on node %s 🚀\n", n.Name())
 
 		if err := n.Command(
