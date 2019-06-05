@@ -74,5 +74,5 @@ kubeadm secret copy feature among control planes and then verify the cluster con
 
 | Version          | e.g.   |                                                              |
 | ---------------- | ------ | ------------------------------------------------------------ |
-| master<br />(master branch) | v1.15.0-alpha...  | The release under current development |
-| current<br />(release-1.14 branch) | v1.14.2-alpha...  | Current GA release |
+| master<br />(ci/latest) | v1.15.0-alpha...  | The release under current development |
+| current<br />(ci/latest-1.14) | v1.14.2-alpha...  | Current GA release |

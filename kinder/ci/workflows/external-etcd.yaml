@@ -6,7 +6,7 @@ vars:
   kubernetesVersion: v1.14.1
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
-  clusterName: kinder-ha-external-etcd
+  clusterName: kinder-external-etcd
 tasks:
 - name: pull-base-image
   description: |
