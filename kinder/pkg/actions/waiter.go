@@ -231,11 +231,20 @@ func staticPodHasVersion(pod, version string) func(kctx *kcluster.KContext, kn *
 	}
 }
 
-// kubeletHasRBAC is a test checking that kubelet has access to the expected config map
+// kubeletHasRBAC is a test checking that kubelet has reliable access to kubelet-config-x.y and kube-proxy,
+// where reliable = it have access for 5 seconds in a row.
+//
+// this test is a workaround meant to prevent errors like: configmaps "kube-proxy" is forbidden:
+// User "system:node:kinder-upgrade-control-plane3" cannot get resource "configmaps" in API
+// group "" in the namespace "kube-system": no relationship found between node "kinder-upgrade-control-plane3"
+// and this object
+//
+// The real source of this errors during upgrades is still not clear, but it is probably related to
+// the restarting of control-plane components after control-plane upgrade like e.g. the node authorizer
 func kubeletHasRBAC(major, minor uint) func(kctx *kcluster.KContext, kn *kcluster.KNode) bool {
 	return func(kctx *kcluster.KContext, kn *kcluster.KNode) bool {
 		for i := 0; i < 5; i++ {
-			output := kubectlOutput(kctx.BootStrapControlPlane(),
+			output1 := kubectlOutput(kctx.BootStrapControlPlane(),
 				"get",
 				"cm",
 				fmt.Sprintf("kubelet-config-%d.%d", major, minor),
@@ -243,7 +252,15 @@ func kubeletHasRBAC(major, minor uint) func(kctx *kcluster.KContext, kn *kcluste
 				"-n=kube-system",
 				"-o=jsonpath='{.metadata.name}'",
 			)
-			if output != "" {
+			output2 := kubectlOutput(kctx.BootStrapControlPlane(),
+				"get",
+				"cm",
+				"kube-proxy",
+				"--kubeconfig=/etc/kubernetes/kubelet.conf",
+				"-n=kube-system",
+				"-o=jsonpath='{.metadata.name}'",
+			)
+			if output1 != "" && output2 != "" {
 				time.Sleep(1 * time.Second)
 				continue
 			}
