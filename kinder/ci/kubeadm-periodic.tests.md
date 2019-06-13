@@ -46,7 +46,7 @@ Upgrade tests are meant to verify the proper functioning of the `kubeadm upgrade
 
 | from                                         | e.g.              | to                                     | e.g.             |
 | -------------------------------------------- | ----------------- | -------------------------------------- | ---------------- |
-| current<br />(release/stable)                | v1.14.1           | master<br />(ci/latest)                | v1.15.0-alpha... |
+| current<br />(release/latest-1.14)                | v1.14.1           | master<br />(ci/latest)                | v1.15.0-alpha... |
 | current -1/minor<br />(ci/latest-1.13) | V1.13.6-alpha...  | current<br />(release/latest-1.14)     | v1.14.1          |
 | current -2/minor<br />(ci/latest-1.12)       | V1.12.9-alpha...  | current -1/minor<br />(ci/latest-1.13) | V1.13.5          |
 | current -3/minor<br />(ci/latest-1.11)       | V1.11.10-alpha... | current -2/minor<br />(ci/latest-1.12) | V1.12.8          |
@@ -60,7 +60,7 @@ X on Y tests are meant to verify the proper functioning of kubeadm version X wit
 
 | kubeadm (X)                            | e.g.             | Kubernetes (Y)                         | e.g.              |
 | -------------------------------------- | ---------------- | -------------------------------------- | ----------------- |
-| master<br />(ci/latest)                | v1.15.0-alpha... | current<br />(release/stable)          | v1.14.1           |
+| master<br />(ci/latest)                | v1.15.0-alpha... | current<br />(release/latest-1.14)          | v1.14.1-alpha...           |
 | current<br />(ci/latest-1.14)          | v1.14.1-alpha... | current -1/minor<br />(ci/latest-1.13) | V1.13.6-alpha...  |
 | current -1/minor<br />(ci/latest-1.13) | V1.13.6-alpha... | current -2/minor<br />(ci/latest-1.12) | V1.12.9-alpha...  |
 | current -2/minor<br />(ci/latest-1.12) | V1.12.9-alpha... | current -3/minor<br />(ci/latest-1.11) | V1.11.10-alpha... |

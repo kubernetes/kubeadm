@@ -210,7 +210,7 @@ func getInitVersionFromImage(image string) (string, error) {
 			}
 		}
 
-		log.Debug("Failed to read initVersion from image name, using release/stable release")
+		log.Debug("Failed to read initVersion from image name, using release/latest-1.14 release")
 		return kextract.ResolveLabel("release/stable")
 	}
 

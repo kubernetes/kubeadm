@@ -6,7 +6,7 @@ summary: |
   config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
 vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
-  kubernetesVersion: "{{ resolve `release/stable` }}"
+  kubernetesVersion: "{{ resolve `release/latest-1.14` }}"
   controlPlaneNodes: 3
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f

@@ -5,7 +5,7 @@ summary: |
   config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml
   config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
 vars:
-  initVersion: "{{ resolve `release/stable` }}"
+  initVersion: "{{ resolve `release/latest-1.14` }}"
   upgradeVersion: "{{ resolve `ci/latest` }}"
   controlPlaneNodes: 3
   workerNodes: 2
