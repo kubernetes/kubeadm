@@ -23,29 +23,29 @@
     </tr>
     <tr>
         <th>color</th>
-        <td><img src="horizontal/color/kubeadm-horizontal-color.png" width="200"></td>
-        <td><img src="stacked/color/kubeadm-stacked-color.png" width="95"></td>
-        <td><img src="icon/color/kubeadm-icon-color.png" width="75"></td>
-        <td><img src="horizontal/color/kubeadm-horizontal-color.svg" width="200"></td>
-        <td><img src="stacked/color/kubeadm-stacked-color.svg" width="95"></td>
-        <td><img src="icon/color/kubeadm-icon-color.svg" width="75"></td>
+        <td><img src="/logos/horizontal/color/kubeadm-horizontal-color.png" width="200"></td>
+        <td><img src="/logos/stacked/color/kubeadm-stacked-color.png" width="95"></td>
+        <td><img src="/logos/icon/color/kubeadm-icon-color.png" width="75"></td>
+        <td><img src="/logos/horizontal/color/kubeadm-horizontal-color.svg" width="200"></td>
+        <td><img src="/logos/stacked/color/kubeadm-stacked-color.svg" width="95"></td>
+        <td><img src="/logos/icon/color/kubeadm-icon-color.svg" width="75"></td>
     </tr>
     <tr>
         <th>black</th>
-        <td><img src="horizontal/black/kubeadm-horizontal-black.png" width="200"></td>
-        <td><img src="stacked/black/kubeadm-stacked-black.png" width="95"></td>
-        <td><img src="icon/black/kubeadm-icon-black.png" width="75"></td>
-        <td><img src="horizontal/black/kubeadm-horizontal-black.svg" width="200"></td>
-        <td><img src="stacked/black/kubeadm-stacked-black.svg" width="95"></td>
-        <td><img src="icon/black/kubeadm-icon-black.svg" width="75"></td>
+        <td><img src="/logos/horizontal/black/kubeadm-horizontal-black.png" width="200"></td>
+        <td><img src="/logos/stacked/black/kubeadm-stacked-black.png" width="95"></td>
+        <td><img src="/logos/icon/black/kubeadm-icon-black.png" width="75"></td>
+        <td><img src="/logos/horizontal/black/kubeadm-horizontal-black.svg" width="200"></td>
+        <td><img src="/logos/stacked/black/kubeadm-stacked-black.svg" width="95"></td>
+        <td><img src="/logos/icon/black/kubeadm-icon-black.svg" width="75"></td>
     </tr>
     <tr>
         <th>white</th>
-        <td><img src="horizontal/white/kubeadm-horizontal-white.png" width="200"></td>
-        <td><img src="stacked/white/kubeadm-stacked-white.png" width="95"></td>
-        <td><img src="icon/white/kubeadm-icon-white.png" width="75"></td>
-        <td><img src="horizontal/white/kubeadm-horizontal-white.svg" width="200"></td>
-        <td><img src="stacked/white/kubeadm-stacked-white.svg" width="95"></td>
-        <td><img src="icon/white/kubeadm-icon-white.svg" width="75"></td>
+        <td><img src="/logos/horizontal/white/kubeadm-horizontal-white.png" width="200"></td>
+        <td><img src="/logos/stacked/white/kubeadm-stacked-white.png" width="95"></td>
+        <td><img src="/logos/icon/white/kubeadm-icon-white.png" width="75"></td>
+        <td><img src="/logos/horizontal/white/kubeadm-horizontal-white.svg" width="200"></td>
+        <td><img src="/logos/stacked/white/kubeadm-stacked-white.svg" width="95"></td>
+        <td><img src="/logos/icon/white/kubeadm-icon-white.svg" width="75"></td>
     </tr>
 </table>
