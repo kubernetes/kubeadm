@@ -7,19 +7,19 @@ approvers:
 - fabriziopandini
 - neolit123
 - rosti
+- ereslibre
 reviewers:
 - luxas
 - timothysc
 - fabriziopandini
 - kad
-- liztio
-- chuckha
 - detiber
 - dixudx
 - neolit123
 - rosti
 - yagonobre
 - ereslibre
-# Might want to add @xiangpengzhao, @stealthybox, @kargakis, @jamiehannaford, @krousey and/or @dmmcquay back in the future
+- SataQiu
+# Might want to add @xiangpengzhao, @stealthybox, @kargakis, @jamiehannaford, @krousey, @dmmcquay, @liztio and/or @chuckha back in the future
 labels:
 - sig/cluster-lifecycle
