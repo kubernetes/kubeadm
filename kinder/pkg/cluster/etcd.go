@@ -17,17 +17,20 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/docker"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // CreateExternalEtcd creates a docker container mocking a kind external etcd node
 // this is temporary and should go away as soon as kind support external etcd node
-func CreateExternalEtcd(name string) (ip string, err error) {
+func CreateExternalEtcd(name, nodeImage string) (ip string, err error) {
 	// define name and labels mocking a kind external etcd node
 
 	containerName := fmt.Sprintf("%s-%s", name, constants.ExternalEtcdNodeRoleValue)
@@ -50,8 +53,34 @@ func CreateExternalEtcd(name string) (ip string, err error) {
 		"--listen-client-urls", "http://0.0.0.0:2379",
 	}
 
+	// create a temporary container from the node-image to be able to fetch the etcd version from kubeadm
 	_, err = docker.Run(
-		"k8s.gcr.io/etcd:3.2.24",
+		nodeImage,
+		docker.WithRunArgs("-d", fmt.Sprintf("--name=%s", containerName)),
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create a temporary node container")
+	}
+	var etcdVersionBuf bytes.Buffer
+	cmder := docker.ContainerCmder(containerName)
+	cmd := cmder.Command("/bin/sh", "-c", "kubeadm config images list | grep etcd")
+	cmd.SetStdout(&etcdVersionBuf)
+	if err := cmd.Run(); err != nil {
+		return "", errors.Wrap(err, "failed to get etcd version from the temporary node container")
+	}
+	if err := exec.Command("docker", "rm", "-f", "-v", containerName).Run(); err != nil {
+		return "", errors.Wrap(err, "failed to remove the temporary node container")
+	}
+
+	// pull the image if needed
+	etcdImage := strings.TrimSpace(etcdVersionBuf.String())
+	if _, err := docker.PullIfNotPresent(etcdImage, 2); err != nil {
+		return "", errors.Wrap(err, "failed to pre-pull the etcd image")
+	}
+
+	// create the etcd container
+	_, err = docker.Run(
+		etcdImage,
 		docker.WithRunArgs(runArgs...),
 		docker.WithContainerArgs(containerArgs...),
 	)

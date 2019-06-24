@@ -120,7 +120,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		fmt.Printf("Creating external etcd for the cluster %q ...\n", flags.Name)
 
 		var err error
-		externalEtcdIP, err = kcluster.CreateExternalEtcd(flags.Name)
+		externalEtcdIP, err = kcluster.CreateExternalEtcd(flags.Name, flags.ImageName)
 		if err != nil {
 			return errors.Wrap(err, "failed to create cluster")
 		}
