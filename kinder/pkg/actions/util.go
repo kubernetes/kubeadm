@@ -61,7 +61,7 @@ func postInit(kctx *kcluster.KContext, kn *kcluster.KNode, flags kcluster.Action
 	if err := kn.DebugCmd(
 		"==> install cni 🗻",
 		"/bin/sh", "-c", //use shell to get $(...) resolved into the container
-		"kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml",
+		"kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml",
 	); err != nil {
 		return err
 	}
