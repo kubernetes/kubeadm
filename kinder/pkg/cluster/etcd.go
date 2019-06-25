@@ -63,7 +63,7 @@ func CreateExternalEtcd(name, nodeImage string) (ip string, err error) {
 	}
 	var etcdVersionBuf bytes.Buffer
 	cmder := docker.ContainerCmder(containerName)
-	cmd := cmder.Command("/bin/sh", "-c", "kubeadm config images list | grep etcd")
+	cmd := cmder.Command("/bin/sh", "-c", "kubeadm config images list 2> /dev/null | grep etcd")
 	cmd.SetStdout(&etcdVersionBuf)
 	if err := cmd.Run(); err != nil {
 		return "", errors.Wrap(err, "failed to get etcd version from the temporary node container")
