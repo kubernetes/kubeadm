@@ -40,6 +40,7 @@ tasks:
     - --control-plane-nodes=3
     - --worker-nodes=2
     - --external-etcd
+    - --loglevel=debug
   timeout: 5m
 - name: init
   description: |
@@ -51,6 +52,7 @@ tasks:
     - kubeadm-init
     - --automatic-copy-certs
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 5m
 - name: join
   description: |
@@ -61,6 +63,7 @@ tasks:
     - kubeadm-join
     - --automatic-copy-certs
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 5m
 - name: e2e-kubeadm
   description: |
@@ -71,6 +74,7 @@ tasks:
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-cluster-creation
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: e2e
   description: |
     Runs e2e tests
@@ -81,6 +85,7 @@ tasks:
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-cluster-creation
     - --parallel
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 25m
 - name: get-logs
   description: |
@@ -106,6 +111,7 @@ tasks:
     - do
     - kubeadm-reset
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
 - name: delete
   description: |
@@ -115,4 +121,5 @@ tasks:
     - delete
     - cluster
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
