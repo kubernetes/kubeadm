@@ -1,7 +1,7 @@
 version: 1
 summary: |
   This workflow tests the proper functioning of kubeadm version v1.14 with Kubernetes v1.13
-  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-all#kubeadm-kinder-1.14-on-1.13
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-1-14-on-1-13
   config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-X-on-Y.yaml
   config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
 vars:
