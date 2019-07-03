@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# CI script to run go vet over our code
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -23,10 +22,4 @@ source "$(dirname "$0")/utils.sh"
 # cd to the root path
 cd_root_path
 
-# run go test
-export GO111MODULE=on
-go test -v ./cmd/...
-go test -v ./pkg/...
-go test -v ./ci/tools/...
-go test -v ./hack/...
-go test -v ./
+git ls-files | xargs go run ./hack/verify-boilerplate.go
