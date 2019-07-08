@@ -1,21 +1,21 @@
 version: 1
 summary: |
-  This workflow tests the proper functioning of kubeadm version master with Kubernetes stable
-  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-all#kubeadm-kinder-1.14-on-1.13
-  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-X-on-Y.yaml
+  this workflow test kubeadm upgrades from Kubernetes ci/latest-1.15 version to Kubernetes from ci/latest
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-upgrade-1-15-1-16
+  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml
   config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
 vars:
-  kubeadmVersion: "{{ resolve `ci/latest` }}"
-  kubernetesVersion: "{{ resolve `release/stable` }}"
+  initVersion: "{{ resolve `ci/latest-1.15` }}"
+  upgradeVersion: "{{ resolve `ci/latest` }}"
   controlPlaneNodes: 3
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
-  clusterName: kinder-xony
+  clusterName: kinder-upgrade
 tasks:
-# Important! this worflow is using locally defined task instead of the shared skew-x-on-y-tasks.yaml
+# Important! this worflow is using locally defined task instead of the shared upgrade-task.yaml
 # because:
-# - e2e-kubeadm is executed (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
+# - e2e-kubeadm is executed after the upgrade (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
 # - it uses the automatic copy certs feature, available in kubeadm since v1.14
 - name: pull-base-image
   description: |
@@ -26,16 +26,17 @@ tasks:
     - "{{ .vars.baseImage }}"
 - name: add-kubernetes-versions
   description: |
-    creates a node-image-variant by adding a Kubernetes version and
-    and a different Kubernetes version
+    creates a node-image-variant by adding Kubernetes version "initVersion"
+    to be used when executing "kinder do kubeadm-init" and Kubernetes
+    version "upgradeVersion" to be used afterwards when executing "kinder do kubeadm-upgrade"
   cmd: kinder
   args:
     - build
     - node-image-variant
     - --base-image={{ .vars.baseImage }}
     - --image={{ .vars.image }}
-    - --with-init-artifacts={{ .vars.kubernetesVersion }}
-    - --with-kubeadm={{ .vars.kubeadmVersion }}
+    - --with-init-artifacts={{ .vars.initVersion }}
+    - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -71,31 +72,49 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --automatic-copy-certs
   timeout: 5m
-- name: cluster-info
+- name: cluster-info-before
   description: |
-    Runs cluster-info
+    Runs cluster-info on the cluster before upgrade
   cmd: kinder
   args:
     - do
     - cluster-info
     - --name={{ .vars.clusterName }}
-- name: e2e-kubeadm
+- name: upgrade
   description: |
-    Runs kubeadm e2e test
+    upgrades the cluster to Kubernetes "upgradeVersion"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-upgrade
+    - --upgrade-version={{ .vars.upgradeVersion }}
+    - --name={{ .vars.clusterName }}
+  timeout: 5m
+- name: e2e-kubeadm-after
+  description: |
+    Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"
   cmd: kinder
   args:
     - test
     - e2e-kubeadm
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-upgrade
     - --name={{ .vars.clusterName }}
-- name: e2e
+- name: cluster-info-after
   description: |
-    Runs kubeadm e2e test
+    Runs cluster-info on the cluster after upgrade
+  cmd: kinder
+  args:
+    - do
+    - cluster-info
+    - --name={{ .vars.clusterName }}
+- name: e2e-after
+  description: |
+    Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"
   cmd: kinder
   args:
     - test
     - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=05-e2e
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-upgrade
     - --parallel
     - --name={{ .vars.clusterName }}
   timeout: 25m
