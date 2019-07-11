@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/kind/pkg/exec"
+	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // getBinary tries to find a binary, and if not exist it builds it
@@ -40,8 +40,8 @@ func getOrBuildBinary(kubeRoot, name, target string) (string, error) {
 	if path == "" {
 		log.Debugf("%s binary not found, triggering build", name)
 
-		cmd := exec.Command("make", "-C", kubeRoot, fmt.Sprintf("WHAT=%s", target))
-		exec.InheritOutput(cmd)
+		cmd := kindexec.Command("make", "-C", kubeRoot, fmt.Sprintf("WHAT=%s", target))
+		kindexec.InheritOutput(cmd)
 		err = cmd.Run()
 		if err != nil {
 			return "", errors.Errorf("error building %s binary - %s target", name, target)
@@ -65,8 +65,8 @@ func getOrBuildBinary(kubeRoot, name, target string) (string, error) {
 func findKubeRoot() (root string, err error) {
 	goroot := os.Getenv("GOPATH")
 	if goroot == "" {
-		cmd := exec.Command("go", "env", "GOPATH")
-		lines, err := exec.CombinedOutputLines(cmd)
+		cmd := kindexec.Command("go", "env", "GOPATH")
+		lines, err := kindexec.CombinedOutputLines(cmd)
 		if err != nil {
 			return "", err
 		}

@@ -19,9 +19,6 @@ package main
 
 import (
 	kinder "k8s.io/kubeadm/kinder/cmd/kinder"
-
-	// forces kinder actions to register
-	_ "k8s.io/kubeadm/kinder/pkg/actions"
 )
 
 func main() {

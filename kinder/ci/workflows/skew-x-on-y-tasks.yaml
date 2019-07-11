@@ -36,6 +36,7 @@ tasks:
     - --image={{ .vars.image }}
     - --with-init-artifacts={{ .vars.kubernetesVersion }}
     - --with-kubeadm={{ .vars.kubeadmVersion }}
+    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -49,6 +50,8 @@ tasks:
     - --image={{ .vars.image }}
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
+    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
+    - --loglevel=debug
   timeout: 5m
 - name: init
   description: |
@@ -79,7 +82,7 @@ tasks:
     - --name={{ .vars.clusterName }}
 - name: e2e
   description: |
-    Runs kubeadm e2e test
+    Runs Kubernetes e2e test (conformance)
   cmd: kinder
   args:
     - test

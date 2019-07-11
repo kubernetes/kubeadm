@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package create implements the `create` command
-// Nb. re-implemented in Kinder in order to import the kinder version of createcluster
 package create
 
 import (
@@ -33,7 +31,5 @@ func NewCommand() *cobra.Command {
 		Long:  "Creates one of local Kubernetes cluster (cluster), or nodes in a local kubernetes cluster (worker-node, control-plane-node)",
 	}
 	cmd.AddCommand(createcluster.NewCommand())
-	//cmd.AddCommand(createnode.NewCommand(constants.ControlPlaneNodeRoleValue)) //this is currently super hacky, looking for a better solution
-	//cmd.AddCommand(createnode.NewCommand(constants.WorkerNodeRoleValue))
 	return cmd
 }

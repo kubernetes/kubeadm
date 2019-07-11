@@ -14,30 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package cluster implements the `create cluster` command
-// Nb. re-implemented in Kinder in order to add the --install-kubernetes flag
 package cluster
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/apimachinery/pkg/util/version"
-	kalter "k8s.io/kubeadm/kinder/pkg/build/alter"
-	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
-	kextract "k8s.io/kubeadm/kinder/pkg/extract"
-	"sigs.k8s.io/kind/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
-	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha2"
-	"sigs.k8s.io/kind/pkg/cluster/create"
-	"sigs.k8s.io/kind/pkg/util"
+	"k8s.io/kubeadm/kinder/pkg/cluster/manager"
+	"k8s.io/kubeadm/kinder/pkg/constants"
+	kindAPI "sigs.k8s.io/kind/pkg/cluster/config"
+	kindencoding "sigs.k8s.io/kind/pkg/cluster/config/encoding"
+	kindAPIv1alpha3 "sigs.k8s.io/kind/pkg/cluster/config/v1alpha3"
 )
 
 const (
@@ -53,15 +42,14 @@ type flagpole struct {
 	Name                 string
 	Config               string
 	ImageName            string
-	InitVersion          string
-	Workers              int32
-	ControlPlanes        int32
-	KubeDNS              bool
+	Workers              int
+	ControlPlanes        int
 	Retain               bool
-	Wait                 time.Duration
-	SetupKubernetes      bool
-	ExternalLoadBalancer bool
 	ExternalEtcd         bool
+	ExternalLoadBalancer bool
+	KubeDNS              bool
+	AutomaticCopyCerts   bool
+	CRI                  string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -76,69 +64,90 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
-	cmd.Flags().StringVar(&flags.Config, configFlagName, "", "path to a kind config file")
-	cmd.Flags().Int32Var(&flags.ControlPlanes, controlPlaneNodesFlagName, 1, "number of control-plane nodes in the cluster")
-	cmd.Flags().Int32Var(&flags.Workers, workerNodesFLagName, 0, "number of worker nodes in the cluster")
-	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
-	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
-	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "Wait for control plane node to be ready (default 0s)")
-	cmd.Flags().BoolVar(&flags.SetupKubernetes, "setup-kubernetes", false, "setup Kubernetes on cluster nodes")
-	cmd.Flags().BoolVar(&flags.KubeDNS, kubeDNSFLagName, false, "setup kubeadm for installing kube-dns instead of CoreDNS")
-	cmd.Flags().BoolVar(&flags.ExternalEtcd, externalEtcdFlagName, false, "create an external etcd and setup kubeadm for using it")
-	cmd.Flags().BoolVar(&flags.ExternalLoadBalancer, externalLoadBalancerFlagName, false, "add an external load balancer to the cluster (implicit if number of control-plane nodes>1)")
-	cmd.Flags().StringVar(&flags.InitVersion, "init-version", "", "defines the Kubernetes version that will be used for kubeadm init (if empty, kinder will try to detect the initVersion from image labels or consider the current stable as the default)")
+
+	cmd.Flags().StringVar(
+		&flags.Name,
+		"name", constants.DefaultClusterName,
+		"cluster name")
+	cmd.Flags().StringVar(
+		&flags.Config, configFlagName,
+		"",
+		"path to a kind config file",
+	)
+	cmd.Flags().IntVar(
+		&flags.ControlPlanes,
+		controlPlaneNodesFlagName, 1,
+		"number of control-plane nodes in the cluster",
+	)
+	cmd.Flags().IntVar(
+		&flags.Workers,
+		workerNodesFLagName, 0,
+		"number of worker nodes in the cluster",
+	)
+	cmd.Flags().StringVar(
+		&flags.ImageName,
+		"image", "",
+		"node docker image to use for booting the cluster",
+	)
+	cmd.Flags().BoolVar(
+		&flags.Retain,
+		"retain", false,
+		"retain nodes for debugging when cluster creation fails",
+	)
+	cmd.Flags().BoolVar(
+		&flags.ExternalEtcd,
+		externalEtcdFlagName, false,
+		"create an external etcd container and setup kubeadm for using it",
+	)
+	cmd.Flags().BoolVar(
+		&flags.ExternalLoadBalancer,
+		externalLoadBalancerFlagName, false,
+		"add an external load balancer to the cluster (implicit if number of control-plane nodes>1)",
+	)
+	//TODO: remove this as soon CRI autodetection is implemented
+	cmd.Flags().StringVar(
+		&flags.CRI,
+		"cri", "",
+		"specifies the cri installed inside the base image",
+	)
+
+	cmd.Flags().BoolVar(
+		&flags.KubeDNS,
+		kubeDNSFLagName, false,
+		"setup kubeadm for installing kube-dns instead of CoreDNS",
+	)
+	cmd.Flags().BoolVar(
+		&flags.AutomaticCopyCerts,
+		"automatic-copy-certs", false,
+		"setup kubeadm for using the automatic copy certs instead of manual copy certs when joining new control-plane nodes",
+	)
+
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	// refactor this...
+	var err error
+
+	//TODO: refactor this...
 	if cmd.Flags().Changed(configFlagName) && (cmd.Flags().Changed(controlPlaneNodesFlagName) ||
 		cmd.Flags().Changed(workerNodesFLagName) ||
-		cmd.Flags().Changed(kubeDNSFLagName) ||
 		cmd.Flags().Changed(externalEtcdFlagName) ||
 		cmd.Flags().Changed(externalLoadBalancerFlagName)) {
-		return errors.Errorf("flag --%s can't be used in combination with --%s flags", configFlagName, strings.Join([]string{controlPlaneNodesFlagName, workerNodesFLagName, kubeDNSFLagName, externalEtcdFlagName, externalLoadBalancerFlagName}, ","))
+		return errors.Errorf("flag --%s can't be used in combination with --%s flags", configFlagName, strings.Join([]string{controlPlaneNodesFlagName, workerNodesFLagName, externalEtcdFlagName, externalLoadBalancerFlagName}, ","))
 	}
 
 	if flags.ControlPlanes < 0 || flags.Workers < 0 {
 		return errors.Errorf("flags --%s and --%s should not be a negative number", controlPlaneNodesFlagName, workerNodesFLagName)
 	}
 
-	// Check if the cluster name already exists
-	known, err := cluster.IsKnown(flags.Name)
-	if err != nil {
-		return err
-	}
-	if known {
-		return errors.Errorf("a cluster with the name %q already exists", flags.Name)
-	}
-
-	//TODO: this should go away as soon as kind will support etcd nodes
-	var externalEtcdIP string
-	if flags.ExternalEtcd {
-		fmt.Printf("Creating external etcd for the cluster %q ...\n", flags.Name)
-
-		var err error
-		externalEtcdIP, err = kcluster.CreateExternalEtcd(flags.Name, flags.ImageName)
-		if err != nil {
-			return errors.Wrap(err, "failed to create cluster")
-		}
-	}
-
-	// get the init version.
-	// if it is not specified as a flag override, the init version is read from the
-	// image metadata/image labels, otherwise a release/stable is used as a default
-	initVersion := flags.InitVersion
-	if initVersion == "" {
-		initVersion, err = getInitVersionFromImage(flags.ImageName)
-		if err != nil {
-			return errors.Wrap(err, "failed to get the Kubernetes init version")
-		}
+	// check the cri flag
+	cri := flags.CRI
+	if cri == "" {
+		return errors.Wrap(err, "Please use the --cri flag to specify the container runtime installed inside the base image")
 	}
 
 	// gets the kind config, which is prebuild by kinder in accordance to the CLI flags
-	cfg, err := NewConfig(initVersion, flags.ControlPlanes, flags.Workers, flags.KubeDNS, flags.ExternalLoadBalancer, externalEtcdIP)
+	cfg, err := NewConfig(flags.ControlPlanes, flags.Workers, flags.ImageName)
 	if err != nil {
 		return errors.Wrap(err, "error initializing the cluster cfg")
 	}
@@ -146,119 +155,51 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// override the config with the one from file, if specified
 	if flags.Config != "" {
 		// load the config
-		cfg, err := encoding.Load(flags.Config)
+		cfg, err = kindencoding.Load(flags.Config)
 		if err != nil {
 			return errors.Wrap(err, "error loading config")
 		}
-
-		// validate the config
-		err = cfg.Validate()
-		if err != nil {
-			log.Error("Invalid configuration!")
-			configErrors := err.(*util.Errors)
-			for _, problem := range configErrors.Errors() {
-				log.Error(problem)
-			}
-			return errors.New("aborting due to invalid configuration")
-		}
 	}
 
-	// create a cluster context and create the cluster
-	ctx := cluster.NewContext(flags.Name)
-	if flags.ImageName != "" {
-		// Apply image override to all the Nodes defined in Config
-		// TODO(Fabrizio Pandini): this should be reconsidered when implementing
-		//     https://github.com/kubernetes-sigs/kind/issues/133
-		for i := range cfg.Nodes {
-			cfg.Nodes[i].Image = flags.ImageName
-		}
-
-		err := cfg.Validate()
-		if err != nil {
-			log.Errorf("Invalid flags, configuration failed validation: %v", err)
-			return errors.New("aborting due to invalid configuration")
-		}
-	}
-
-	fmt.Printf("Creating cluster %q ...\n", flags.Name)
-	if err = ctx.Create(cfg,
-		create.Retain(flags.Retain),
-		create.WaitForReady(flags.Wait),
-		create.SetupKubernetes(flags.SetupKubernetes),
+	// get a kinder cluster manager
+	if err = manager.CreateCluster(
+		flags.Name,
+		cfg,
+		manager.CRI(cri),
+		manager.ExternalLoadBalancer(flags.ExternalLoadBalancer),
+		manager.ExternalEtcd(flags.ExternalEtcd),
+		manager.KubeDNS(flags.KubeDNS),
+		manager.AutomaticCopyCerts(flags.AutomaticCopyCerts),
+		manager.Retain(flags.Retain),
 	); err != nil {
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
-	fmt.Printf("\nYou can also use kinder commands:\n\n")
-	fmt.Printf("- kinder do, the kinder swiss knife 🚀!\n")
-	fmt.Printf("- kinder exec, a \"topology aware\" wrapper on docker exec\n")
-	fmt.Printf("- kinder cp, a \"topology aware\" wrapper on docker cp\n")
-
 	return nil
 }
 
-// getInitVersionFromImage the init version from the image metadata/image labels,
-// otherwise get image version from the image tag as a first fallback, then use release/stable as as second fallback
-func getInitVersionFromImage(image string) (string, error) {
-	v, err := kalter.GetImageVersion(image)
-	if err != nil || v == "" {
-		log.Debug("Image initVersion label not set, reading initVersion from image tag")
-		x := regexp.MustCompile(`:(.*)`).FindStringSubmatch(image)
-		if len(x) == 2 {
-			if _, err := version.ParseSemantic(x[1]); err == nil {
-				return x[1], nil
-			}
-		}
-
-		log.Debug("Failed to read initVersion from image name, using release/stable release")
-		return kextract.ResolveLabel("release/stable")
-	}
-
-	return v, nil
-}
-
 // NewConfig returns the default config according to requested number of control-plane and worker nodes
-func NewConfig(initVersion string, controlPlanes, workers int32, kubeDNS bool, externalLoadBalancer bool, externalEtcdIP string) (*config.Cluster, error) {
-	// get the kubeadm config patches for the Kubernetes initVersion
-	kubeDNSPatch, calicoPatch, externalEtcdPatch, err := kcluster.GetKubeadmConfigPatches(initVersion)
-	if err != nil {
-		return nil, err
+func NewConfig(controlPlanes, workers int, image string) (*kindAPI.Cluster, error) {
+	var latestPublicConfig = &kindAPIv1alpha3.Cluster{
+		Nodes: []kindAPIv1alpha3.Node{},
 	}
 
-	// create default config according to requested number of control-plane and worker nodes
-	var latestPublicConfig = &v1alpha2.Config{}
-
-	// adds the control-plane node(s) and releated kubeadm config patchs
-	controlPlaneNodes := v1alpha2.Node{Role: v1alpha2.ControlPlaneRole, Replicas: &controlPlanes}
-
-	controlPlaneNodes.KubeadmConfigPatches = []string{}
-	if kubeDNS {
-		controlPlaneNodes.KubeadmConfigPatches = append(controlPlaneNodes.KubeadmConfigPatches, kubeDNSPatch)
-	}
-	if externalEtcdIP != "" {
-		controlPlaneNodes.KubeadmConfigPatches = append(controlPlaneNodes.KubeadmConfigPatches, fmt.Sprintf(externalEtcdPatch, externalEtcdIP))
-	}
-
-	controlPlaneNodes.KubeadmConfigPatches = append(controlPlaneNodes.KubeadmConfigPatches, calicoPatch)
-
-	latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, controlPlaneNodes)
-
-	// if requester or more than one control-plane node(s), add an external load balancer
-	if externalLoadBalancer || controlPlanes > 1 {
-		latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, v1alpha2.Node{Role: v1alpha2.ExternalLoadBalancerRole})
+	// adds the control-plane node(s)
+	for i := 0; i < controlPlanes; i++ {
+		latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, kindAPIv1alpha3.Node{Role: kindAPIv1alpha3.ControlPlaneRole, Image: image})
 	}
 
 	// adds the worker node(s), if any
-	if workers > 0 {
-		latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, v1alpha2.Node{Role: v1alpha2.WorkerRole, Replicas: &workers})
+	for i := 0; i < workers; i++ {
+		latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, kindAPIv1alpha3.Node{Role: kindAPIv1alpha3.WorkerRole, Image: image})
 	}
 
 	// apply defaults
-	encoding.Scheme.Default(latestPublicConfig)
+	kindencoding.Scheme.Default(latestPublicConfig)
 
 	// converts to internal config
-	var cfg = &config.Cluster{}
-	encoding.Scheme.Convert(latestPublicConfig, cfg, nil)
+	var cfg = &kindAPI.Cluster{}
+	kindencoding.Scheme.Convert(latestPublicConfig, cfg, nil)
 
 	// unmarshal the file content into a `kind` Config
 	return cfg, nil

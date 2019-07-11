@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package e2ekubeadm implements the `e2ekubeadm` command
 package e2ekubeadm
 
 import (
@@ -23,8 +22,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	ke2e "k8s.io/kubeadm/kinder/pkg/test/e2e"
-	"sigs.k8s.io/kind/pkg/cluster"
+	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/test/e2e"
+	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 )
 
 type flagpole struct {
@@ -50,20 +50,46 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&flags.KubeRoot, "kube-root", "", "Path to the Kubernetes source directory (if empty, the path is autodetected)")
-	cmd.Flags().BoolVar(&flags.SingleNode, "single-node", false, "if set, skips tests labeled with [multi-node]")
-	cmd.Flags().BoolVar(&flags.CopyCerts, "automatic-copy-certs", false, "if set, adds tests labeled with [copy-cert] for validating alpha feature automatic-copy-certs")
-	cmd.Flags().StringVar(&flags.GinkgoFlags, "ginkgo-flags", "", "Space-separated list of arguments to pass to Ginkgo test runner")
-	cmd.Flags().StringVar(&flags.TestFlags, "test-flags", "", "Space-separated list of arguments to pass to node e2e test")
+	cmd.Flags().StringVar(
+		&flags.KubeRoot,
+		"kube-root", "", "Path to the Kubernetes source directory (if empty, the path is autodetected)",
+	)
+	cmd.Flags().BoolVar(
+		&flags.SingleNode,
+		"single-node", false,
+		"if set, skips tests labeled with [multi-node]",
+	)
+	cmd.Flags().BoolVar(
+		&flags.CopyCerts,
+		"automatic-copy-certs", false,
+		"if set, adds tests labeled with [copy-cert] for validating alpha feature automatic-copy-certs",
+	)
+	cmd.Flags().StringVar(&flags.GinkgoFlags,
+		"ginkgo-flags", "",
+		"Space-separated list of arguments to pass to Ginkgo test runner",
+	)
+	cmd.Flags().StringVar(
+		&flags.TestFlags,
+		"test-flags", "",
+		"Space-separated list of arguments to pass to node e2e test",
+	)
 
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
-	cmd.Flags().StringVar(&flags.kubeconfig, "kubeconfig", "", "The kubeconfig file to use when talking to the cluster. If the flag is not set, this value will be set to the location of the kubeconfig for the kind cluster pointed by name")
+	cmd.Flags().StringVar(
+		&flags.Name,
+		"name", constants.DefaultClusterName,
+		"cluster name",
+	)
+	cmd.Flags().StringVar(
+		&flags.kubeconfig,
+		"kubeconfig", "",
+		"The kubeconfig file to use when talking to the cluster. If the flag is not set, this value will be set to the location of the kubeconfig for the kind cluster pointed by name",
+	)
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// Create a map with the flag/values to pass to the ginkgo test runner
-	ginkgoFlags, err := ke2e.NewGinkgoFlags(flags.GinkgoFlags)
+	ginkgoFlags, err := e2e.NewGinkgoFlags(flags.GinkgoFlags)
 	if err != nil {
 		return err
 	}
@@ -79,7 +105,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 
 	// Create a map with the flag/values to pass to e2e-kubeadm.test
-	testFlags, err := ke2e.NewSuiteFlags(flags.TestFlags)
+	testFlags, err := e2e.NewSuiteFlags(flags.TestFlags)
 	if err != nil {
 		return err
 	}
@@ -87,7 +113,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// if not explicitly set, gets the kubeconfig file for the selected kind cluster
 	if flags.kubeconfig == "" {
 		// Check if the cluster name already exists
-		known, err := cluster.IsKnown(flags.Name)
+		known, err := kindcluster.IsKnown(flags.Name)
 		if err != nil {
 			return err
 		}
@@ -96,7 +122,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		}
 
 		// create a cluster context from current nodes a gets the kubeconfig file
-		ctx := cluster.NewContext(flags.Name)
+		ctx := kindcluster.NewContext(flags.Name)
 		flags.kubeconfig = ctx.KubeConfigPath()
 	}
 	// instruct e2e-kubeadm.test to use the kubeconfig file (if not already set into test-flags)
@@ -105,10 +131,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 
 	// creates a KubeadmTestRunner with the desired options and run it
-	testRunner, err := ke2e.NewKubeadmTestRunner(
-		ke2e.KubeRoot(flags.KubeRoot),
-		ke2e.WithGinkgoFlags(ginkgoFlags),
-		ke2e.WithSuiteFlags(testFlags),
+	testRunner, err := e2e.NewKubeadmTestRunner(
+		e2e.KubeRoot(flags.KubeRoot),
+		e2e.WithGinkgoFlags(ginkgoFlags),
+		e2e.WithSuiteFlags(testFlags),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed create test runner")
