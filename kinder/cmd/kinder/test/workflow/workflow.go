@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package workflow implements the `workflow` command
 package workflow
 
 import (
 	"github.com/spf13/cobra"
 
-	ktestworkflow "k8s.io/kubeadm/kinder/pkg/test/workflow"
+	"k8s.io/kubeadm/kinder/pkg/test/workflow"
 )
 
 type flagpole struct {
@@ -45,9 +44,21 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&flags.DryRun, "dry-run", false, "only prints workflow commands, without executing them")
-	cmd.Flags().BoolVar(&flags.Verbose, "verbose", false, "redirect command output to stdout")
-	cmd.Flags().BoolVar(&flags.ExitOnError, "exit-on-task-error", false, "exit after first task failed")
+	cmd.Flags().BoolVar(
+		&flags.DryRun,
+		"dry-run", false,
+		"only prints workflow commands, without executing them",
+	)
+	cmd.Flags().BoolVar(
+		&flags.Verbose,
+		"verbose", false,
+		"redirect command output to stdout",
+	)
+	cmd.Flags().BoolVar(
+		&flags.ExitOnError,
+		"exit-on-task-error", false,
+		"exit after first task failed",
+	)
 	return cmd
 }
 
@@ -60,7 +71,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		artifacts = args[1]
 	}
 
-	w, err := ktestworkflow.NewWorkflow(config)
+	w, err := workflow.NewWorkflow(config)
 	if err != nil {
 		return err
 	}

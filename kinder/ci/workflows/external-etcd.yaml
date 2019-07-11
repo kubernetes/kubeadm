@@ -26,6 +26,7 @@ tasks:
     - --base-image={{ .vars.baseImage }}
     - --image={{ .vars.image }}
     - --with-init-artifacts={{ .vars.kubernetesVersion }}
+    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -40,6 +41,8 @@ tasks:
     - --control-plane-nodes=3
     - --worker-nodes=2
     - --external-etcd
+    - --automatic-copy-certs  # in v1.15 and after automatic copy certs can be configure in the kubeadm-config (which is generated at create time)
+    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
     - --loglevel=debug
   timeout: 5m
 - name: init
@@ -77,7 +80,7 @@ tasks:
     - --loglevel=debug
 - name: e2e
   description: |
-    Runs e2e tests
+    Runs Kubernetes e2e test (conformance)
   cmd: kinder
   args:
     - test

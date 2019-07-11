@@ -20,25 +20,25 @@ package kinder
 import (
 	"os"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	logutil "sigs.k8s.io/kind/pkg/log"
 
-	kbuild "k8s.io/kubeadm/kinder/cmd/kinder/build"
-	kcp "k8s.io/kubeadm/kinder/cmd/kinder/cp"
-	kcreate "k8s.io/kubeadm/kinder/cmd/kinder/create"
-	kdo "k8s.io/kubeadm/kinder/cmd/kinder/do"
-	kexec "k8s.io/kubeadm/kinder/cmd/kinder/exec"
-	kget "k8s.io/kubeadm/kinder/cmd/kinder/get"
-	ktest "k8s.io/kubeadm/kinder/cmd/kinder/test"
-	kversion "k8s.io/kubeadm/kinder/cmd/kinder/version"
-	"sigs.k8s.io/kind/cmd/kind/delete"
-	"sigs.k8s.io/kind/cmd/kind/export"
-	"sigs.k8s.io/kind/cmd/kind/load"
+	"k8s.io/kubeadm/kinder/cmd/kinder/build"
+	"k8s.io/kubeadm/kinder/cmd/kinder/cp"
+	"k8s.io/kubeadm/kinder/cmd/kinder/create"
+	"k8s.io/kubeadm/kinder/cmd/kinder/do"
+	"k8s.io/kubeadm/kinder/cmd/kinder/exec"
+	"k8s.io/kubeadm/kinder/cmd/kinder/get"
+	"k8s.io/kubeadm/kinder/cmd/kinder/test"
+	"k8s.io/kubeadm/kinder/cmd/kinder/version"
+	"k8s.io/kubeadm/kinder/pkg/constants"
+	kinddelete "sigs.k8s.io/kind/cmd/kind/delete"
+	kindexport "sigs.k8s.io/kind/cmd/kind/export"
+	kindload "sigs.k8s.io/kind/cmd/kind/load"
+	kindlog "sigs.k8s.io/kind/pkg/log"
 )
 
-const defaultLevel = logrus.WarnLevel
+const defaultLevel = log.WarnLevel
 
 // Flags for the kinder command
 type Flags struct {
@@ -64,31 +64,31 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 		SilenceUsage: true,
-		Version:      kversion.Version,
+		Version:      constants.KinderVersion,
 	}
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
 		"loglevel",
 		defaultLevel.String(),
-		"logrus log level "+logutil.LevelsString(),
+		"logrus log level "+kindlog.LevelsString(),
 	)
 
 	// add kind top level subcommands re-used without changes
-	cmd.AddCommand(delete.NewCommand())
-	cmd.AddCommand(export.NewCommand())
-	cmd.AddCommand(load.NewCommand())
+	cmd.AddCommand(kinddelete.NewCommand())
+	cmd.AddCommand(kindexport.NewCommand())
+	cmd.AddCommand(kindload.NewCommand())
 
 	// add kind commands commands customized in kind
-	cmd.AddCommand(kbuild.NewCommand())
-	cmd.AddCommand(kcreate.NewCommand())
-	cmd.AddCommand(kversion.NewCommand())
-	cmd.AddCommand(kget.NewCommand())
+	cmd.AddCommand(build.NewCommand())
+	cmd.AddCommand(create.NewCommand())
+	cmd.AddCommand(version.NewCommand())
+	cmd.AddCommand(get.NewCommand())
 
 	// add kinder only commands
-	cmd.AddCommand(kcp.NewCommand())
-	cmd.AddCommand(kdo.NewCommand())
-	cmd.AddCommand(kexec.NewCommand())
-	cmd.AddCommand(ktest.NewCommand())
+	cmd.AddCommand(cp.NewCommand())
+	cmd.AddCommand(do.NewCommand())
+	cmd.AddCommand(exec.NewCommand())
+	cmd.AddCommand(test.NewCommand())
 
 	return cmd
 }
@@ -122,7 +122,7 @@ func Main() {
 		// we force colors because this only forces over the isTerminal check
 		// and this will not be accurately checkable later on when we wrap
 		// the logger output with our logutil.StatusFriendlyWriter
-		ForceColors: logutil.IsTerminal(log.StandardLogger().Out),
+		ForceColors: kindlog.IsTerminal(log.StandardLogger().Out),
 	})
 	if err := Run(); err != nil {
 		os.Exit(1)

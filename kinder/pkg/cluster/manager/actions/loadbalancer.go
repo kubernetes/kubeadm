@@ -1,0 +1,87 @@
+/*
+Copyright 2019 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package actions
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
+	"k8s.io/kubeadm/kinder/pkg/cluster/status"
+	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/loadbalancer"
+	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
+)
+
+// LoadBalancer action writes the loadbalancer configuration file on the load balancer node.
+// Please note that this action is automatically executed at create time, but it is possible
+// to invoke it separately as well.
+func LoadBalancer(c *status.Cluster) error {
+	// identify external load balancer node
+	lb := c.ExternalLoadBalancer()
+
+	// if there's no loadbalancer we're done
+	if lb == nil {
+		return nil
+	}
+
+	ipv6 := (c.Settings.IPFamily == status.IPv6Family)
+
+	// collect info about the existing controlplane nodes
+	var backendServers = map[string]string{}
+	for _, n := range c.ControlPlanes() {
+		controlPlaneIPv4, controlPlaneIPv6, err := n.IP()
+		if err != nil {
+			return errors.Wrapf(err, "failed to get IP for node %s", n.Name())
+		}
+		if controlPlaneIPv4 != "" && !ipv6 {
+			backendServers[n.Name()] = fmt.Sprintf("%s:%d", controlPlaneIPv4, constants.APIServerPort)
+		}
+		if controlPlaneIPv6 != "" && ipv6 {
+			backendServers[n.Name()] = fmt.Sprintf("[%s]:%d", controlPlaneIPv6, constants.APIServerPort)
+		}
+	}
+
+	// create loadbalancer config data
+	loadbalancerConfig, err := loadbalancer.Config(loadbalancer.ConfigData{
+		ControlPlanePort: constants.ControlPlanePort,
+		BackendServers:   backendServers,
+		IPv6:             ipv6,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to generate loadbalancer config data")
+	}
+
+	// create loadbalancer config on the node
+	log.Debugf("Writing loadbalancer config on %s...", lb.Name())
+
+	if err = lb.Command("cp", "/dev/stdin", constants.LoadBalancerConfigPath).
+		Stdin(strings.NewReader(loadbalancerConfig)).
+		Silent().
+		Run(); err != nil {
+		return errors.Wrap(err, "failed to copy loadbalancer config to node")
+	}
+
+	// reload the config
+	if err := kinddocker.Kill("SIGHUP", lb.Name()); err != nil {
+		return errors.Wrap(err, "failed to reload loadbalancer")
+	}
+
+	return nil
+}

@@ -14,9 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package extract implements the `extract` library; please note that this
-// packages should be replace by the same capability offered by kind/by a
-// shared library as soon as available
+/*
+Package extract implements support for extracting required K8s binaries and required K8s images
+from GCS buckets containing release or ci builds artifacts.
+
+Additionally, it is also possible to manage local repositories of the aforementioned artifacts
+or repository hosted on http/https web servers.
+*/
 package extract
 
 import (
@@ -34,8 +38,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	versionutil "k8s.io/apimachinery/pkg/util/version"
-	"sigs.k8s.io/kind/pkg/fs"
+	K8sVersion "k8s.io/apimachinery/pkg/util/version"
+	kindfs "sigs.k8s.io/kind/pkg/fs"
 )
 
 const (
@@ -82,7 +86,7 @@ func GetSourceType(src string) SourceType {
 		return CILabelOrVersionSource
 	} else if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
 		return RemoteRepositorySource
-	} else if v, err := versionutil.ParseSemantic(src); err == nil {
+	} else if v, err := K8sVersion.ParseSemantic(src); err == nil {
 		if v.BuildMetadata() != "" {
 			return CILabelOrVersionSource
 		}
@@ -217,7 +221,7 @@ func extractFromCIBuild(src string, files []string, dst string, m fileNameMutato
 	src = strings.TrimPrefix(src, "ci/")
 
 	// gets the Kubernetes version from the src
-	version, err := versionutil.ParseSemantic(src)
+	version, err := K8sVersion.ParseSemantic(src)
 	if err != nil {
 		version, err = resolveLabel(ciBuildRepository, src)
 		if err != nil {
@@ -247,7 +251,7 @@ func extractFromReleaseBuild(src string, files []string, dst string, m fileNameM
 	src = strings.TrimPrefix(src, "release/")
 
 	// gets the Kubernetes version from the src
-	version, err := versionutil.ParseSemantic(src)
+	version, err := K8sVersion.ParseSemantic(src)
 	if err != nil {
 		version, err = resolveLabel(releaseBuildURepository, src)
 		if err != nil {
@@ -374,7 +378,7 @@ func extractFromLocalDir(src string, files []string, dst string, m fileNameMutat
 
 		dstFilePath := path.Join(dst, m.Mutate(f))
 		// NOTE: we use copy not copyfile because copy ensures the dest dir
-		if err := fs.Copy(srcFilePath, dstFilePath); err != nil {
+		if err := kindfs.Copy(srcFilePath, dstFilePath); err != nil {
 			return nil, errors.Wrap(err, "failed to copy alter bits")
 		}
 		if f == kubeadmBinary || f == kubeletBinary || f == kubectlBinary {
@@ -413,7 +417,7 @@ func expandWildcards(src string, files []string) (expandedFiles []string, err er
 	return expandedFiles, nil
 }
 
-func resolveLabel(repository, label string) (version *versionutil.Version, err error) {
+func resolveLabel(repository, label string) (version *K8sVersion.Version, err error) {
 	// labels are .txt file containing a release version
 
 	// Gets the uri of the label file
@@ -439,14 +443,14 @@ func resolveLabel(repository, label string) (version *versionutil.Version, err e
 	return version, nil
 }
 
-func readVersion(r io.Reader) (version *versionutil.Version, err error) {
+func readVersion(r io.Reader) (version *K8sVersion.Version, err error) {
 	buf, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading version")
 	}
 
 	labelValue := url.PathEscape(string(bytes.TrimSpace(buf)))
-	version, err = versionutil.ParseSemantic(labelValue)
+	version, err = K8sVersion.ParseSemantic(labelValue)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid version")
 	}
@@ -454,7 +458,7 @@ func readVersion(r io.Reader) (version *versionutil.Version, err error) {
 	return version, nil
 }
 
-func saveVersionFile(addVersionFileToDst bool, dst string, version *versionutil.Version, m fileNameMutator) error {
+func saveVersionFile(addVersionFileToDst bool, dst string, version *K8sVersion.Version, m fileNameMutator) error {
 	if !addVersionFileToDst {
 		return nil
 	}
@@ -565,7 +569,7 @@ func (m *fileNameMutator) ReadVersionFile(src string) error {
 	return nil
 }
 
-func (m *fileNameMutator) SetPrependVersionFolder(version *versionutil.Version) {
+func (m *fileNameMutator) SetPrependVersionFolder(version *K8sVersion.Version) {
 	if m.prependVersionFolder {
 		m.prependFolder = fmt.Sprintf("v%s", version)
 	}

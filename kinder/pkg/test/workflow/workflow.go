@@ -14,6 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+Package workflow implements a simple workflow manager aimed at automating kinder test workflows.
+
+Workflows must be defined in a yaml file containing list of tasks; each task
+can be any command, thus including also any kinder commands invoked via CLI.
+
+Tasks will be executed in order; in case of errors the workflow will stop and the remaining tasks
+will be skipped with the only exception of tasks specifically marked to be executed in any case
+(e.g. cleanup tasks).
+*/
 package workflow
 
 import (
@@ -26,7 +36,6 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -34,7 +43,7 @@ import (
 type Workflow struct {
 	// Version of the workflow file
 	// NB. We are enforcing version to be set only for future improvements of the config API
-	// but currently there is no version management is in place.
+	// but currently there is no version management in place.
 	Version int
 
 	// Summary provides an high level description of the test workflow
@@ -50,7 +59,7 @@ type Workflow struct {
 	// Envs are processed in order, and OS environment variables, Vars and already known Vars
 	// can be used in templates for other envs.
 	// After all the envs are processed, an ARTIFACTS env variable is added by default, eventually overriding the existing
-	// one according to the precedence or the ARTIFACTS command line argument, env vars defined in the config
+	// one according to the precedence of the ARTIFACTS command line argument, env vars defined in the config
 	// and OS environment variables.
 	// Env variables can be used for golang template expansion using {{ .env.KEY }}
 	Env map[string]string
@@ -66,6 +75,7 @@ type Tasks []*Task
 
 // Task represents a task to be executed as part of a test workflow
 type Task struct {
+	// Name of the task
 	Name string
 
 	// Description of the task
@@ -87,7 +97,7 @@ type Task struct {
 	// This allows e.g. to define cleanup tasks to be always executed
 	Force bool
 
-	// Timeout for the current task, by default
+	// Timeout for the current task, 5m by default
 	Timeout time.Duration
 
 	// IgnoreError sets a task to be recorded as successful even if it is actually failed

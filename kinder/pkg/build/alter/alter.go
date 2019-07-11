@@ -19,14 +19,16 @@ package alter
 import (
 	"fmt"
 	"os"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/kind/pkg/container/docker"
-	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/fs"
+	"k8s.io/kubeadm/kinder/pkg/build/bits"
+	"k8s.io/kubeadm/kinder/pkg/cri"
+	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
+	kindexec "sigs.k8s.io/kind/pkg/exec"
+	kindfs "sigs.k8s.io/kind/pkg/fs"
 )
 
 // DefaultBaseImage is the default base image used
@@ -39,6 +41,7 @@ const DefaultImage = DefaultBaseImage
 // alter configuration
 type Context struct {
 	baseImage           string
+	cri                 string
 	image               string
 	initArtifactsSrc    string
 	imageSrcs           []string
@@ -69,6 +72,13 @@ func WithImage(image string) Option {
 func WithBaseImage(image string) Option {
 	return func(b *Context) {
 		b.baseImage = image
+	}
+}
+
+// WithCRI configures a NewContext to manage the `cri` embedded in the base image
+func WithCRI(cri string) Option {
+	return func(b *Context) {
+		b.cri = cri
 	}
 }
 
@@ -123,43 +133,38 @@ func NewContext(options ...Option) (ctx *Context, err error) {
 
 // Alter alters the cluster node image
 func (c *Context) Alter() (err error) {
-	// initialize bits
-	var bits []bits
+	// initialize bits installers
+	var bitsInstallers []bits.Installer
 
 	if c.initArtifactsSrc != "" {
-		bits = append(bits, newInitBits(c.initArtifactsSrc))
+		bitsInstallers = append(bitsInstallers, bits.NewInitBits(c.initArtifactsSrc))
 	}
 
 	if c.kubeadmSrc != "" {
-		bits = append(bits, newBinaryBits(c.kubeadmSrc, "kubeadm"))
+		bitsInstallers = append(bitsInstallers, bits.NewBinaryBits(c.kubeadmSrc, "kubeadm"))
 	}
 	if c.kubeletSrc != "" {
-		bits = append(bits, newBinaryBits(c.kubeletSrc, "kubelet"))
+		bitsInstallers = append(bitsInstallers, bits.NewBinaryBits(c.kubeletSrc, "kubelet"))
 	}
 
 	if len(c.imageSrcs) > 0 {
-		bits = append(bits, newImageBits(c.imageSrcs, c.imageNamePrefix))
+		bitsInstallers = append(bitsInstallers, bits.NewImageBits(c.imageSrcs, c.imageNamePrefix))
 	}
 
 	if c.upgradeArtifactsSrc != "" {
-		bits = append(bits, newUpgradeBits(c.upgradeArtifactsSrc))
+		bitsInstallers = append(bitsInstallers, bits.NewUpgradeBits(c.upgradeArtifactsSrc))
 	}
 
 	// create tempdir to alter the image in
-	alterDir, err := fs.TempDir("", "kinder-alter-image")
+	alterDir, err := kindfs.TempDir("", "kinder-alter-image")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(alterDir)
 	log.Infof("Altering node image in: %s", alterDir)
 
-	// initialize the bits working context
-	bc := &bitsContext{
-		hostBasePath: alterDir,
-		labels: map[string]string{
-			alterContainerLabelKey: time.Now().Format(time.RFC3339Nano),
-		},
-	}
+	// initialize the build context
+	bc := bits.NewBuildContext(alterDir)
 
 	// always create folder for storing bits output
 	bitsDir := bc.HostBitsPath()
@@ -168,29 +173,26 @@ func (c *Context) Alter() (err error) {
 	}
 
 	// populate the kubernetes artifacts first
-	if err := c.populateBits(bits, bc); err != nil {
+	if err := c.prepareBits(bitsInstallers, bc); err != nil {
 		return err
 	}
 
 	// then the perform the actual docker image alter
-	return c.alterImage(bits, bc)
+	return c.alterImage(bitsInstallers, bc)
 }
 
-func (c *Context) populateBits(bits []bits, bc *bitsContext) error {
-	log.Info("Starting populate bits ...")
+func (c *Context) prepareBits(bitsInstallers []bits.Installer, bc *bits.BuildContext) error {
+	log.Info("Preparing bits ...")
 
-	for _, b := range bits {
-		if err := b.Get(bc); err != nil {
+	for _, b := range bitsInstallers {
+		if err := b.Prepare(bc); err != nil {
 			return errors.Wrap(err, "failed to copy alter bits")
 		}
 	}
 	return nil
 }
 
-func (c *Context) alterImage(bits []bits, bc *bitsContext) error {
-	// alter the image, tagged as tagImageAs, using the our tempdir as the context
-	log.Debug("Starting image alter ...")
-
+func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildContext) error {
 	// create alter container
 	// NOTE: we are using docker run + docker commit so we can install
 	// debians without permanently copying them into the image.
@@ -201,7 +203,7 @@ func (c *Context) alterImage(bits []bits, bc *bitsContext) error {
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
-			exec.Command("docker", "rm", "-f", "-v", containerID).Run()
+			kindexec.Command("docker", "rm", "-f", "-v", containerID).Run()
 		}()
 	}
 	if err != nil {
@@ -209,53 +211,65 @@ func (c *Context) alterImage(bits []bits, bc *bitsContext) error {
 		return err
 	}
 
-	// binds the bitsContext the the container
+	// alter the image, tagged as tagImageAs, using the our tempdir as the context
+	log.Debug("Starting image alter ...")
+
+	// binds the BuildContext the the container
 	bc.BindToContainer(containerID)
 
 	// install the bits that are used to alter the image
 	log.Info("Starting bits install ...")
-	for _, b := range bits {
+	for _, b := range bitsInstallers {
 		if err = b.Install(bc); err != nil {
 			log.Errorf("Image build Failed! %v", err)
 			return err
 		}
 	}
 
-	// Save the image changes to a new image
-	cmd := exec.Command("docker", "commit", containerID, c.image)
-	exec.InheritOutput(cmd)
-	if err = cmd.Run(); err != nil {
+	alterHelper, err := cri.NewAlterHelper(c.cri)
+	if err != nil {
+		log.Errorf("Image alter Failed! %v", err)
+		return err
+	}
+
+	log.Info("Pre loading images ...")
+	if err := alterHelper.PreLoadInitImages(bc); err != nil {
+		log.Errorf("Image build Failed! Failed to load images into %s %v", c.cri, err)
+		return err
+	}
+
+	log.Infof("Commit to %s ...", c.image)
+	if err = alterHelper.Commit(containerID, c.image); err != nil {
 		log.Errorf("Image alter Failed! %v", err)
 		return err
 	}
 
 	log.Info("Image alter completed.")
+
 	return nil
 }
 
-func (c *Context) createAlterContainer(bc *bitsContext) (id string, err error) {
+func (c *Context) createAlterContainer(bc *bits.BuildContext) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	_, _ = docker.PullIfNotPresent(c.baseImage, 4)
+	_, _ = kinddocker.PullIfNotPresent(c.baseImage, 4)
 
 	// define docker default args
+	id = "kind-build-" + uuid.New().String()
 	args := []string{
 		"-d", // make the client exit while the container continues to run
 		"-v", fmt.Sprintf("%s:%s", bc.HostBasePath(), bc.ContainerBasePath()),
 		// the container should hang forever so we can exec in it
 		"--entrypoint=sleep",
-	}
-	// adds args for setting additional label/image metadata
-	for k, v := range bc.labels {
-		args = append(args, "--label", fmt.Sprintf("%s=%s", k, v))
+		"--name=" + id,
 	}
 
-	id, err = docker.Run(
+	err = kinddocker.Run(
 		c.baseImage,
-		docker.WithRunArgs(
+		kinddocker.WithRunArgs(
 			args...,
 		),
-		docker.WithContainerArgs(
+		kinddocker.WithContainerArgs(
 			"infinity", // sleep infinitely to keep the container around
 		),
 	)

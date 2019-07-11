@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package artifacts implements the `artifacts` command
 package artifacts
 
 import (
@@ -24,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 
-	kextract "k8s.io/kubeadm/kinder/pkg/extract"
+	"k8s.io/kubeadm/kinder/pkg/extract"
 )
 
 const (
@@ -64,10 +63,23 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&flags.OnlyKubeadm, onlyKubeadmFlagName, false, "Gets only the kubeadm binary (instead of all artifacts)")
-	cmd.Flags().BoolVar(&flags.OnlyKubelet, onlyKubeletFlagName, false, "Gets only the kubelet binary (instead of all artifacts)")
-	cmd.Flags().BoolVar(&flags.OnlyBinaries, onlyBinariesFlagName, false, "Gets only the kubeadm, kubelet, kubectl binaries (instead of all artifacts)")
-	cmd.Flags().BoolVar(&flags.OnlyImages, onlyImagesFLagName, false, "Gets only the kube-apiserver, kube-scheduler, kube-controller-manager and kube-proxy image tarballs (instead of all artifacts)")
+	cmd.Flags().BoolVar(
+		&flags.OnlyKubeadm,
+		onlyKubeadmFlagName, false,
+		"Gets only the kubeadm binary (instead of all artifacts)",
+	)
+	cmd.Flags().BoolVar(&flags.OnlyKubelet,
+		onlyKubeletFlagName, false,
+		"Gets only the kubelet binary (instead of all artifacts)",
+	)
+	cmd.Flags().BoolVar(&flags.OnlyBinaries,
+		onlyBinariesFlagName, false,
+		"Gets only the kubeadm, kubelet, kubectl binaries (instead of all artifacts)",
+	)
+	cmd.Flags().BoolVar(&flags.OnlyImages,
+		onlyImagesFLagName, false,
+		"Gets only the kube-apiserver, kube-scheduler, kube-controller-manager and kube-proxy image tarballs (instead of all artifacts)",
+	)
 
 	return cmd
 }
@@ -87,11 +99,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 
 	// Build an artifact extractor customized with the command options
-	e := kextract.NewExtractor(src, dst,
-		kextract.OnlyKubeadm(flags.OnlyKubeadm),
-		kextract.OnlyKubelet(flags.OnlyKubelet),
-		kextract.OnlyKubernetesBinaries(flags.OnlyBinaries),
-		kextract.OnlyKubernetesImages(flags.OnlyImages),
+	e := extract.NewExtractor(src, dst,
+		extract.OnlyKubeadm(flags.OnlyKubeadm),
+		extract.OnlyKubelet(flags.OnlyKubelet),
+		extract.OnlyKubernetesBinaries(flags.OnlyBinaries),
+		extract.OnlyKubernetesImages(flags.OnlyImages),
 	)
 
 	// Extracts the artifacts from the source

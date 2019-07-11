@@ -14,94 +14,127 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package do implements the `do` command
 package do
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"k8s.io/apimachinery/pkg/util/version"
-	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cluster"
+	K8sVersion "k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/kubeadm/kinder/pkg/cluster/manager"
+	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 type flagpole struct {
-	Name           string
-	OnlyNode       string
-	UsePhases      bool
-	UpgradeVersion string
-	CopyCerts      bool
-	Wait           time.Duration
+	Name               string
+	UsePhases          bool
+	UpgradeVersion     string
+	AutomaticCopyCerts bool
+	KubeDNS            bool
+	OnlyNode           string
+	DryRun             bool
+	Wait               time.Duration
 }
 
 // NewCommand returns a new cobra.Command for exec
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
-	actions := kcluster.KnownActions()
 	cmd := &cobra.Command{
-		Args: cobra.MinimumNArgs(1),
+		Args: cobra.ExactArgs(1),
 		Use: "do [flags] ACTION\n\n" +
 			"Args:\n" +
-			fmt.Sprintf("  ACTION is one of [%s]", strings.Join(actions, ", ")),
-		Short: "Executes actions (tasks/sequence of commands) on one or more nodes in the local Kubernetes cluster",
+			fmt.Sprintf("  ACTION is one of %s", actions.KnownActions()),
+		Short: "Executes actions (tasks/sequence of commands) on a cluster",
 		Long: "Action define a set of tasks/sequence of commands to be executed on a cluster. Usage of actions allows \n" +
-			"automate repetitive operatitions.",
+			"to automate repetitive operatitions.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
 	}
 
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
-	cmd.Flags().StringVar(&flags.OnlyNode, "only-node", "", "exec the action only on the selected node")
-	cmd.Flags().BoolVar(&flags.UsePhases, "use-phases", false, "use the kubeadm phases subcommands insted of the the kubeadm top-level commands")
-	cmd.Flags().StringVar(&flags.UpgradeVersion, "upgrade-version", "", "defines the target upgrade version (it should match the version of upgrades binaries)")
-	cmd.Flags().BoolVar(&flags.CopyCerts, "automatic-copy-certs", false, "use automatic copy certs instead of manual copy certs when joining new control-plane nodes")
-	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(5*time.Minute), "Wait for cluster state to converge after action")
+	cmd.Flags().StringVar(
+		&flags.Name,
+		"name", constants.DefaultClusterName, "cluster name",
+	)
+	cmd.Flags().StringVar(&flags.OnlyNode,
+		"only-node",
+		"", "exec the action only on the selected node",
+	)
+	cmd.Flags().BoolVar(
+		&flags.DryRun,
+		"dry-run", false,
+		"only prints workflow commands, without executing them",
+	)
+	cmd.Flags().BoolVar(
+		&flags.UsePhases, "use-phases",
+		false, "use the kubeadm phases subcommands insted of the the kubeadm top-level commands",
+	)
+	cmd.Flags().StringVar(
+		&flags.UpgradeVersion,
+		"upgrade-version", "",
+		"defines the target upgrade version (it should match the version of upgrades binaries)",
+	)
+	cmd.Flags().BoolVar(
+		&flags.AutomaticCopyCerts,
+		"automatic-copy-certs", false,
+		"use automatic copy certs instead of manual copy certs when joining new control-plane nodes",
+	)
+	cmd.Flags().BoolVar(
+		&flags.KubeDNS,
+		"kube-dns", false,
+		"setup kubeadm for installing kube-dns instead of CoreDNS",
+	)
+	cmd.Flags().DurationVar(
+		&flags.Wait,
+		"wait", time.Duration(5*time.Minute),
+		"Wait for cluster state to converge after action",
+	)
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	actionFlags := kcluster.ActionFlags{
-		UsePhases: flags.UsePhases,
-		CopyCerts: flags.CopyCerts,
-		Wait:      flags.Wait,
-	}
-
-	//TODO: upgrade version mandatory for updates
-
+func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
+	// validate UpgradeVersion flag
+	var upgradeVersion *K8sVersion.Version
 	if flags.UpgradeVersion != "" {
-		v, err := version.ParseSemantic(flags.UpgradeVersion)
+		upgradeVersion, err = K8sVersion.ParseSemantic(flags.UpgradeVersion)
 		if err != nil {
 			return err
 		}
-		actionFlags.UpgradeVersion = v
 	}
 
-	// Check if the cluster name already exists
-	known, err := cluster.IsKnown(flags.Name)
+	// get a kinder cluster manager
+	o, err := manager.NewClusterManager(flags.Name)
 	if err != nil {
-		return err
-	}
-	if !known {
-		return errors.Errorf("a cluster with the name %q does not exists", flags.Name)
+		return errors.Wrapf(err, "failed to create create a kinder cluster manager for %s", flags.Name)
 	}
 
-	// create a cluster context from current nodes
-	ctx := cluster.NewContext(flags.Name)
+	// eventually, instruct the cluster manager to run only commands on one node
+	if flags.OnlyNode != "" {
+		o.OnlyNode(flags.OnlyNode)
+	}
 
-	kcfg, err := kcluster.NewKContext(ctx)
+	// eventually, instruct the cluster manager to dry run commands (without actually running them)
+	if flags.DryRun {
+		o.DryRun()
+
+		flags.Wait = 0
+	}
+
+	// executed the requested action
+	action := args[0]
+	err = o.DoAction(action,
+		actions.UsePhases(flags.UsePhases),
+		actions.AutomaticCopyCerts(flags.AutomaticCopyCerts),
+		actions.KubeDNS(flags.KubeDNS),
+		actions.Wait(flags.Wait),
+		actions.UpgradeVersion(upgradeVersion),
+	)
 	if err != nil {
-		return errors.Wrap(err, "failed to create cluster context")
-	}
-
-	err = kcfg.Do(args, actionFlags, flags.OnlyNode)
-	if err != nil {
-		return errors.Wrap(err, "failed to exec action on cluster nodes")
+		return errors.Wrapf(err, "failed to exec action %s", action)
 	}
 
 	return nil

@@ -14,6 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+Package e2e implements support for running kubeadm e2e tests or kubernetes e2e test.
+
+It takes care of building upstream test suites if necessary, and provides "sane" defaults
+for simplifying test invokation.
+*/
 package e2e
 
 import (
@@ -22,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/kind/pkg/exec"
+	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // Option is an Runner configuration option supplied to NewRunner
@@ -92,7 +98,8 @@ func newTestRunner(testBinary, makeBinaryGoal string, options ...Option) (runner
 	return runner, nil
 }
 
-// Run executes tests
+// Run executes tests as defined by the selected runner options.
+// it takes care of building ginkgo and upstream test suites if necessary,
 func (r *Runner) Run() error {
 	// find a ginkgo binary or build it if it not exists
 	ginkgoBinary, err := getOrBuildBinary(r.kubeRoot, "ginkgo", "vendor/github.com/onsi/ginkgo/ginkgo")
@@ -121,8 +128,8 @@ func (r *Runner) Run() error {
 
 	// executes the command.
 	// TODO: switch to an executor that supports timeout/cancellation
-	cmd := exec.Command(ginkgoBinary, args...)
-	exec.InheritOutput(cmd)
+	cmd := kindexec.Command(ginkgoBinary, args...)
+	kindexec.InheritOutput(cmd)
 	err = cmd.Run()
 	if err != nil {
 		return errors.Wrap(err, "error running test")

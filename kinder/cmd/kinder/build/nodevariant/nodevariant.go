@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/build/alter"
-	"sigs.k8s.io/kind/pkg/build/node"
+	kindebuildnode "sigs.k8s.io/kind/pkg/build/node"
 )
 
 type flagpole struct {
@@ -33,6 +33,7 @@ type flagpole struct {
 	UpgradeArtifacts string
 	Kubeadm          string
 	Kubelet          string
+	CRI              string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -50,13 +51,13 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
-		node.DefaultImage,
+		kindebuildnode.DefaultImage,
 		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
-		node.DefaultImage,
-		"name:tag of the base image to use for the build; this can be a kindest/base image or kindest/node image",
+		kindebuildnode.DefaultImage,
+		"name:tag of the source image; this can be a kindest/base image or kindest/node image",
 	)
 	cmd.Flags().StringVar(
 		&flags.InitArtifacts, "with-init-artifacts",
@@ -67,6 +68,12 @@ func NewCommand() *cobra.Command {
 		&flags.ImageTars, "with-images",
 		nil,
 		"version/build-label/path to images tar or folder with images tars to be added to the images",
+	)
+	//TODO: remove this as soon CRI autodetection is implemented
+	cmd.Flags().StringVar(
+		&flags.CRI, "cri",
+		"",
+		"specifies the cri installed inside the base image",
 	)
 	cmd.Flags().StringVar(
 		&flags.ImageNamePrefix, "image-name-prefix",
@@ -92,10 +99,18 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	// check the cri flag
+	var err error
+	cri := flags.CRI
+	if cri == "" {
+		return errors.Wrap(err, "Please use the --cri flag to specify the container runtime installed inside the base image")
+	}
+
 	ctx, err := alter.NewContext(
 		// base build options
-		alter.WithImage(flags.Image),
 		alter.WithBaseImage(flags.BaseImage),
+		alter.WithCRI(cri),
+		alter.WithImage(flags.Image),
 		// bits to be added to the image
 		alter.WithInitArtifacts(flags.InitArtifacts),
 		alter.WithKubeadm(flags.Kubeadm),

@@ -17,6 +17,7 @@ tasks:
 # because:
 # - e2e-kubeadm is executed after the upgrade (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
 # - it uses the automatic copy certs feature, available in kubeadm since v1.14
+# - it configures automatic copy certs via the kubeadm-config, available in kubeadm since v1.15
 - name: pull-base-image
   description: |
     pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
@@ -37,6 +38,7 @@ tasks:
     - --image={{ .vars.image }}
     - --with-init-artifacts={{ .vars.initVersion }}
     - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
+    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -50,6 +52,9 @@ tasks:
     - --image={{ .vars.image }}
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
+    - --cri=docker            # this is temporary, until kinder will autodetect the CRI runtime installed into the node image
+    - --automatic-copy-certs  # in v1.15 and after automatic copy certs can be configure in the kubeadm-config (which is generated at create time)
+    - --loglevel=debug
   timeout: 5m
 - name: init
   description: |
@@ -109,7 +114,7 @@ tasks:
     - --name={{ .vars.clusterName }}
 - name: e2e-after
   description: |
-    Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"
+    Runs Kubernetes e2e test (conformance) on the cluster with Kubernetes "upgradeVersion"
   cmd: kinder
   args:
     - test
@@ -152,4 +157,3 @@ tasks:
     - cluster
     - --name={{ .vars.clusterName }}
   force: true
-

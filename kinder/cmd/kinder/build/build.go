@@ -14,16 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package build implements the `build` command
 package build
 
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/build/baseimage"
-	"sigs.k8s.io/kind/cmd/kind/build/nodeimage"
-
 	"k8s.io/kubeadm/kinder/cmd/kinder/build/nodevariant"
+	kindbaseimage "sigs.k8s.io/kind/cmd/kind/build/baseimage"
+	kindnodeimage "sigs.k8s.io/kind/cmd/kind/build/nodeimage"
 )
 
 // NewCommand returns a new cobra.Command for building
@@ -36,8 +34,8 @@ func NewCommand() *cobra.Command {
 		Long:  "Build the base node image (base-image) or the node image (node-image) or node image variants (node-variant)",
 	}
 	// add subcommands
-	cmd.AddCommand(baseimage.NewCommand())
-	cmd.AddCommand(nodeimage.NewCommand())
+	cmd.AddCommand(kindbaseimage.NewCommand())
+	cmd.AddCommand(kindnodeimage.NewCommand())
 	cmd.AddCommand(nodevariant.NewCommand())
 	return cmd
 }

@@ -14,15 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package exec implements the `exec` command
 package exec
 
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kcluster "k8s.io/kubeadm/kinder/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cluster"
+	"k8s.io/kubeadm/kinder/pkg/cluster/manager"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 type flagpole struct {
@@ -51,31 +50,25 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
+	cmd.Flags().StringVar(
+		&flags.Name,
+		"name", constants.DefaultClusterName,
+		"cluster name",
+	)
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	// Check if the cluster name already exists
-	known, err := cluster.IsKnown(flags.Name)
+	// get a kinder cluster manager
+	o, err := manager.NewClusterManager(flags.Name)
 	if err != nil {
-		return err
-	}
-	if !known {
-		return errors.Errorf("a cluster with the name %q does not exists", flags.Name)
+		return errors.Wrapf(err, "failed to create create a kinder cluster manager for %s", flags.Name)
 	}
 
-	// create a cluster context from current nodes
-	ctx := cluster.NewContext(flags.Name)
-
-	kcfg, err := kcluster.NewKContext(ctx)
+	// execute the command on selected target nodes
+	err = o.ExecCommand(args[0], args[1:])
 	if err != nil {
-		return errors.Wrap(err, "failed to create cluster context")
-	}
-
-	err = kcfg.Exec(args[0], args[1:])
-	if err != nil {
-		return errors.Wrap(err, "failed to exec command on cluster nodes")
+		return errors.Wrap(err, "failed to copy files")
 	}
 
 	return nil
