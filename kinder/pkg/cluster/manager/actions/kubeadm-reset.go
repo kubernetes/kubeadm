@@ -17,15 +17,17 @@ limitations under the License.
 package actions
 
 import (
+	"fmt"
+
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 )
 
 // KubeadmReset executes the kubeadm reset workflow
-func KubeadmReset(c *status.Cluster) error {
+func KubeadmReset(c *status.Cluster, vLevel int) error {
 	//TODO: implements kubeadm reset with phases
 	for _, n := range c.K8sNodes() {
 		if err := n.Command(
-			"kubeadm", "reset", "--force",
+			"kubeadm", "reset", "--force", fmt.Sprintf("--v=%d", vLevel),
 		).RunWithEcho(); err != nil {
 			return err
 		}

@@ -34,7 +34,7 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
 	// fail fast if required to use automatic copy certs and kubeadm less than v1.14
@@ -44,9 +44,9 @@ func KubeadmInit(c *status.Cluster, usePhases, automaticCopyCerts bool, wait tim
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, automaticCopyCerts)
+		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, vLevel)
 	} else {
-		err = kubeadmInit(cp1, automaticCopyCerts)
+		err = kubeadmInit(cp1, automaticCopyCerts, vLevel)
 	}
 	if err != nil {
 		return err
@@ -60,11 +60,12 @@ func KubeadmInit(c *status.Cluster, usePhases, automaticCopyCerts bool, wait tim
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool) error {
+func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, vLevel int) error {
 	initArgs := []string{
 		"init",
 		"--ignore-preflight-errors=all",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 	}
 	if automaticCopyCerts {
 		if cp1.MustKubeadmVersion().AtLeast(constants.V1_15) {
@@ -90,40 +91,40 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool) error {
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool) error {
+func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, vLevel int) error {
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind; TODO: change from all > exact list of checks
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "kubelet-start", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "kubelet-start", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "certs", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "certs", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "kubeconfig", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "kubeconfig", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -137,7 +138,7 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool) error {
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "upload-config", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "upload-config", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -146,6 +147,7 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool) error {
 		uploadCertsArgs := []string{
 			"init", "phase", "upload-certs",
 			fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+			fmt.Sprintf("--v=%d", vLevel),
 		}
 		if automaticCopyCerts {
 			if cp1.MustKubeadmVersion().AtLeast(constants.V1_15) {
@@ -169,19 +171,19 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool) error {
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "mark-control-plane", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "mark-control-plane", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "bootstrap-token", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "bootstrap-token", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "addon", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		"kubeadm", "init", "phase", "addon", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}

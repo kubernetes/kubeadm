@@ -218,7 +218,7 @@ func (n *Node) EtcdImage() (string, error) {
 		return n.etcdImage, nil
 	}
 
-	kubeadmVersion, err := n.KubeVersion()
+	kubeVersion, err := n.KubeVersion()
 	if err != nil {
 		return "", err
 	}
@@ -226,7 +226,7 @@ func (n *Node) EtcdImage() (string, error) {
 	lines, err := cmd.NewProxyCmd(
 		n.Name(),
 		"/bin/sh", "-c",
-		fmt.Sprintf("kubeadm config images list --kubernetes-version=%s 2> /dev/null | grep etcd", kubeadmVersion),
+		fmt.Sprintf("kubeadm config images list --kubernetes-version=%s 2> /dev/null | grep etcd", kubeVersion),
 	).Silent().RunAndCapture()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get the etcd image")

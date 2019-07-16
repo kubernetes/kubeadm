@@ -44,16 +44,16 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.automaticCopyCerts, flags.wait)
+		return KubeadmInit(c, flags.usePhases, flags.automaticCopyCerts, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.wait)
+		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmUpgrade(c, flags.upgradeVersion, flags.wait)
+		return KubeadmUpgrade(c, flags.upgradeVersion, flags.wait, flags.vLevel)
 	},
 	"kubeadm-reset": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmReset(c)
+		return KubeadmReset(c, flags.vLevel)
 	},
 	"copy-certs": func(c *status.Cluster, flags *RunOptions) error {
 		return CopyCertificates(c)
@@ -116,6 +116,13 @@ func UpgradeVersion(upgradeVersion *K8sVersion.Version) Option {
 	}
 }
 
+// VLevel option sets the number for the log level verbosity for the kubeadm commands
+func VLevel(vLevel int) Option {
+	return func(r *RunOptions) {
+		r.vLevel = vLevel
+	}
+}
+
 // RunOptions holds options supplied to actions.Run
 type RunOptions struct {
 	kubeDNS            bool
@@ -123,6 +130,7 @@ type RunOptions struct {
 	automaticCopyCerts bool
 	wait               time.Duration
 	upgradeVersion     *K8sVersion.Version
+	vLevel             int
 }
 
 // Run executes one action
