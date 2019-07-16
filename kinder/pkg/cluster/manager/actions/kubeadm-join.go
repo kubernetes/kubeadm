@@ -28,18 +28,18 @@ import (
 
 // KubeadmJoin executes the kubeadm join workflow both for control-plane nodes and
 // worker nodes
-func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration) (err error) {
-	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, wait); err != nil {
+func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
+	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, wait, vLevel); err != nil {
 		return err
 	}
 
-	if err := joinWorkers(c, usePhases, wait); err != nil {
+	if err := joinWorkers(c, usePhases, wait, vLevel); err != nil {
 		return err
 	}
 	return nil
 }
 
-func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration) (err error) {
+func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
 	for _, cp2 := range c.SecondaryControlPlanes() {
 		// automatic copy certs is supported starting from v1.14
 		if automaticCopyCerts && !cp2.MustKubeadmVersion().AtLeast(constants.V1_14) {
@@ -55,9 +55,9 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wa
 
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
-			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts)
+			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, vLevel)
 		} else {
-			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts)
+			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts, vLevel)
 		}
 		if err != nil {
 			return err
@@ -70,10 +70,11 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wa
 	return nil
 }
 
-func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool) (err error) {
+func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, vLevel int) (err error) {
 	joinArgs := []string{
 		"join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
 		//TODO: change from all > exact list of checks
 	}
@@ -95,11 +96,12 @@ func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool) (err erro
 	return nil
 }
 
-func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool) (err error) {
+func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	preflightArgs := []string{
 		"join", "phase", "preflight",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
 		//TODO: change from all > exact list of checks
 	}
@@ -122,6 +124,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool)
 	prepareArgs := []string{
 		"join", "phase", "control-plane-prepare", "all",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 	}
 	if automaticCopyCerts {
 		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
@@ -142,6 +145,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool)
 	if err := cp.Command(
 		"kubeadm", "join", "phase", "kubelet-start",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -150,6 +154,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool)
 	controlPlaneArgs := []string{
 		"join", "phase", "control-plane-join", "all",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 	}
 	if automaticCopyCerts {
 		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
@@ -169,7 +174,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool)
 	return nil
 }
 
-func joinWorkers(c *status.Cluster, usePhases bool, wait time.Duration) (err error) {
+func joinWorkers(c *status.Cluster, usePhases bool, wait time.Duration, vLevel int) (err error) {
 	for _, w := range c.Workers() {
 		if usePhases && !w.MustKubeadmVersion().AtLeast(constants.V1_14) {
 			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
@@ -177,9 +182,9 @@ func joinWorkers(c *status.Cluster, usePhases bool, wait time.Duration) (err err
 
 		// executes the kubeadm join workflow
 		if usePhases {
-			err = kubeadmJoinWorkerWithPhases(w)
+			err = kubeadmJoinWorkerWithPhases(w, vLevel)
 		} else {
-			err = kubeadmJoinWorker(w)
+			err = kubeadmJoinWorker(w, vLevel)
 		}
 		if err != nil {
 			return err
@@ -192,10 +197,11 @@ func joinWorkers(c *status.Cluster, usePhases bool, wait time.Duration) (err err
 	return nil
 }
 
-func kubeadmJoinWorker(w *status.Node) (err error) {
+func kubeadmJoinWorker(w *status.Node, vLevel int) (err error) {
 	if err := w.Command(
 		"kubeadm", "join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
 		//TODO: change from all > exact list of checks
 	).RunWithEcho(); err != nil {
@@ -205,11 +211,12 @@ func kubeadmJoinWorker(w *status.Node) (err error) {
 	return nil
 }
 
-func kubeadmJoinWorkerWithPhases(w *status.Node) (err error) {
+func kubeadmJoinWorkerWithPhases(w *status.Node, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	if err := w.Command(
 		"kubeadm", "join", "phase", "preflight",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
 		//TODO: change from all > exact list of checks
 	).RunWithEcho(); err != nil {
@@ -222,6 +229,7 @@ func kubeadmJoinWorkerWithPhases(w *status.Node) (err error) {
 	if err := w.Command(
 		"kubeadm", "join", "phase", "kubelet-start",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}

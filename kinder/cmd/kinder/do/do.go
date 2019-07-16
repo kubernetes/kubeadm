@@ -37,6 +37,7 @@ type flagpole struct {
 	KubeDNS            bool
 	OnlyNode           string
 	DryRun             bool
+	VLevel             int
 	Wait               time.Duration
 }
 
@@ -93,6 +94,11 @@ func NewCommand() *cobra.Command {
 		"wait", time.Duration(5*time.Minute),
 		"Wait for cluster state to converge after action",
 	)
+	cmd.Flags().IntVarP(
+		&flags.VLevel,
+		"kubeadm-verbosity", "v", 0,
+		"Number for the log level verbosity for the kubeadm commands",
+	)
 	return cmd
 }
 
@@ -132,6 +138,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.KubeDNS(flags.KubeDNS),
 		actions.Wait(flags.Wait),
 		actions.UpgradeVersion(upgradeVersion),
+		actions.VLevel(flags.VLevel),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)

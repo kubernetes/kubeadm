@@ -35,7 +35,7 @@ import (
 //
 // The implementation assumes that the kubeadm/kubelet/kubectl binaries and all the necessary images
 // for the new kubernetes version are available in the /kinder/upgrade/{version} folder.
-func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, wait time.Duration) (err error) {
+func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, wait time.Duration, vLevel int) (err error) {
 	if upgradeVersion == nil {
 		return errors.New("kubeadm-upgrade actions requires the --upgrade-version parameter to be set")
 	}
@@ -49,9 +49,9 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, wait 
 		}
 
 		if n.Name() == c.BootstrapControlPlane().Name() {
-			err = kubeadmUpgradeApply(c, n, upgradeVersion, wait)
+			err = kubeadmUpgradeApply(c, n, upgradeVersion, wait, vLevel)
 		} else {
-			err = kubeadmUpgradeNode(c, n, upgradeVersion, wait)
+			err = kubeadmUpgradeNode(c, n, upgradeVersion, wait, vLevel)
 		}
 		if err != nil {
 			return err
@@ -109,9 +109,9 @@ func upgradeKubeadmBinary(n *status.Node, upgradeVersion *K8sVersion.Version) er
 	return nil
 }
 
-func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
+func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration, vLevel int) error {
 	if err := cp1.Command(
-		"kubeadm", "upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion),
+		"kubeadm", "upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8
 	return nil
 }
 
-func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
+func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration, vLevel int) error {
 	// waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
 	// please note that this is a temporary workaround for a problem we are observing on upgrades while
 	// executing node upgrades immediately after control-plane upgrade.
@@ -137,7 +137,7 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 	if n.MustKubeadmVersion().AtLeast(constants.V1_15) {
 		// kubeadm upgrade node
 		if err := n.Command(
-			"kubeadm", "upgrade", "node",
+			"kubeadm", "upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
 		).RunWithEcho(); err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 		if n.IsControlPlane() {
 			// kubeadm upgrade node experimental-control-plane
 			if err := n.Command(
-				"kubeadm", "upgrade", "node", "experimental-control-plane",
+				"kubeadm", "upgrade", "node", "experimental-control-plane", fmt.Sprintf("--v=%d", vLevel),
 			).RunWithEcho(); err != nil {
 				return err
 			}
@@ -153,7 +153,7 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 
 		// kubeadm upgrade node config
 		if err := n.Command(
-			"kubeadm", "upgrade", "node", "config", "--kubelet-version", fmt.Sprintf("v%s", upgradeVersion),
+			"kubeadm", "upgrade", "node", "config", "--kubelet-version", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
 		).RunWithEcho(); err != nil {
 			return err
 		}
