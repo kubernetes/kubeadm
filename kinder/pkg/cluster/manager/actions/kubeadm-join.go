@@ -53,6 +53,16 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wa
 			}
 		}
 
+		// checks pre-loaded images available on the node (this will report missing images, if any)
+		kubeVersion, err := cp2.KubeVersion()
+		if err != nil {
+			return err
+		}
+
+		if err := checkImagesForVersion(cp2, kubeVersion); err != nil {
+			return err
+		}
+
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
 			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, vLevel)
@@ -178,6 +188,16 @@ func joinWorkers(c *status.Cluster, usePhases bool, wait time.Duration, vLevel i
 	for _, w := range c.Workers() {
 		if usePhases && !w.MustKubeadmVersion().AtLeast(constants.V1_14) {
 			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
+		}
+
+		// checks pre-loaded images available on the node (this will report missing images, if any)
+		kubeVersion, err := w.KubeVersion()
+		if err != nil {
+			return err
+		}
+
+		if err := checkImagesForVersion(w, kubeVersion); err != nil {
+			return err
 		}
 
 		// executes the kubeadm join workflow

@@ -18,7 +18,9 @@ package alter
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -26,6 +28,7 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/extract"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	kindexec "sigs.k8s.io/kind/pkg/exec"
 	kindfs "sigs.k8s.io/kind/pkg/fs"
@@ -184,12 +187,79 @@ func (c *Context) Alter() (err error) {
 func (c *Context) prepareBits(bitsInstallers []bits.Installer, bc *bits.BuildContext) error {
 	log.Info("Preparing bits ...")
 
+	var isAKubernetesImages = func(i string) bool {
+		for _, ki := range extract.AllKubernetesImages {
+			if i == ki {
+				return true
+			}
+		}
+		return false
+	}
+
 	for _, b := range bitsInstallers {
-		if err := b.Prepare(bc); err != nil {
+		// prepare bits
+		bits, err := b.Prepare(bc)
+		if err != nil {
 			return errors.Wrap(err, "failed to copy alter bits")
 		}
+
+		// fix the bits in order to match kubeadm/kinder expectations
+		// NB. this is done here so all the bits gets fixes, no matter of the source
+		for k, v := range bits {
+			// if the bit is one of the kubernetes images, we should ensure the repository/name matches kubeadm expectations
+			if isAKubernetesImages(k) {
+				if err := fixImageTar(v); err != nil {
+					return errors.Wrap(err, "failed to fix bits")
+				}
+			}
+		}
 	}
+
 	return nil
+}
+
+// fixImageTar ensure the repository/name matches kubeadm expectations
+func fixImageTar(v string) error {
+	log.Infof("fixing %s", v)
+
+	// prepare to read the image tar
+	f, err := os.Open(v)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// read the image tar and write the fixed version on a string builder
+	var w strings.Builder
+	err = kinddocker.EditArchiveRepositories(f, &w, fixRepository)
+	if err != nil {
+		return err
+	}
+	f.Close()
+
+	// override the image tar with the fixed version
+	err = ioutil.WriteFile(v, []byte(w.String()), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// fixRepository drop the arch suffix from images to get the expected image;
+// this is necessary for kubernetes v1.15+
+// Nb. for < v1.12 it was requested to do the opposite, but it not necessary anymore
+// because v.11 is already out of the kubeadm e2e test matrix
+func fixRepository(repository string) string {
+	archSuffix := "-amd64"
+
+	if strings.HasSuffix(repository, archSuffix) {
+		fixed := strings.TrimSuffix(repository, archSuffix)
+		fmt.Println("fixed: " + repository + " -> " + fixed)
+		repository = fixed
+	}
+
+	return repository
 }
 
 func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildContext) error {

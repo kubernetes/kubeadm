@@ -28,7 +28,7 @@ import (
 // Installer interface defines the behaviour of a type in charge of installing a specific set of bits (files/artifacts)
 type Installer interface {
 	// Prepare a set of bits into the temporary folder on the host machine
-	Prepare(*BuildContext) error
+	Prepare(*BuildContext) (map[string]string, error)
 	// Install should install (deploy) the bits on the image being altered
 	Install(*BuildContext) error
 }

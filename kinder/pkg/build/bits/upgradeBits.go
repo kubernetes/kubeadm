@@ -42,11 +42,11 @@ func NewUpgradeBits(arg string) Installer {
 }
 
 // Get implements bits.Get
-func (b *upgradeBits) Prepare(c *BuildContext) error {
+func (b *upgradeBits) Prepare(c *BuildContext) (map[string]string, error) {
 	// ensure the dest path exists on host/inside the HostBitsPath
 	dst := filepath.Join(c.HostBitsPath(), "upgrade")
 	if err := os.Mkdir(dst, 0777); err != nil {
-		return errors.Wrap(err, "failed to make bits dir")
+		return nil, errors.Wrap(err, "failed to make bits dir")
 	}
 
 	// Creates an extractor instance, that will read binaries & images required from upgrades from the src,
@@ -58,8 +58,7 @@ func (b *upgradeBits) Prepare(c *BuildContext) error {
 	)
 
 	// Extracts the binary bit
-	_, err := e.Extract()
-	return err
+	return e.Extract()
 }
 
 // Install implements bits.Install

@@ -46,3 +46,14 @@ func (h *ActionHelper) PreLoadUpgradeImages(n *status.Node, srcFolder string) er
 	}
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
+
+// GetImages prints the images available in the node
+func (h *ActionHelper) GetImages(n *status.Node) ([]string, error) {
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.GetImages(n)
+	case status.DockerRuntime:
+		return docker.GetImages(n)
+	}
+	return nil, errors.Errorf("unknown cri: %s", h.cri)
+}

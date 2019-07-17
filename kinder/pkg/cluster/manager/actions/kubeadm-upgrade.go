@@ -91,6 +91,12 @@ func preloadUpgradeImages(c *status.Cluster, upgradeVersion *K8sVersion.Version)
 			fmt.Printf("error PreLoadUpgradeImages: %v", err)
 			continue
 		}
+
+		// checks pre-loaded images available on the node (this will report missing images, if any)
+		if err := checkImagesForVersion(n, upgradeVersion.String()); err != nil {
+			fmt.Printf("error ReportImages: %v", err)
+			continue
+		}
 	}
 }
 

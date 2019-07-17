@@ -18,6 +18,9 @@ package docker
 
 import (
 	"fmt"
+	"strconv"
+
+	"github.com/pkg/errors"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 )
@@ -28,4 +31,21 @@ func PreLoadUpgradeImages(n *status.Node, srcFolder string) error {
 		"/bin/bash", "-c",
 		`find `+fmt.Sprintf("%s", srcFolder)+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Silent().Run()
+}
+
+// GetImages returns the list of images available in the node
+func GetImages(n *status.Node) ([]string, error) {
+	current, err := n.Command(
+		"docker", "images", `--format="{{.Repository}}:{{.Tag}}"`,
+	).Silent().RunAndCapture()
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read current images from %s", n.Name())
+	}
+
+	for i := range current {
+		current[i], _ = strconv.Unquote(current[i])
+	}
+
+	return current, nil
 }

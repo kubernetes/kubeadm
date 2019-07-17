@@ -53,7 +53,9 @@ const (
 
 var (
 	allKubernetesBinaries = []string{kubeletBinary, kubectlBinary, kubeadmBinary}
-	allKubernetesImages   = []string{"kube-apiserver.tar", "kube-controller-manager.tar", "kube-scheduler.tar", "kube-proxy.tar"}
+
+	// AllKubernetesImages defines of image tarballs included in a K8s release
+	AllKubernetesImages = []string{"kube-apiserver.tar", "kube-controller-manager.tar", "kube-scheduler.tar", "kube-proxy.tar"}
 
 	// AllImagesPattern defines a pattern for searching all the images in a folder
 	AllImagesPattern = []string{"*.tar"}
@@ -135,7 +137,7 @@ func OnlyKubernetesBinaries(onlyBinaries bool) Option {
 func OnlyKubernetesImages(onlyImages bool) Option {
 	return func(b *Extractor) {
 		if onlyImages {
-			b.files = allKubernetesImages
+			b.files = AllKubernetesImages
 			// disable addVersionFileToDst when we are reading only a subset of files
 			b.addVersionFileToDst = false
 		}
@@ -174,7 +176,7 @@ type Extractor struct {
 func NewExtractor(src, dst string, options ...Option) (extractor *Extractor) {
 	extractor = &Extractor{
 		src:                 src,
-		files:               append(allKubernetesBinaries, allKubernetesImages...),
+		files:               append(allKubernetesBinaries, AllKubernetesImages...),
 		dst:                 dst,
 		dstMutator:          fileNameMutator{},
 		addVersionFileToDst: true,

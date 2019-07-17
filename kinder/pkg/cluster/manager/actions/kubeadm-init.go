@@ -42,6 +42,16 @@ func KubeadmInit(c *status.Cluster, usePhases, automaticCopyCerts bool, wait tim
 		return errors.Wrapf(err, "--automatic-copy-certs can't be used with kubeadm older than v1.14")
 	}
 
+	// checks pre-loaded images available on the node (this will report missing images, if any)
+	kubeVersion, err := cp1.KubeVersion()
+	if err != nil {
+		return err
+	}
+
+	if err := checkImagesForVersion(cp1, kubeVersion); err != nil {
+		return err
+	}
+
 	// execs the kubeadm init workflow
 	if usePhases {
 		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, vLevel)
