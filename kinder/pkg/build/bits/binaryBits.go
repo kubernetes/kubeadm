@@ -42,7 +42,7 @@ func NewBinaryBits(src, binaryName string) Installer {
 }
 
 // Get implements Installer.Get
-func (b *binaryBits) Prepare(c *BuildContext) error {
+func (b *binaryBits) Prepare(c *BuildContext) (map[string]string, error) {
 	// Creates an extractor instance, that will read the binary bit from the src,
 	// where source can be one of version/build-label/file or folder containing the binary,
 	// and save it to the HostBitsPath
@@ -53,8 +53,7 @@ func (b *binaryBits) Prepare(c *BuildContext) error {
 	)
 
 	// Extracts the binary bit
-	_, err := e.Extract()
-	return err
+	return e.Extract()
 }
 
 // Install implements bits.Install

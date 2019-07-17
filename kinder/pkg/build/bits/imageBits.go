@@ -44,14 +44,15 @@ func NewImageBits(args []string, namePrefix string) Installer {
 }
 
 // Get implements Installer.Get
-func (b *imageBits) Prepare(c *BuildContext) error {
+func (b *imageBits) Prepare(c *BuildContext) (map[string]string, error) {
 	// ensure the dest path exists on host/inside the HostBitsPath
 	dst := filepath.Join(c.HostBitsPath(), "images")
 	if err := os.Mkdir(dst, 0777); err != nil {
-		return errors.Wrap(err, "failed to make bits dir")
+		return nil, errors.Wrap(err, "failed to make bits dir")
 	}
 
 	// for each of the given sources
+	allImages := map[string]string{}
 	for _, src := range b.srcs {
 		// Creates an extractor instance, that will read the binary bit from the src,
 		// that can be one of version/build-label/file or folder containing the binary,
@@ -70,12 +71,18 @@ func (b *imageBits) Prepare(c *BuildContext) error {
 		}
 
 		// Extracts the image tarballs bit
-		if _, err := e.Extract(); err != nil {
-			return errors.Wrapf(err, "failed to extract %s", src)
+		images, err := e.Extract()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract %s", src)
+		}
+
+		// keeps track of the image tarballs bit extracted from the souce
+		for k, v := range images {
+			allImages[k] = v
 		}
 	}
 
-	return nil
+	return allImages, nil
 }
 
 // Install implements bits.Install
