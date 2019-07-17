@@ -19,6 +19,8 @@ package containerd
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 )
 
@@ -29,4 +31,19 @@ func PreLoadUpgradeImages(n *status.Node, srcFolder string) error {
 		"bash", "-c",
 		`find `+fmt.Sprintf("%s", srcFolder)+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack && rm -rf `+fmt.Sprintf("%s", srcFolder)+`/*.tar`,
 	).Silent().Run()
+}
+
+// GetImages returns the list of images available in the node
+func GetImages(n *status.Node) ([]string, error) {
+	current, err := n.Command(
+		"ctr", "--namespace=k8s.io", "images", "ls", "-q",
+	).Silent().RunAndCapture()
+
+	fmt.Println(current)
+	fmt.Println(err)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read current images from %s", n.Name())
+	}
+
+	return current, nil
 }
