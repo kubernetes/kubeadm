@@ -18,8 +18,13 @@ Follow either of the two links above to access the appropriate CLA and instructi
 1. Submit an issue describing your proposed change to the repo in question.
 2. The [repo owners](OWNERS) will respond to your issue promptly.
 3. If your proposed change is accepted, and you haven't already done so, sign a Contributor License Agreement (see details above).
-4. Fork the desired repo, develop and test your code changes.
-5. Submit a pull request.
+4. Before starting to work on an issue, type `/lifecycle active` in a comment on the issue or contact a Kubeadm maintainer to do so;
+   The `lifecycle/active` label denotes to the community that the issue is currently being worked on and it signals to the
+   reviewers and approvers that patches are coming soon.
+   If instead you are planning to work on an issue created by other contributors, it would be nice to comment on the issue about 
+   your intentions and then wait 2 or 3 days for feedback before adding `lifecycle/active` label and actually start working on it.
+5. Fork the desired repo, develop and test your code changes.
+6. Submit a pull request.
 
 ### Contributing kubeadm documentation
 
