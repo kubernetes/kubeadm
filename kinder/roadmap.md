@@ -9,6 +9,8 @@ for helping kubeadm contributors.
 
 High level goals for kinder v0.1 include:
 
+- [x] Support docker and containerd as a container runtime inside nodes
+
 - [ ] Provide a local test environment for kubeadm development
    - [x] Allow creation of nodes "ready for installing Kubernetes"
    - [x] Provide pre built developer-workflows for kubeadm init, join, reset
@@ -29,12 +31,13 @@ High level goals for kinder v0.1 include:
       - [ ] Add worker node
       - [ ] Add control plane node (and reconfigure load balancer)
    - [x] Provide smoke test action
+   - [ ] Support for testing concurrency on joining nodes
 
-- [ ] Be a temporary, kubeadm-project CI glue on top of kind
+- [x] Be a temporary, kubeadm-project CI glue on top of kind
    - [x] Provide get Kubernetes artifacts command(s)
    - [x] Allow build of node-image variants using Kubernetes artifacts from different sources
    - [x] Provide E2E run command(s)
-   - [ ] Provide test command that automates complex test scenarios composed by many steps/stages
+   - [x] Provide test command that automates complex test scenarios composed by many steps/stages
 
 **Non**-Goals include:
 
