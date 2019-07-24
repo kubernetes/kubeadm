@@ -1,11 +1,12 @@
-# Kinder
+# kinder
 
-kinder is an example of [kind](https://github.com/kubernetes-sigs/kind) used as a library.
-
-All the kind commands will be available in kinder, side by side with additional commands
-designed for helping kubeadm contributors.
+kinder is a tool designed for helping kubeadm contributors, by allowing them to create,
+delete and modify local clusters, and also execute actions, such as running the Kubernetes E2E suite.
 
 **kinder is a work in progress. Test it! Break it! Send feedback!**
+
+> The exported logic in kinder packages can be a subject of change at any point in time, thus using kinder
+> as a library is unsupported.
 
 See the kinder [roadmap](roadmap.md) for more information.
 
@@ -60,11 +61,13 @@ What makes kinder different, is the fact that it is designed for helping kubeadm
 so it provides a slightly different workflow that allows developers to take control of the cluster
 bootstrap process.
 
-![Kinder workflow](doc/kinder-workflow.png)
+![kinder workflow](doc/kinder-workflow.png)
+
+See [kind & kinder](doc/kind-kinder.md) for a more detailed comparison between kind and kinder.
 
 ### Prepare node-image & node-image variants
 
-Kind can be extremely efficient when the node image contains all the necessary artifacts.
+kind can be extremely efficient when the node image contains all the necessary artifacts.
 
 kinder allows kubeadm contributors to exploit this feature by implementing the `kinder build node-variant` command, that takes a node-image and allows to build variants by:
 
@@ -127,4 +130,4 @@ For more details please take a look at following how to guides:
 - [Testing upgrades](doc/test-upgrades.md)
 - [Testing X on Y](doc/test-XonY.md)
 
-or at the [Kinder reference](doc/reference.md)
+or at the [kinder reference](doc/reference.md)
