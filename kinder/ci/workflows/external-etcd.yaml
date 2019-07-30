@@ -40,7 +40,6 @@ tasks:
     - --control-plane-nodes=3
     - --worker-nodes=2
     - --external-etcd
-    - --automatic-copy-certs  # in v1.15 and after automatic copy certs can be configure in the kubeadm-config (which is generated at create time)
     - --loglevel=debug
   timeout: 5m
 - name: init
