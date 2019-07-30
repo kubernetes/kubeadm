@@ -29,22 +29,20 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 )
 
-// TODO: make actions name costants, because they are used also in create
-
 // action registry defines the list of available actions and the corresponding entry point.
 var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"loadbalancer": func(c *status.Cluster, flags *RunOptions) error {
-		// Nb. this action is invoked automatically at create time, but it is possible
+		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return LoadBalancer(c)
+		return LoadBalancer(c, c.ControlPlanes()...)
 	},
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
-		// Nb. this action is invoked automatically at create time, but it is possible
+		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts)
+		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts, c.K8sNodes()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.automaticCopyCerts, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.automaticCopyCerts, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.wait, flags.vLevel)

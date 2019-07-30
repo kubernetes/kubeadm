@@ -32,9 +32,10 @@ import (
 // LoadBalancer action writes the loadbalancer configuration file on the load balancer node.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func LoadBalancer(c *status.Cluster) error {
+func LoadBalancer(c *status.Cluster, nodes ...*status.Node) error {
 	// identify external load balancer node
 	lb := c.ExternalLoadBalancer()
+	lb.Infof("Updating load balancer configuration with %d control plane backends", len(nodes))
 
 	// if there's no loadbalancer we're done
 	if lb == nil {
@@ -45,7 +46,7 @@ func LoadBalancer(c *status.Cluster) error {
 
 	// collect info about the existing controlplane nodes
 	var backendServers = map[string]string{}
-	for _, n := range c.ControlPlanes() {
+	for _, n := range nodes {
 		controlPlaneIPv4, controlPlaneIPv6, err := n.IP()
 		if err != nil {
 			return errors.Wrapf(err, "failed to get IP for node %s", n.Name())

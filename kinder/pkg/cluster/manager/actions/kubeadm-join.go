@@ -33,13 +33,15 @@ func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, wait tim
 		return err
 	}
 
-	if err := joinWorkers(c, usePhases, wait, vLevel); err != nil {
+	if err := joinWorkers(c, usePhases, automaticCopyCerts, wait, vLevel); err != nil {
 		return err
 	}
 	return nil
 }
 
 func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
+	cpX := []*status.Node{c.BootstrapControlPlane()}
+
 	for _, cp2 := range c.SecondaryControlPlanes() {
 		// automatic copy certs is supported starting from v1.14
 		if automaticCopyCerts && !cp2.MustKubeadmVersion().AtLeast(constants.V1_14) {
@@ -63,6 +65,12 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wa
 			return err
 		}
 
+		// prepares the kubeadm config on this node
+		// NB. kubeDNS flag is set to false because it is not relevant for joinConfiguration
+		if err := KubeadmConfig(c, false, automaticCopyCerts, cp2); err != nil {
+			return err
+		}
+
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
 			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, vLevel)
@@ -70,6 +78,12 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wa
 			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts, vLevel)
 		}
 		if err != nil {
+			return err
+		}
+
+		// updates the loadbalancer config with the new cp node
+		cpX = append(cpX, cp2)
+		if err := LoadBalancer(c, cpX...); err != nil {
 			return err
 		}
 
@@ -184,7 +198,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 	return nil
 }
 
-func joinWorkers(c *status.Cluster, usePhases bool, wait time.Duration, vLevel int) (err error) {
+func joinWorkers(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
 	for _, w := range c.Workers() {
 		if usePhases && !w.MustKubeadmVersion().AtLeast(constants.V1_14) {
 			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
@@ -197,6 +211,12 @@ func joinWorkers(c *status.Cluster, usePhases bool, wait time.Duration, vLevel i
 		}
 
 		if err := checkImagesForVersion(w, kubeVersion); err != nil {
+			return err
+		}
+
+		// prepares the kubeadm config on this node
+		// NB. kubeDNS flag is set to false because it is not relevant for joinConfiguration
+		if err := KubeadmConfig(c, false, automaticCopyCerts, w); err != nil {
 			return err
 		}
 

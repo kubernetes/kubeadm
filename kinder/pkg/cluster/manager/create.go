@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
@@ -42,8 +41,6 @@ import (
 type CreateOptions struct {
 	externalLoadBalancer bool
 	externalEtcd         bool
-	kubeDNS              bool
-	automaticCopyCerts   bool
 	retain               bool
 }
 
@@ -63,22 +60,6 @@ func ExternalEtcd(externalEtcd bool) CreateOption {
 func ExternalLoadBalancer(externalLoadBalancer bool) CreateOption {
 	return func(c *CreateOptions) {
 		c.externalLoadBalancer = externalLoadBalancer
-	}
-}
-
-// KubeDNS option instructs kubeadm config action to prepare the cluster for using kube-dns instead of CoreDNS
-// NB. kubeadm config action is executed as part of the create workflow
-func KubeDNS(kubeDNS bool) CreateOption {
-	return func(r *CreateOptions) {
-		r.kubeDNS = kubeDNS
-	}
-}
-
-// AutomaticCopyCerts option instructs kubeadm-config to prepare the cluster for using the automatic copy certs function when initializing the cluster
-// NB. kubeadm-config action is executed as part of the create workflow
-func AutomaticCopyCerts(automaticCopyCerts bool) CreateOption {
-	return func(r *CreateOptions) {
-		r.automaticCopyCerts = automaticCopyCerts
 	}
 }
 
@@ -146,27 +127,6 @@ func CreateCluster(clusterName string, cfg *kindAPI.Cluster, options ...CreateOp
 		cfg,
 		flags,
 	); err != nil {
-		return handleErr(err)
-	}
-
-	// Executes post create, default actions; those actions can be executed also after create,
-	// but for sake of usability, we are running them automatically during create up to the state
-	// where the nodes are "ready to init a cluster"
-	o, err := NewClusterManager(clusterName)
-	if err != nil {
-		return handleErr(err)
-	}
-
-	err = o.DoAction("kubeadm-config",
-		actions.KubeDNS(flags.kubeDNS),
-		actions.AutomaticCopyCerts(flags.automaticCopyCerts),
-	)
-	if err != nil {
-		return handleErr(err)
-	}
-
-	err = o.DoAction("loadbalancer")
-	if err != nil {
 		return handleErr(err)
 	}
 

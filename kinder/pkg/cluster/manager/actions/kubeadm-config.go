@@ -39,7 +39,7 @@ type kubeadmConfigOptions struct {
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool) error {
+func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -81,7 +81,7 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool) err
 	}
 
 	// writs the kubeadm config file on all the K8s nodes.
-	for _, node := range c.K8sNodes() {
+	for _, node := range nodes {
 		if err := writeKubeadmConfig(c, node, configData, configOptions); err != nil {
 			return err
 		}
@@ -117,7 +117,7 @@ func getControlPlaneAddress(c *status.Cluster) (string, string, int, error) {
 
 // writeKubeadmConfig writes the /kind/kubeadm.conf file on a node
 func writeKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData, options kubeadmConfigOptions) error {
-	log.Debugf("Writing kubeadm config on %s...", n.Name())
+	n.Infof("Preparing %s", constants.KubeadmConfigPath)
 
 	// Amends the ConfigData struct with node specific settings
 
