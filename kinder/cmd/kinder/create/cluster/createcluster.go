@@ -47,8 +47,6 @@ type flagpole struct {
 	Retain               bool
 	ExternalEtcd         bool
 	ExternalLoadBalancer bool
-	KubeDNS              bool
-	AutomaticCopyCerts   bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -103,16 +101,6 @@ func NewCommand() *cobra.Command {
 		externalLoadBalancerFlagName, false,
 		"add an external load balancer to the cluster (implicit if number of control-plane nodes>1)",
 	)
-	cmd.Flags().BoolVar(
-		&flags.KubeDNS,
-		kubeDNSFLagName, false,
-		"setup kubeadm for installing kube-dns instead of CoreDNS",
-	)
-	cmd.Flags().BoolVar(
-		&flags.AutomaticCopyCerts,
-		"automatic-copy-certs", false,
-		"setup kubeadm for using the automatic copy certs instead of manual copy certs when joining new control-plane nodes",
-	)
 
 	return cmd
 }
@@ -153,8 +141,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		cfg,
 		manager.ExternalLoadBalancer(flags.ExternalLoadBalancer),
 		manager.ExternalEtcd(flags.ExternalEtcd),
-		manager.KubeDNS(flags.KubeDNS),
-		manager.AutomaticCopyCerts(flags.AutomaticCopyCerts),
 		manager.Retain(flags.Retain),
 	); err != nil {
 		return errors.Wrap(err, "failed to create cluster")

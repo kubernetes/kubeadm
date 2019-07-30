@@ -34,7 +34,7 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
 	// fail fast if required to use automatic copy certs and kubeadm less than v1.14
@@ -49,6 +49,16 @@ func KubeadmInit(c *status.Cluster, usePhases, automaticCopyCerts bool, wait tim
 	}
 
 	if err := checkImagesForVersion(cp1, kubeVersion); err != nil {
+		return err
+	}
+
+	// prepares the kubeadm config on this node
+	if err := KubeadmConfig(c, kubeDNS, automaticCopyCerts, cp1); err != nil {
+		return err
+	}
+
+	// prepares the loadbalancer config
+	if err := LoadBalancer(c, cp1); err != nil {
 		return err
 	}
 
