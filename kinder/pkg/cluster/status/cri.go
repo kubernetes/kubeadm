@@ -65,33 +65,22 @@ func InspectCRIinImage(image string) (ContainerRuntime, error) {
 	return InspectCRIinContainer(id)
 }
 
-// InspectCRIinContainer inspect a running and detects the installed container runtime
-// NB. this method use raw kinddocker/kindexec commands because it is used also during alter and create
+// InspectCRIinContainer inspect a running container and detects the installed container runtime
+// NB. this method use raw kinddocker/kindexec commands because it is used also during "alter" and "create"
 // (before an actual Cluster status exist)
 func InspectCRIinContainer(id string) (ContainerRuntime, error) {
 
 	cmder := kinddocker.ContainerCmder(id)
 
 	cmd := cmder.Command("/bin/sh", "-c",
-		`cat /kinder/cri > /dev/null 2>&1 || true`)
-	lines, err := kindexec.CombinedOutputLines(cmd)
-	if err != nil {
-		return ContainerRuntime(""), errors.Wrap(err, "error detecting CRI")
-	}
-
-	if len(lines) == 1 {
-		return ContainerRuntime(lines[0]), nil
-	}
-
-	cmd = cmder.Command("/bin/sh", "-c",
 		`which docker || true`)
-	lines, err = kindexec.CombinedOutputLines(cmd)
+	lines, err := kindexec.CombinedOutputLines(cmd)
 
-	if err != nil {
+	if err != nil  {
 		return ContainerRuntime(""), errors.Wrap(err, "error detecting CRI")
 	}
 
-	if len(lines) == 1 {
+	if len(lines) > 0 {
 		return DockerRuntime, nil
 	}
 
