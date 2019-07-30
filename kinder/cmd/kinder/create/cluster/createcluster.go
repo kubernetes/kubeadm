@@ -49,7 +49,6 @@ type flagpole struct {
 	ExternalLoadBalancer bool
 	KubeDNS              bool
 	AutomaticCopyCerts   bool
-	CRI                  string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -104,13 +103,6 @@ func NewCommand() *cobra.Command {
 		externalLoadBalancerFlagName, false,
 		"add an external load balancer to the cluster (implicit if number of control-plane nodes>1)",
 	)
-	//TODO: remove this as soon CRI autodetection is implemented
-	cmd.Flags().StringVar(
-		&flags.CRI,
-		"cri", "",
-		"specifies the cri installed inside the base image",
-	)
-
 	cmd.Flags().BoolVar(
 		&flags.KubeDNS,
 		kubeDNSFLagName, false,
@@ -140,12 +132,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return errors.Errorf("flags --%s and --%s should not be a negative number", controlPlaneNodesFlagName, workerNodesFLagName)
 	}
 
-	// check the cri flag
-	cri := flags.CRI
-	if cri == "" {
-		return errors.Wrap(err, "Please use the --cri flag to specify the container runtime installed inside the base image")
-	}
-
 	// gets the kind config, which is prebuild by kinder in accordance to the CLI flags
 	cfg, err := NewConfig(flags.ControlPlanes, flags.Workers, flags.ImageName)
 	if err != nil {
@@ -165,7 +151,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if err = manager.CreateCluster(
 		flags.Name,
 		cfg,
-		manager.CRI(cri),
 		manager.ExternalLoadBalancer(flags.ExternalLoadBalancer),
 		manager.ExternalEtcd(flags.ExternalEtcd),
 		manager.KubeDNS(flags.KubeDNS),

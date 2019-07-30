@@ -175,6 +175,8 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 
 	// add patches for instructing kubeadm to use the CRI runtime engine  installed on a node
 	// NB. this is a no-op in case of containerd, because it is already the default in the raw config
+	// TODO: currently we are always specifying the CRI kubeadm should use; it will be nice in the future to
+	// have the possibility to test the kubeadm CRI autodetection
 	nodeCRI, err := n.CRI()
 	if err != nil {
 		return "", err
