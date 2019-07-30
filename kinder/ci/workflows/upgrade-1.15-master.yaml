@@ -38,7 +38,6 @@ tasks:
     - --image={{ .vars.image }}
     - --with-init-artifacts={{ .vars.initVersion }}
     - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
-    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -52,7 +51,6 @@ tasks:
     - --image={{ .vars.image }}
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
-    - --cri=docker            # this is temporary, until kinder will autodetect the CRI runtime installed into the node image
     - --automatic-copy-certs  # in v1.15 and after automatic copy certs can be configure in the kubeadm-config (which is generated at create time)
     - --loglevel=debug
   timeout: 5m

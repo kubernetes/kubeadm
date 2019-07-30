@@ -36,7 +36,6 @@ tasks:
     - --image={{ .vars.image }}
     - --with-init-artifacts={{ .vars.initVersion }}
     - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
-    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -50,7 +49,6 @@ tasks:
     - --image={{ .vars.image }}
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
-    - --cri=docker           # this is temporary, until kinder will autodetect the CRI runtime installed into the base image
     - --loglevel=debug
   timeout: 5m
 - name: init
