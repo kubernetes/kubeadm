@@ -31,9 +31,9 @@ type AlterHelper struct {
 }
 
 // NewAlterHelper returns a new AlterHelper
-func NewAlterHelper(cri string) (*AlterHelper, error) {
+func NewAlterHelper(cri status.ContainerRuntime) (*AlterHelper, error) {
 	return &AlterHelper{
-		cri: status.ContainerRuntime(cri),
+		cri: cri,
 	}, nil
 }
 

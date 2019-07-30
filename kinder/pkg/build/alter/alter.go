@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
+	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/cri"
 	"k8s.io/kubeadm/kinder/pkg/extract"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
@@ -44,7 +45,6 @@ const DefaultImage = DefaultBaseImage
 // alter configuration
 type Context struct {
 	baseImage           string
-	cri                 string
 	image               string
 	initArtifactsSrc    string
 	imageSrcs           []string
@@ -75,13 +75,6 @@ func WithImage(image string) Option {
 func WithBaseImage(image string) Option {
 	return func(b *Context) {
 		b.baseImage = image
-	}
-}
-
-// WithCRI configures a NewContext to manage the `cri` embedded in the base image
-func WithCRI(cri string) Option {
-	return func(b *Context) {
-		b.cri = cri
 	}
 }
 
@@ -296,7 +289,14 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 	}
 
-	alterHelper, err := cri.NewAlterHelper(c.cri)
+	runtime, err := status.InspectCRIinContainer(containerID)
+	if err != nil {
+		log.Errorf("Error detecting CRI! %v", err)
+		return err
+	}
+	log.Infof("Detected %s as container runtime", runtime)
+
+	alterHelper, err := cri.NewAlterHelper(runtime)
 	if err != nil {
 		log.Errorf("Image alter Failed! %v", err)
 		return err
@@ -304,7 +304,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 
 	log.Info("Pre loading images ...")
 	if err := alterHelper.PreLoadInitImages(bc); err != nil {
-		log.Errorf("Image build Failed! Failed to load images into %s %v", c.cri, err)
+		log.Errorf("Image build Failed! Failed to load images into %s %v", runtime, err)
 		return err
 	}
 

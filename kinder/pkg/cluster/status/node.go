@@ -40,21 +40,12 @@ type commandMutator = func(*cmd.ProxyCmd) *cmd.ProxyCmd
 // one external dependency of the cluster, like etcd or the load balancer.
 type Node struct {
 	kindNode        kindnodes.Node
+	cri             ContainerRuntime
 	kubeadmVersion  *K8sVersion.Version
 	settings        *NodeSettings
 	etcdImage       string
 	commandMutators []commandMutator
 }
-
-// ContainerRuntime defines CRI runtime that are supported inside a kind(er) node
-type ContainerRuntime string
-
-const (
-	// DockerRuntime refers to the docker container runtime
-	DockerRuntime ContainerRuntime = "docker"
-	// ContainerdRuntime refers to the containerd container runtime
-	ContainerdRuntime ContainerRuntime = "containerd"
-)
 
 // NodeSettings defines a set of settings that will be stored in the node and re-used
 // by kinder during the node lifecyle.
@@ -63,7 +54,7 @@ const (
 // and actions for setting up a working cluster can happen at different time
 // (while in kind everything happen within an atomic operation).
 type NodeSettings struct {
-	CRI ContainerRuntime //`json:"cri,omitempty"`
+	// NB Currently there are no persintent node settings used by kind, but we are preserving this feature for future changes
 }
 
 // NewNode returns a new kindnodes.Node wrapper
@@ -338,16 +329,16 @@ func (n *Node) ReadNodeSettings() (*NodeSettings, error) {
 // CRI returns the ContainerRuntime installed on the node and that
 // should be used by kubeadm for creating the K8s cluster
 func (n *Node) CRI() (cri ContainerRuntime, err error) {
-	if n.settings != nil {
-		return n.settings.CRI, nil
+	if n.cri != "" {
+		return n.cri, nil
 	}
 
-	n.settings, err = n.ReadNodeSettings()
+	n.cri, err = InspectCRIinContainer(n.Name())
 	if err != nil {
 		return "", err
 	}
 
-	return n.settings.CRI, nil
+	return n.cri, nil
 }
 
 // Ports returns a specific port mapping for the node

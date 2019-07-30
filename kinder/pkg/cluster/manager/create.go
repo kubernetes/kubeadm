@@ -40,7 +40,6 @@ import (
 
 // CreateOptions holds all the the options used at create time
 type CreateOptions struct {
-	cri                  status.ContainerRuntime
 	externalLoadBalancer bool
 	externalEtcd         bool
 	kubeDNS              bool
@@ -50,14 +49,6 @@ type CreateOptions struct {
 
 // CreateOption is a configuration option supplied to Create
 type CreateOption func(*CreateOptions)
-
-// CRI informs create about the cri runtime installed on the kind(er) node images
-// TODO: remove this option by implementing CRI autodetection for each image.
-func CRI(cri string) CreateOption {
-	return func(c *CreateOptions) {
-		c.cri = status.ContainerRuntime(cri)
-	}
-}
 
 // ExternalEtcd instruct create to add an external etcd to the cluster
 func ExternalEtcd(externalEtcd bool) CreateOption {
@@ -197,10 +188,28 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 	}
 	spinner.Start("Preparing nodes " + strings.Repeat("📦", numberOfNodes))
 
-	//TODO: this should be refactored by implementing CRI autodetection for each image down into the create methods
-	createHelper, err := cri.NewCreateHelper(status.ContainerRuntime(flags.cri))
-	if err != nil {
-		return err
+	// detect CRI runtime installed into images before actually creating nodes
+	var createHelperMap = map[string]*cri.CreateHelper{}
+	for _, n := range desiredNodes {
+		if n.Role != constants.ExternalLoadBalancerNodeRoleValue {
+			if _, ok := createHelperMap[n.Image]; ok {
+				continue
+			}
+
+			runtime, err := status.InspectCRIinImage(n.Image)
+			if err != nil {
+				log.Errorf("Error detecting CRI for images %s! %v", n.Image, err)
+				return err
+			}
+			log.Infof("Detected %s container runtime for image %s", runtime, n.Image)
+
+			createHelper, err := cri.NewCreateHelper(runtime)
+			if err != nil {
+				log.Errorf("Error creating NewCreateHelper for CRI %s! %v", n.Image, err)
+				return err
+			}
+			createHelperMap[n.Image] = createHelper
+		}
 	}
 
 	// create all of the node containers, concurrently
@@ -208,20 +217,25 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 	for _, desiredNode := range desiredNodes {
 		desiredNode := desiredNode // capture loop variable
 		fns = append(fns, func() error {
+			var createHelper *cri.CreateHelper
 			if desiredNode.Role != constants.ExternalLoadBalancerNodeRoleValue {
-				log.Infof("Node %s using %s with %s runtime installed internally", desiredNode.Name, desiredNode.Image, flags.cri)
+				if _, ok := createHelperMap[desiredNode.Image]; !ok {
+					return errors.Errorf("Unable to find create helper for image %s", desiredNode.Image)
+				}
+				createHelper = createHelperMap[desiredNode.Image]
 			}
+
 			// create the node into a container (~= docker run -d)
 			return desiredNode.create(createHelper, clusterLabel)
 		})
 	}
 
-	log.Info("Creating nodes and external load balancer (if required)...")
+	log.Info("Creating nodes...")
 	if err := kindconcurrent.UntilError(fns); err != nil {
 		return err
 	}
 
-	// add an external etcd balancer if explicitly requested
+	// add an external etcd if explicitly requested
 	if flags.externalEtcd {
 		log.Info("Getting required etcd image...")
 		c, err := status.GetNodesFromDocker(clusterName)
@@ -265,9 +279,7 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 
 	// writes to the nodes the node settings
 	for _, n := range c.K8sNodes() {
-		if err := n.WriteNodeSettings(&status.NodeSettings{
-			CRI: flags.cri,
-		}); err != nil {
+		if err := n.WriteNodeSettings(&status.NodeSettings{}); err != nil {
 			return err
 		}
 	}
