@@ -93,7 +93,6 @@ By default kinder stops the cluster creation process before executing kubeadm in
 this will give you nodes ready for installing Kubernetes and more specifically:
 
 - The necessary prerequisites already installed on all nodes
-- A kubeadm config file in `/kind/kubeadm.conf`
 - In case of more than one control-plane node exists in the cluster, a pre-configured external load balancer
 
 Additionally, the `kinder create` command gives you shortcuts for testing different Kubernetes cluster topologies without using the kind config file:
@@ -103,7 +102,7 @@ Additionally, the `kinder create` command gives you shortcuts for testing differ
 
 Similarly, `kinder create` command gives you also shortcuts for testing different kubeadm cluster configurations:
 
-- Flag `--kube-dns`
+- Flag `--external-load-balancer`
 - Flag `--external-etcd`
 
 ### Work on Nodes
@@ -113,6 +112,8 @@ It allows to execute actions (repetitive tasks/sequence of commands) on one or m
 
 | action          | Notes                                                        |
 | --------------- | ------------------------------------------------------------ |
+| kubeadm-config  | Creates `/kind/kubeadm.conf` files on nodes (this action is automatically executed during `kubeadm-init` or `kubeadm-join`) .|
+| loadbalancer    | Update the load balancer configuration, if present (this action is automatically executed during `kubeadm-init` or `kubeadm-join`) .|
 | kubeadm-init    | Executes the kubeadm-init workflow, installs the CNI plugin and then copies the kubeconfig file on the host machine.|
 | manual-copy-certs      | Implement the manual copy of certificates to be shared across control-plane nodes (n.b. manual means not managed by kubeadm).|
 | kubeadm-join    | Executes the kubeadm-join workflow both on secondary control plane nodes and on worker nodes.|
