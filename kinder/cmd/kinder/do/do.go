@@ -18,6 +18,7 @@ package do
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,6 +36,7 @@ type flagpole struct {
 	UpgradeVersion     string
 	AutomaticCopyCerts bool
 	KubeDNS            bool
+	Discovery          string
 	OnlyNode           string
 	DryRun             bool
 	VLevel             int
@@ -43,7 +45,9 @@ type flagpole struct {
 
 // NewCommand returns a new cobra.Command for exec
 func NewCommand() *cobra.Command {
-	flags := &flagpole{}
+	flags := &flagpole{
+		Discovery: string(actions.TokenDiscovery),
+	}
 	cmd := &cobra.Command{
 		Args: cobra.ExactArgs(1),
 		Use: "do [flags] ACTION\n\n" +
@@ -89,6 +93,11 @@ func NewCommand() *cobra.Command {
 		"kube-dns", false,
 		"setup kubeadm for installing kube-dns instead of CoreDNS",
 	)
+	cmd.Flags().StringVar(
+		&flags.Discovery,
+		"discovery-mode", flags.Discovery,
+		fmt.Sprintf("defines the discovery mode to be used for join; use one of %s", actions.KnownDiscoveryMode()),
+	)
 	cmd.Flags().DurationVar(
 		&flags.Wait,
 		"wait", time.Duration(5*time.Minute),
@@ -110,6 +119,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		if err != nil {
 			return err
 		}
+	}
+
+	discovery := actions.DiscoveryMode(strings.ToLower(flags.Discovery))
+	if err := actions.ValidateDiscoveryMode(discovery); err != nil {
+		return err
 	}
 
 	// get a kinder cluster manager
@@ -136,6 +150,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.UsePhases(flags.UsePhases),
 		actions.AutomaticCopyCerts(flags.AutomaticCopyCerts),
 		actions.KubeDNS(flags.KubeDNS),
+		actions.Discovery(discovery),
 		actions.Wait(flags.Wait),
 		actions.UpgradeVersion(upgradeVersion),
 		actions.VLevel(flags.VLevel),

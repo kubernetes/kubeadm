@@ -27,7 +27,7 @@ import (
 
 // GetDockerPatch returns the kubeadm config patch that will instruct kubeadm
 // to setup user docker CRI defaults.
-func GetDockerPatch(kubeadmVersion *K8sVersion.Version) ([]string, error) {
+func GetDockerPatch(kubeadmVersion *K8sVersion.Version, ControlPlane bool) ([]string, error) {
 	// gets the config version corresponding to a kubeadm version
 	kubeadmConfigVersion, err := getKubeadmConfigVersion(kubeadmVersion)
 	if err != nil {
@@ -46,11 +46,22 @@ func GetDockerPatch(kubeadmVersion *K8sVersion.Version) ([]string, error) {
 	case "v1alpha3":
 		basePatch = dockerPatchv1alpha3
 	case "v1alpha2":
-		basePatch = dockerPatchv1alpha2
+		// kind kubeadm config template for v1alpha2 returns only MasterConfiguration or NodeConfiguration
+		// so we should create patches accordingly
+		if ControlPlane {
+			return []string{
+				fmt.Sprintf(dockerPatchv1alpha2, "MasterConfiguration"),
+			}, nil
+		}
+		return []string{
+			fmt.Sprintf(dockerPatchv1alpha2, "NodeConfiguration"),
+		}, nil
 	default:
 		return nil, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
 
+	// kind kubeadm config template for v1alpha3, v1beta1,v1beta2 returns both InitConfiguration and JoinConfiguration
+	// so we should create two patches
 	return []string{
 		fmt.Sprintf(basePatch, "InitConfiguration"),
 		fmt.Sprintf(basePatch, "JoinConfiguration"),

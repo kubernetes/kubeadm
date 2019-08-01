@@ -53,7 +53,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	}
 
 	// prepares the kubeadm config on this node
-	if err := KubeadmConfig(c, kubeDNS, automaticCopyCerts, cp1); err != nil {
+	if err := KubeadmInitConfig(c, kubeDNS, automaticCopyCerts, cp1); err != nil {
 		return err
 	}
 

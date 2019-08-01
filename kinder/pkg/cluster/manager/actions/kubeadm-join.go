@@ -28,21 +28,21 @@ import (
 
 // KubeadmJoin executes the kubeadm join workflow both for control-plane nodes and
 // worker nodes
-func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
-	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, wait, vLevel); err != nil {
+func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
+	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, discoveryMode, wait, vLevel); err != nil {
 		return err
 	}
 
-	if err := joinWorkers(c, usePhases, automaticCopyCerts, wait, vLevel); err != nil {
+	if err := joinWorkers(c, usePhases, automaticCopyCerts, discoveryMode, wait, vLevel); err != nil {
 		return err
 	}
 	return nil
 }
 
-func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
+func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
-	for _, cp2 := range c.SecondaryControlPlanes() {
+	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
 		// automatic copy certs is supported starting from v1.14
 		if automaticCopyCerts && !cp2.MustKubeadmVersion().AtLeast(constants.V1_14) {
 			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
@@ -67,7 +67,7 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, wa
 
 		// prepares the kubeadm config on this node
 		// NB. kubeDNS flag is set to false because it is not relevant for joinConfiguration
-		if err := KubeadmConfig(c, false, automaticCopyCerts, cp2); err != nil {
+		if err := KubeadmJoinConfig(c, automaticCopyCerts, discoveryMode, cp2); err != nil {
 			return err
 		}
 
@@ -198,8 +198,8 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 	return nil
 }
 
-func joinWorkers(c *status.Cluster, usePhases, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
-	for _, w := range c.Workers() {
+func joinWorkers(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
+	for _, w := range c.Workers().EligibleForActions() {
 		if usePhases && !w.MustKubeadmVersion().AtLeast(constants.V1_14) {
 			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
 		}
@@ -215,8 +215,7 @@ func joinWorkers(c *status.Cluster, usePhases, automaticCopyCerts bool, wait tim
 		}
 
 		// prepares the kubeadm config on this node
-		// NB. kubeDNS flag is set to false because it is not relevant for joinConfiguration
-		if err := KubeadmConfig(c, false, automaticCopyCerts, w); err != nil {
+		if err := KubeadmJoinConfig(c, false, discoveryMode, w); err != nil {
 			return err
 		}
 

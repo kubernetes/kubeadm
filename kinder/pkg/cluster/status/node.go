@@ -44,6 +44,7 @@ type Node struct {
 	kubeadmVersion  *K8sVersion.Version
 	settings        *NodeSettings
 	etcdImage       string
+	skip            bool
 	commandMutators []commandMutator
 }
 
@@ -134,18 +135,9 @@ func (n *Node) Command(command string, args ...string) *cmd.ProxyCmd {
 	return cmd
 }
 
-// SkipRun instruct the node to skip the call to Command.Run for all the commands that
-// will be executed on this node.
-func (n *Node) SkipRun() {
-	if n.commandMutators == nil {
-		n.commandMutators = []commandMutator{}
-	}
-
-	n.commandMutators = append(n.commandMutators,
-		func(c *cmd.ProxyCmd) *cmd.ProxyCmd {
-			return c.Skip()
-		},
-	)
+// SkipActions marks the node to be skipped during actions.
+func (n *Node) SkipActions() {
+	n.skip = true
 }
 
 // DryRun instruct the node to dry run all the commands that will be executed on this node.
@@ -163,7 +155,7 @@ func (n *Node) DryRun() {
 	)
 }
 
-// Infof print an information message in the same format of commnads on the node;
+// Infof print an information message in the same format of commands on the node;
 // the message is print after the prompt containing the kind (er) node name.
 func (n *Node) Infof(message string, args ...interface{}) {
 	node := colors.Prompt(fmt.Sprintf("%s:$ ", n.Name()))

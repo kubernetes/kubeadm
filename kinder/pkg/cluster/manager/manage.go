@@ -78,7 +78,7 @@ func (c *ClusterManager) DryRun() {
 func (c *ClusterManager) OnlyNode(node string) {
 	for _, n := range c.Cluster.AllNodes() {
 		if n.Name() != node {
-			n.SkipRun()
+			n.SkipActions()
 		}
 	}
 }

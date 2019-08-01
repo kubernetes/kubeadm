@@ -35,7 +35,6 @@ import (
 func LoadBalancer(c *status.Cluster, nodes ...*status.Node) error {
 	// identify external load balancer node
 	lb := c.ExternalLoadBalancer()
-	lb.Infof("Updating load balancer configuration with %d control plane backends", len(nodes))
 
 	// if there's no loadbalancer we're done
 	if lb == nil {
@@ -45,6 +44,8 @@ func LoadBalancer(c *status.Cluster, nodes ...*status.Node) error {
 	ipv6 := (c.Settings.IPFamily == status.IPv6Family)
 
 	// collect info about the existing controlplane nodes
+	lb.Infof("Updating load balancer configuration with %d control plane backends", len(nodes))
+
 	var backendServers = map[string]string{}
 	for _, n := range nodes {
 		controlPlaneIPv4, controlPlaneIPv6, err := n.IP()

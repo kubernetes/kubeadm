@@ -39,13 +39,13 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
 		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts, c.K8sNodes()...)
+		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.automaticCopyCerts, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.wait, flags.vLevel)
+		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.discoveryMode, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmUpgrade(c, flags.upgradeVersion, flags.wait, flags.vLevel)
@@ -114,6 +114,13 @@ func UpgradeVersion(upgradeVersion *K8sVersion.Version) Option {
 	}
 }
 
+// Discovery option instructs kubeadm join to use a specific discovery mode
+func Discovery(discoveryMode DiscoveryMode) Option {
+	return func(r *RunOptions) {
+		r.discoveryMode = discoveryMode
+	}
+}
+
 // VLevel option sets the number for the log level verbosity for the kubeadm commands
 func VLevel(vLevel int) Option {
 	return func(r *RunOptions) {
@@ -126,9 +133,55 @@ type RunOptions struct {
 	kubeDNS            bool
 	usePhases          bool
 	automaticCopyCerts bool
+	discoveryMode      DiscoveryMode
 	wait               time.Duration
 	upgradeVersion     *K8sVersion.Version
 	vLevel             int
+}
+
+// DiscoveryMode defines discovery mode supported by kubeadm join
+type DiscoveryMode string
+
+const (
+	// TokenDiscovery for kubeadm join
+	TokenDiscovery = DiscoveryMode("token")
+
+	// FileDiscoveryWithoutCredentials for kubeadm join
+	FileDiscoveryWithoutCredentials = DiscoveryMode("file")
+
+	// FileDiscoveryWithToken for kubeadm join
+	FileDiscoveryWithToken = DiscoveryMode("file-with-token")
+
+	// FileDiscoveryWithEmbeddedClientCerts for kubeadm join
+	FileDiscoveryWithEmbeddedClientCerts = DiscoveryMode("file-with-embedded-client-certificates")
+
+	// FileDiscoveryWithExternalClientCerts for kubeadm join
+	FileDiscoveryWithExternalClientCerts = DiscoveryMode("file-with-external-client-certificates")
+)
+
+// KnownDiscoveryMode returns the list of known DiscoveryMode
+func KnownDiscoveryMode() []string {
+	return []string{
+		string(TokenDiscovery),
+		string(FileDiscoveryWithoutCredentials),
+		string(FileDiscoveryWithToken),
+		string(FileDiscoveryWithEmbeddedClientCerts),
+		string(FileDiscoveryWithExternalClientCerts),
+	}
+}
+
+// ValidateDiscoveryMode validates a DiscoveryMode
+func ValidateDiscoveryMode(t DiscoveryMode) error {
+	switch t {
+	case TokenDiscovery:
+	case FileDiscoveryWithoutCredentials:
+	case FileDiscoveryWithToken:
+	case FileDiscoveryWithEmbeddedClientCerts:
+	case FileDiscoveryWithExternalClientCerts:
+	default:
+		return errors.Errorf("invalid discovery mode. Use one of %s", KnownDiscoveryMode())
+	}
+	return nil
 }
 
 // Run executes one action

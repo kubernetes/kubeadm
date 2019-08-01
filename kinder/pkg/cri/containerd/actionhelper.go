@@ -39,8 +39,6 @@ func GetImages(n *status.Node) ([]string, error) {
 		"ctr", "--namespace=k8s.io", "images", "ls", "-q",
 	).Silent().RunAndCapture()
 
-	fmt.Println(current)
-	fmt.Println(err)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read current images from %s", n.Name())
 	}

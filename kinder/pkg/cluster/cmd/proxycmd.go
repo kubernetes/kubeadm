@@ -48,7 +48,6 @@ type ProxyCmd struct {
 	args    []string
 	silent  bool
 	dryRun  bool
-	skip    bool
 	stdin   io.Reader
 	stdout  io.Writer
 	stderr  io.Writer
@@ -62,7 +61,6 @@ func NewProxyCmd(node, command string, args ...string) *ProxyCmd {
 		args:    args,
 		silent:  false,
 		dryRun:  false,
-		skip:    false,
 	}
 }
 
@@ -102,13 +100,6 @@ func (c *ProxyCmd) Stdin(in io.Reader) *ProxyCmd {
 // Silent instructs the proxy command to not the command text to stdout before execution
 func (c *ProxyCmd) Silent() *ProxyCmd {
 	c.silent = true
-	return c
-}
-
-// Skip instruct the proxy command to not run the inner command.
-// It is used e.g. when requested to skip command execution on a node
-func (c *ProxyCmd) Skip() *ProxyCmd {
-	c.skip = true
 	return c
 }
 
@@ -167,13 +158,7 @@ func (c *ProxyCmd) runInnnerCommand() error {
 		fmt.Printf("\n%s%s\n", prompt, command)
 	}
 
-	// if the command should be skipped, warn the user and exit
-	if c.skip {
-		fmt.Println("skipped")
-		return nil
-	}
-
-	// if twe are dry running, eventually print the proxy command that we are skipping, and then exit
+	// if we are dry running, eventually print the proxy command and then exit
 	if c.dryRun {
 		log.Debugf("Dry-running: %v", cmd.Args)
 		return nil
