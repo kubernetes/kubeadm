@@ -12,14 +12,7 @@ By default kinder stops the cluster creation process before executing `kubeadm i
 This will give you nodes ready for installing Kubernetes and more specifically
 
 - the necessary prerequisites already installed on all nodes
-- a pre-build kubeadm config file in `/kind/kubeadm.conf`
 - in case of more than one control-plane node exists in the cluster, a pre-configured external load balancer
-
-If instead you want to revert to the default kind behavior, you can use the `--setup-kubernetes`:
-
-```bash
-kinder create cluster --setup-kubernetes=true
-```
 
 ### Testing different cluster topologies
 
@@ -35,27 +28,14 @@ kinder create cluster ---control-plane-nodes=2
 ```
 
 Please note that a load balancer node will be automatically create when there are more than
-one control-plane node; if necessary, you can use `--external-load balancer` flag to explicitly
+one control-plane node; if necessary, you can use `--external-load-balancer` flag to explicitly
 request the creation of an external load balancer node.
+
+It is also possible to create an external etcd cluster using the `--external-etcd` flag.
 
 More sophisticated cluster topologies can be achieved using the kind config file, like e.g. customizing
 kubeadm-config or specifying volume mounts. see [kind documentation](https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster)
 for more details.
-
-### Testing Kubernetes cluster configurations
-
-kinder gives you shortcuts for testing well known Kubernetes cluster configurations supported by kubeadm:
-
-```bash
-# create a cluster using kube-dns instead of CoreDNS
-kinder create cluster --kube-dns
-
-# create a cluster using an external etcd
-kinder create cluster --external-etcd
-```
-
-Further configurations can be achieved customizing the `kubeadm-conf.yaml` file under the `kind` folder on the
-bootstrap control-plane node.
 
 ## Working on nodes
 
@@ -100,11 +80,13 @@ Following actions are available:
 
 | action          | Notes                                                        |
 | --------------- | ------------------------------------------------------------ |
-| kubeadm-init    | Executes the kubeadm-init workflow, installs the CNI plugin and then copies the kubeconfig file on the host machine. Available options are:<br /> `--use-phases` triggers execution of the init workflow by invoking single phases. <br />`--automatic-copy-certs` instruct kubeadm to use the automatic copy cert feature.|
-| manual-copy-certs      | Implement the manual copy of certificates to be shared across control-plane nodes (n.b. manual means not managed by kubeadm) Available options are:<br />  `--only-node` to execute this action only on a specific node. |
-| kubeadm-join    | Executes the kubeadm-join workflow both on secondary control plane nodes and on worker nodes. Available options are:<br /> `--use-phases` triggers execution of the init workflow by invoking single phases.<br />`--automatic-copy-certs` instruct kubeadm to use the automatic copy cert feature.<br /> `--only-node` to execute this action only on a specific node. |
-| kubeadm-upgrade |Executes the kubeadm upgrade workflow and upgrading K8s. Available options are:<br /> `--upgrade-version` for defining the target K8s version.<br />`--only-node` to execute this action only on a specific node.                                             |
-| Kubeadm-reset   | Executes the kubeadm-reset workflow on all the nodes. Available options are:<br />  `--only-node` to execute this action only on a specific node. |
+| kubeadm-config  | Creates `/kind/kubeadm.conf` files on nodes (this action is automatically executed during `kubeadm-init` or `kubeadm-join`). Available options are:<br /> `--kube-dns` instruct kubeadm to use kube-dns instead of CoreDNS <br />`--automatic-copy-certs` instruct kubeadm to prepare for use the automatic copy cert feature. <br />`--discover-mode` instruct kubeadm to use a specific discovery mode when doing kubeadm join.<br /> `--only-node` to execute this action only on a specific node. <br /> `--dry-run`|
+| loadbalancer    | Update the load balancer configuration, if present (this action is automatically executed during `kubeadm-init` or `kubeadm-join`) .|
+| kubeadm-init    | Executes the kubeadm-init workflow, installs the CNI plugin and then copies the kubeconfig file on the host machine. Available options are:<br /> `--use-phases` triggers execution of the init workflow by invoking single phases.<br /> `--kube-dns` instruct kubeadm to use kube-dns instead of CoreDNS <br />`--automatic-copy-certs` instruct kubeadm to use the automatic copy cert feature.<br /> `--dry-run`||
+| manual-copy-certs      | Implement the manual copy of certificates to be shared across control-plane nodes (n.b. manual means not managed by kubeadm) Available options are:<br />  `--only-node` to execute this action only on a specific node. <br /> `--dry-run`||
+| kubeadm-join    | Executes the kubeadm-join workflow both on secondary control plane nodes and on worker nodes. Available options are:<br /> `--use-phases` triggers execution of the init workflow by invoking single phases.<br />`--automatic-copy-certs` instruct kubeadm to use the automatic copy cert feature.<br />`--discover-mode` instruct kubeadm to use a specific discovery mode when doing kubeadm join.<br /> `--only-node` to execute this action only on a specific node. <br /> `--dry-run`||
+| kubeadm-upgrade |Executes the kubeadm upgrade workflow and upgrading K8s. Available options are:<br /> `--upgrade-version` for defining the target K8s version.<br />`--only-node` to execute this action only on a specific node.                           <br /> `--dry-run`|
+| Kubeadm-reset   | Executes the kubeadm-reset workflow on all the nodes. Available options are:<br />  `--only-node` to execute this action only on a specific node. Available options are:<br /> `--dry-run`||
 | cluster-info    | Returns a summary of cluster info including<br />- List of nodes<br />- list of pods<br />- list of images used by pods<br />- list of etcd members |
 | smoke-test      | Implements a non-exhaustive set of tests that aim at ensuring that the most important functions of a Kubernetes cluster work |
 

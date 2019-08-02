@@ -17,12 +17,14 @@ limitations under the License.
 package actions
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
@@ -34,12 +36,29 @@ import (
 type kubeadmConfigOptions struct {
 	kubeDNS            bool
 	automaticCopyCerts bool
+	discoveryMode      DiscoveryMode
+}
+
+// KubeadmInitConfig action writes the InitConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
+// Please note that this action is automatically executed at create time, but it is possible
+// to invoke it separately as well.
+func KubeadmInitConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, nodes ...*status.Node) error {
+	// defaults everything not relevant for the Init Config
+	return KubeadmConfig(c, kubeDNS, automaticCopyCerts, TokenDiscovery, nodes...)
+}
+
+// KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
+// Please note that this action is automatically executed at create time, but it is possible
+// to invoke it separately as well.
+func KubeadmJoinConfig(c *status.Cluster, automaticCopyCerts bool, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+	// defaults everything not relevant for the join Config
+	return KubeadmConfig(c, false, automaticCopyCerts, discoveryMode, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -78,6 +97,7 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, nod
 	configOptions := kubeadmConfigOptions{
 		kubeDNS:            kubeDNS,
 		automaticCopyCerts: automaticCopyCerts,
+		discoveryMode:      discoveryMode,
 	}
 
 	// writs the kubeadm config file on all the K8s nodes.
@@ -187,7 +207,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		return "", err
 	}
 
-	criPatches, err := criConfigHelper.GetKubeadmConfigPatches(kubeadmVersion)
+	criPatches, err := criConfigHelper.GetKubeadmConfigPatches(kubeadmVersion, data.ControlPlane)
 	if err != nil {
 		return "", err
 	}
@@ -207,13 +227,46 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		patches = append(patches, automaticCopyCertsPatches...)
 	}
 
-	// if requested automatic copy certs, add patches for using kube-dns addon instead of coreDNS
+	// if requested, add patches for using kube-dns addon instead of coreDNS
 	if options.kubeDNS {
 		kubeDNSPatch, err := kubeadm.GetKubeDNSPatch(kubeadmVersion)
 		if err != nil {
 			return "", err
 		}
 		patches = append(patches, kubeDNSPatch)
+	}
+
+	// if requested to use file discovery and not the first control-plane, add patches for using file discovery
+	if options.discoveryMode != TokenDiscovery && !(n == c.BootstrapControlPlane()) {
+		// remove token from config
+		removeTokenPatch, err := kubeadm.GetRemoveTokenPatch(kubeadmVersion)
+		if err != nil {
+			return "", err
+		}
+		jsonPatches = append(jsonPatches, removeTokenPatch)
+
+		// create the discovery file on the node
+		// NB. this requires that kubeadm init is already completed on the BootstrapControlPlane in order
+		// to have CAs and admin.conf already in place
+		if err := createDiscoveryFile(c, n, options.discoveryMode); err != nil {
+			return "", errors.Wrapf(err, "failed to generate a discovery file. Please ensure that kubeadm-init is already completed")
+		}
+
+		// add discovery file path to the config
+		fileDiscoveryPatch, err := kubeadm.GetFileDiscoveryPatch(kubeadmVersion)
+		if err != nil {
+			return "", err
+		}
+		patches = append(patches, fileDiscoveryPatch)
+
+		// if the file discovery does not contains the authorization credentials, add tls discovery token
+		if options.discoveryMode == FileDiscoveryWithoutCredentials {
+			tlsBootstrapPatch, err := kubeadm.GetTLSBootstrapPatch(kubeadmVersion)
+			if err != nil {
+				return "", err
+			}
+			patches = append(patches, tlsBootstrapPatch)
+		}
 	}
 
 	// if the cluster is using an external etcd node, add patches for configuring access
@@ -272,6 +325,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	// if the node is the bootstrap control plane, then all the objects used as init time
 	if n == c.BootstrapControlPlane() {
 		return selectYamlFramentByKind(patched,
+			"MasterConfiguration", //v1alpha2
 			"ClusterConfiguration",
 			"InitConfiguration",
 			"KubeletConfiguration",
@@ -279,7 +333,93 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	}
 
 	// otherwise select only the JoinConfiguration
-	return selectYamlFramentByKind(patched, "JoinConfiguration"), nil
+	return selectYamlFramentByKind(patched,
+		"NodeConfiguration", //v1alpha2
+		"JoinConfiguration",
+	), nil
+}
+
+func createDiscoveryFile(c *status.Cluster, n *status.Node, discoveryMode DiscoveryMode) error {
+	// the discovery file is a kubeaconfig file, so for sake of semplicity in setting up this test,
+	// we are using the admin.conf file created by kubeadm on the bootstrap control plane node
+	// as a starting point (e.g. it already contains the necessary server address/server certificate)
+	// IMPORTANT. Don't do this in production, admin.conf contains cluster-admin credentials.
+	lines, err := c.BootstrapControlPlane().Command(
+		"cat", "/etc/kubernetes/admin.conf",
+	).Silent().RunAndCapture()
+	if err != nil {
+		return errors.Wrapf(err, "failed to read /etc/kubernetes/admin.conf from %s", c.BootstrapControlPlane().Name())
+	}
+	if len(lines) == 0 {
+		return errors.Errorf("failed to read /etc/kubernetes/admin.conf from %s", c.BootstrapControlPlane().Name())
+	}
+
+	configBytes := []byte(strings.Join(lines, "\n"))
+	config, err := clientcmd.Load(configBytes)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse /etc/kubernetes/admin.conf from %s", c.BootstrapControlPlane().Name())
+	}
+
+	// tweak admin.conf into a discovery file that comply the expected Discovery Mode variant
+	user := config.Contexts[config.CurrentContext].AuthInfo
+	authInfo := config.AuthInfos[user]
+
+	switch discoveryMode {
+	case FileDiscoveryWithoutCredentials:
+		// Nuke X509 credentials embedded in the admin.conf file
+		authInfo.ClientKeyData = []byte{}
+		authInfo.ClientCertificateData = []byte{}
+	case FileDiscoveryWithToken:
+		// Nuke X509 credentials embedded in the admin.conf file
+		authInfo.ClientKeyData = []byte{}
+		authInfo.ClientCertificateData = []byte{}
+		// Add a token
+		authInfo.Token = constants.Token
+	case FileDiscoveryWithEmbeddedClientCerts:
+		// This is NOP, because admin.conf already contains embedded client certs
+	case FileDiscoveryWithExternalClientCerts:
+		// Save the client certificate key embedded in admin.conf into an external file and update authinfo accordingly
+		keyFile := "/kinder/discovery-client-key.pem"
+		if err := n.Command(
+			"cp", "/dev/stdin", keyFile,
+		).Stdin(
+			bytes.NewReader(authInfo.ClientKeyData),
+		).Silent().Run(); err != nil {
+			return errors.Wrapf(err, "failed to write %s", keyFile)
+		}
+		authInfo.ClientKeyData = []byte{}
+		authInfo.ClientKey = keyFile
+
+		// Save the client certificate embedded in admin.conf into an external file and update authinfo accordingly
+		certFile := "/kinder/discovery-client-cert.pem"
+		if err := n.Command(
+			"cp", "/dev/stdin", certFile,
+		).Stdin(
+			bytes.NewReader(authInfo.ClientCertificateData),
+		).Silent().Run(); err != nil {
+			return errors.Wrapf(err, "failed to write %s", certFile)
+		}
+		authInfo.ClientCertificateData = []byte{}
+		authInfo.ClientCertificate = certFile
+	}
+
+	// writes the discovery file to the joining node
+	configBytes, err = clientcmd.Write(*config)
+	if err != nil {
+		return errors.Wrapf(err, "failed to encode %s", constants.DiscoveryFile)
+	}
+
+	if err := n.Command(
+		"cp", "/dev/stdin", constants.DiscoveryFile,
+	).Stdin(
+		bytes.NewReader(configBytes),
+	).Silent().Run(); err != nil {
+		return errors.Wrapf(err, "failed to write %s", constants.DiscoveryFile)
+	}
+
+	log.Debugf("generated discovery file:\n%s", string(configBytes))
+
+	return nil
 }
 
 // objectName is the name every generated object will have

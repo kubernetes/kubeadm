@@ -25,7 +25,7 @@ import (
 // KubeadmReset executes the kubeadm reset workflow
 func KubeadmReset(c *status.Cluster, vLevel int) error {
 	//TODO: implements kubeadm reset with phases
-	for _, n := range c.K8sNodes() {
+	for _, n := range c.K8sNodes().EligibleForActions() {
 		if err := n.Command(
 			"kubeadm", "reset", "--force", fmt.Sprintf("--v=%d", vLevel),
 		).RunWithEcho(); err != nil {

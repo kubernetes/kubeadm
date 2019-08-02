@@ -42,7 +42,7 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, wait 
 
 	preloadUpgradeImages(c, upgradeVersion)
 
-	for _, n := range c.K8sNodes() {
+	for _, n := range c.K8sNodes().EligibleForActions() {
 
 		if err := upgradeKubeadmBinary(n, upgradeVersion); err != nil {
 			return err
@@ -68,7 +68,6 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, wait 
 func preloadUpgradeImages(c *status.Cluster, upgradeVersion *K8sVersion.Version) {
 	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", upgradeVersion))
 
-	fmt.Println("K8s nodes", len(c.K8sNodes()))
 	// load images cached on the node into CRI engine
 	// this should be executed on all nodes before running kubeadm upgrade apply in order to
 	// get everything in place when kubeadm creates pre-pull daemonsets (if not, this might be blocking in case of

@@ -78,3 +78,12 @@ the minimal supported version that is tested for external etcd.
 | master<br />(ci/latest)                | v1.16.0-alpha...  |
 | current<br />(ci/latest-1.15)          | v1.15.2-alpha...  |
 | current -1/minor<br />(ci/latest-1.14) | v1.14.4-alpha...  |
+
+### Discovery tests
+
+Kubeadm discovery tests are meant for testing alternative discovery methods for kubeadm join. Currently, master is
+the minimal supported version that is tested for external discovery variants.
+
+| Version                                | e.g.              |
+| -------------------------------------- | ------            |
+| master<br />(ci/latest)                | v1.16.0-alpha...  |

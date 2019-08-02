@@ -76,7 +76,7 @@ func InspectCRIinContainer(id string) (ContainerRuntime, error) {
 		`which docker || true`)
 	lines, err := kindexec.CombinedOutputLines(cmd)
 
-	if err != nil  {
+	if err != nil {
 		return ContainerRuntime(""), errors.Wrap(err, "error detecting CRI")
 	}
 

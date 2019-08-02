@@ -37,14 +37,14 @@ func NewConfigHelper(cri status.ContainerRuntime) (*ConfigHelper, error) {
 }
 
 // GetKubeadmConfigPatches returns kustomize patches for configuring the kubeadm config file for using the selected container runtime
-func (h *ConfigHelper) GetKubeadmConfigPatches(kubeadmVersion *K8sVersion.Version) ([]string, error) {
+func (h *ConfigHelper) GetKubeadmConfigPatches(kubeadmVersion *K8sVersion.Version, controlPlane bool) ([]string, error) {
 	switch h.cri {
 	case status.ContainerdRuntime:
 		// since we are using kind library for generating the kubeadm-config file, and kind uses by default containerd, no
 		// additional pathches are required in this case
 		return []string{}, nil
 	case status.DockerRuntime:
-		return kubeadm.GetDockerPatch(kubeadmVersion)
+		return kubeadm.GetDockerPatch(kubeadmVersion, controlPlane)
 	}
 	return nil, errors.Errorf("unknown cri: %s", h.cri)
 }

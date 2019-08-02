@@ -30,3 +30,15 @@ func (l NodeList) Sort() {
 			(l[i].provisioningOrder() == l[j].provisioningOrder() && l[i].Name() < l[j].Name())
 	})
 }
+
+// EligibleForActions returns the list of nodes without nodes marked as SkipAction
+func (l NodeList) EligibleForActions() NodeList {
+	var res NodeList
+	for _, n := range l {
+		if !n.skip {
+			res = append(res, n)
+		}
+	}
+	res.Sort()
+	return res
+}

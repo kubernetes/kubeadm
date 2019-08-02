@@ -89,6 +89,9 @@ const (
 	// CertificateKey defines a dummy, well known CertificateKey for automating automatic copy certs process
 	// const CertificateKey = "d02db674b27811f4508bf8a5fa19fbe060921340552f13c15c9feb05aaa96824"
 	CertificateKey = "0123456789012345678901234567890123456789012345678901234567890123"
+
+	// DiscoveryFile defines the path to a discovery file stored on nodes
+	DiscoveryFile = "/kinder/discovery.conf"
 )
 
 // kubernetes releases, used for branching code according to K8s release or kubeadm release version
