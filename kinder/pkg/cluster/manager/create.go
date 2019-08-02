@@ -25,11 +25,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
+	"k8s.io/kubeadm/kinder/pkg/config"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
-	kindAPI "sigs.k8s.io/kind/pkg/cluster/config"
-	kindencoding "sigs.k8s.io/kind/pkg/cluster/config/encoding"
 	kindnodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
 	kindCRI "sigs.k8s.io/kind/pkg/container/cri"
@@ -71,7 +70,7 @@ func Retain(retain bool) CreateOption {
 }
 
 // CreateCluster creates a new kinder cluster
-func CreateCluster(clusterName string, cfg *kindAPI.Cluster, options ...CreateOption) error {
+func CreateCluster(clusterName string, cfg *config.Cluster, options ...CreateOption) error {
 	flags := &CreateOptions{}
 	for _, o := range options {
 		o(flags)
@@ -84,15 +83,6 @@ func CreateCluster(clusterName string, cfg *kindAPI.Cluster, options ...CreateOp
 	}
 	if known {
 		return errors.Errorf("a cluster with the name %q already exists", clusterName)
-	}
-
-	// default config fields (important for usage as a library, where the config
-	// may be constructed in memory rather than from disk)
-	kindencoding.Scheme.Default(cfg)
-
-	// then validate the config
-	if err := cfg.Validate(); err != nil {
-		return err
 	}
 
 	status := kindlog.NewStatus(os.Stdout)
@@ -137,7 +127,7 @@ func CreateCluster(clusterName string, cfg *kindAPI.Cluster, options ...CreateOp
 	return nil
 }
 
-func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel string, cfg *kindAPI.Cluster, flags *CreateOptions) error {
+func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel string, cfg *config.Cluster, flags *CreateOptions) error {
 	defer spinner.End(false)
 
 	// compute the desired nodes, and inform the user that we are setting them up
@@ -261,7 +251,7 @@ type nodeSpec struct {
 }
 
 // nodesToCreate return the list of nodes to create for the cluster
-func nodesToCreate(clusterName string, cfg *kindAPI.Cluster, externalLoadBalancer bool) []nodeSpec {
+func nodesToCreate(clusterName string, cfg *config.Cluster, externalLoadBalancer bool) []nodeSpec {
 	desiredNodes := []nodeSpec{}
 
 	// nodes are named based on the cluster name and their role, with a counter
@@ -373,7 +363,7 @@ func CreateExternalEtcd(name, etcdImage string) error {
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(status *kindlog.Status, cfg *kindAPI.Cluster) {
+func ensureNodeImages(status *kindlog.Status, cfg *config.Cluster) {
 	// pull each required image
 	var images = map[string]interface{}{}
 	for _, n := range cfg.Nodes {
