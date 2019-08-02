@@ -91,7 +91,7 @@ const (
 	CertificateKey = "0123456789012345678901234567890123456789012345678901234567890123"
 
 	// DiscoveryFile defines the path to a discovery file stored on nodes
-	DiscoveryFile = "/kinder/discovery.yaml"
+	DiscoveryFile = "/kinder/discovery.conf"
 )
 
 // kubernetes releases, used for branching code according to K8s release or kubeadm release version
