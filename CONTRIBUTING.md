@@ -21,7 +21,7 @@ Follow either of the two links above to access the appropriate CLA and instructi
 4. Before starting to work on an issue, type `/lifecycle active` in a comment on the issue or contact a Kubeadm maintainer to do so;
    The `lifecycle/active` label denotes to the community that the issue is currently being worked on and it signals to the
    reviewers and approvers that patches are coming soon.
-   If instead you are planning to work on an issue created by other contributors, it would be nice to comment on the issue about 
+   If instead you are planning to work on an issue created by other contributors, it would be nice to comment on the issue about
    your intentions and then wait 2 or 3 days for feedback before adding `lifecycle/active` label and actually start working on it.
 5. Fork the desired repo, develop and test your code changes.
 6. Submit a pull request.
@@ -47,7 +47,7 @@ See [./kinder/README.md](./kinder/README.md) for a quick workflow to build and t
 
 ### Testing pre-release versions of Kubernetes with kubeadm
 
-See [testing-pre-releases.md](testing-pre-releases.md) for information about how to get pre-release versions of kubernetes
+See [testing-pre-releases.md](./docs/testing-pre-releases.md) for information about how to get pre-release versions of kubernetes
 or kubeadm and how to test them.
 
 ### Adding dependencies
