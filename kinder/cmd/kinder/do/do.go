@@ -55,7 +55,7 @@ func NewCommand() *cobra.Command {
 			fmt.Sprintf("  ACTION is one of %s", actions.KnownActions()),
 		Short: "Executes actions (tasks/sequence of commands) on a cluster",
 		Long: "Action define a set of tasks/sequence of commands to be executed on a cluster. Usage of actions allows \n" +
-			"to automate repetitive operatitions.",
+			"to automate repetitive operations.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
@@ -76,7 +76,7 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().BoolVar(
 		&flags.UsePhases, "use-phases",
-		false, "use the kubeadm phases subcommands insted of the the kubeadm top-level commands",
+		false, "use the kubeadm phases subcommands instead of the the kubeadm top-level commands",
 	)
 	cmd.Flags().StringVar(
 		&flags.UpgradeVersion,
