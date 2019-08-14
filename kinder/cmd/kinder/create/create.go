@@ -27,8 +27,8 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "create",
-		Short: "Creates one of [cluster, worker-node, control-plane-node]",
-		Long:  "Creates one of local Kubernetes cluster (cluster), or nodes in a local kubernetes cluster (worker-node, control-plane-node)",
+		Short: "Creates one of [cluster]",
+		Long:  "Creates one of local Kubernetes cluster (cluster)",
 	}
 	cmd.AddCommand(createcluster.NewCommand())
 	return cmd
