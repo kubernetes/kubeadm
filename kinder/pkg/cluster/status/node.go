@@ -55,7 +55,7 @@ type Node struct {
 // and actions for setting up a working cluster can happen at different time
 // (while in kind everything happen within an atomic operation).
 type NodeSettings struct {
-	// NB Currently there are no persintent node settings used by kind, but we are preserving this feature for future changes
+	// NB Currently there are no persistent node settings used by kind, but we are preserving this feature for future changes
 }
 
 // NewNode returns a new kindnodes.Node wrapper
@@ -142,7 +142,7 @@ func (n *Node) SkipActions() {
 
 // DryRun instruct the node to dry run all the commands that will be executed on this node.
 // DryRun differs from SkipRun, because in case of DryRun kinder prints all the details for running
-// the command manaually.
+// the command manually.
 func (n *Node) DryRun() {
 	if n.commandMutators == nil {
 		n.commandMutators = []commandMutator{}
@@ -194,7 +194,7 @@ func (n *Node) KubeadmVersion() (*K8sVersion.Version, error) {
 	return n.kubeadmVersion, nil
 }
 
-// EtcdImage returns the etcdImage that should be used with the kubernertes version
+// EtcdImage returns the etcdImage that should be used with the kubernetes version
 // installed on this node
 func (n *Node) EtcdImage() (string, error) {
 	if n.etcdImage != "" {
@@ -225,7 +225,7 @@ func (n *Node) EtcdImage() (string, error) {
 const clusterSettingsPath = "/kinder/cluster-settings.yaml"
 
 // WriteClusterSettings stores in the node a set of cluster-wide settings that will be re-used
-// by kinder during the cluster lifecyle (after create)
+// by kinder during the cluster lifecycle (after create)
 func (n *Node) WriteClusterSettings(settings *ClusterSettings) error {
 	s, err := ksigsyaml.Marshal(*settings)
 	if err != nil {
@@ -252,7 +252,7 @@ func (n *Node) WriteClusterSettings(settings *ClusterSettings) error {
 }
 
 // ReadClusterSettings reads from the node a set of cluster-wide settings that
-// are goinf to be re-used by kinder during the cluster lifecyle (after create)
+// are going to be re-used by kinder during the cluster lifecyle (after create)
 func (n *Node) ReadClusterSettings() (*ClusterSettings, error) {
 	lines, err := n.Command(
 		"cat", clusterSettingsPath,
@@ -300,7 +300,7 @@ func (n *Node) WriteNodeSettings(settings *NodeSettings) error {
 }
 
 // ReadNodeSettings reads from the node specific settings that
-// are goinf to be re-used by kinder during the cluster lifecyle (after create)
+// are going to be re-used by kinder during the cluster lifecyle (after create)
 func (n *Node) ReadNodeSettings() (*NodeSettings, error) {
 	lines, err := n.Command(
 		"cat", nodeSettingsPath,
