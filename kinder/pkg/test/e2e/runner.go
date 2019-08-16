@@ -124,7 +124,7 @@ func (r *Runner) Run() error {
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
 	}
 
-	log.Debugf("invoking ginkgo with followiong args: %s", args)
+	log.Debugf("invoking ginkgo with following args: %s", args)
 
 	// executes the command.
 	// TODO: switch to an executor that supports timeout/cancellation
