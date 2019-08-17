@@ -41,7 +41,7 @@ func (h *ConfigHelper) GetKubeadmConfigPatches(kubeadmVersion *K8sVersion.Versio
 	switch h.cri {
 	case status.ContainerdRuntime:
 		// since we are using kind library for generating the kubeadm-config file, and kind uses by default containerd, no
-		// additional pathches are required in this case
+		// additional patches are required in this case
 		return []string{}, nil
 	case status.DockerRuntime:
 		return kubeadm.GetDockerPatch(kubeadmVersion, controlPlane)
