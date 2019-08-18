@@ -100,7 +100,7 @@ func GetSourceType(src string) SourceType {
 // Option is an Extractor configuration option supplied to NewExtractor
 type Option func(*Extractor)
 
-// OnlyKubeadm option instructs the Extractor for retriving kubeadm only
+// OnlyKubeadm option instructs the Extractor for retrieving kubeadm only
 func OnlyKubeadm(onlyKubeadm bool) Option {
 	return func(b *Extractor) {
 		if onlyKubeadm {
@@ -111,7 +111,7 @@ func OnlyKubeadm(onlyKubeadm bool) Option {
 	}
 }
 
-// OnlyKubelet option instructs the Extractor for retriving kubelet only
+// OnlyKubelet option instructs the Extractor for retrieving kubelet only
 func OnlyKubelet(onlyKubelet bool) Option {
 	return func(b *Extractor) {
 		if onlyKubelet {
@@ -122,7 +122,7 @@ func OnlyKubelet(onlyKubelet bool) Option {
 	}
 }
 
-// OnlyKubernetesBinaries option instructs the Extractor for retriving Kubernetes binaries only
+// OnlyKubernetesBinaries option instructs the Extractor for retrieving Kubernetes binaries only
 func OnlyKubernetesBinaries(onlyBinaries bool) Option {
 	return func(b *Extractor) {
 		if onlyBinaries {
@@ -133,7 +133,7 @@ func OnlyKubernetesBinaries(onlyBinaries bool) Option {
 	}
 }
 
-// OnlyKubernetesImages option instructs the Extractor for retriving Kubernetes images tarballs only
+// OnlyKubernetesImages option instructs the Extractor for retrieving Kubernetes images tarballs only
 func OnlyKubernetesImages(onlyImages bool) Option {
 	return func(b *Extractor) {
 		if onlyImages {
@@ -354,7 +354,7 @@ func extractFromLocalDir(src string, files []string, dst string, m fileNameMutat
 		log.Debugf("%s is a file, moving up of one level to %s", src, parent)
 		src = parent
 	} else {
-		// Espanding wildcars defined in the list of files (if any)
+		// Expanding wildcards defined in the list of files (if any)
 		// NB. this is required because for imageBits we want to allow to extract
 		// all the images in a folder, not only the Kubernetes one
 		files, err = expandWildcards(src, files)
