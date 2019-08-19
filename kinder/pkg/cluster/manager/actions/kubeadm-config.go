@@ -447,14 +447,15 @@ func setPatchNames(patches []string, jsonPatches []kindkustomize.PatchJSON6902) 
 // removeMetadata trims out the metadata.name we put in the config for kustomize matching,
 // kubeadm will complain about this otherwise
 func removeMetadata(kustomized string) string {
-	return strings.Replace(
-		kustomized,
-		`metadata:
-  name: config
-`,
-		"",
-		-1,
-	)
+	lines := strings.Split(kustomized, "\n")
+	out := []string{}
+	for _, l := range lines {
+		if strings.Contains(l, "metadata:") || (strings.Contains(l, "name:") && strings.Contains(l, "config")) {
+			continue
+		}
+		out = append(out, l)
+	}
+	return strings.Join(out, "\n")
 }
 
 const yamlSeparator = "---\n"

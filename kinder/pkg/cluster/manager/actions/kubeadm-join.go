@@ -28,8 +28,8 @@ import (
 
 // KubeadmJoin executes the kubeadm join workflow both for control-plane nodes and
 // worker nodes
-func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
-	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, discoveryMode, wait, vLevel); err != nil {
+func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
+	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, discoveryMode, kustomizeDir, wait, vLevel); err != nil {
 		return err
 	}
 
@@ -39,13 +39,25 @@ func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discover
 	return nil
 }
 
-func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
+func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
 		// automatic copy certs is supported starting from v1.14
 		if automaticCopyCerts && !cp2.MustKubeadmVersion().AtLeast(constants.V1_14) {
 			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
+		}
+
+		// fail fast if required to use kustomize and kubeadm less than v1.16
+		if kustomizeDir != "" && cp2.MustKubeadmVersion().LessThan(constants.V1_16) {
+			return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")
+		}
+
+		// if kustomize copy patches to the node
+		if kustomizeDir != "" {
+			if err := copyPatchesToNode(cp2, kustomizeDir); err != nil {
+				return err
+			}
 		}
 
 		// if not automatic copy certs, simulate manual copy
@@ -73,9 +85,9 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
-			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, vLevel)
+			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, kustomizeDir, vLevel)
 		} else {
-			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts, vLevel)
+			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts, kustomizeDir, vLevel)
 		}
 		if err != nil {
 			return err
@@ -94,7 +106,7 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 	return nil
 }
 
-func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, vLevel int) (err error) {
+func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) (err error) {
 	joinArgs := []string{
 		"join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
@@ -110,6 +122,9 @@ func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, vLevel in
 			)
 		}
 	}
+	if kustomizeDir != "" {
+		joinArgs = append(joinArgs, "-k", constants.KustomizeDir)
+	}
 
 	if err := cp.Command(
 		"kubeadm", joinArgs...,
@@ -120,7 +135,7 @@ func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, vLevel in
 	return nil
 }
 
-func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool, vLevel int) (err error) {
+func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	preflightArgs := []string{
 		"join", "phase", "preflight",
@@ -158,6 +173,9 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 			)
 		}
 	}
+	if kustomizeDir != "" {
+		prepareArgs = append(prepareArgs, "-k", constants.KustomizeDir)
+	}
 
 	if err := cp.Command(
 		"kubeadm", prepareArgs...,
@@ -179,6 +197,9 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 		"join", "phase", "control-plane-join", "all",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
+	}
+	if kustomizeDir != "" {
+		controlPlaneArgs = append(controlPlaneArgs, "-k", constants.KustomizeDir)
 	}
 	if automaticCopyCerts {
 		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)

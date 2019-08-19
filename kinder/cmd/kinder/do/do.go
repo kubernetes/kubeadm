@@ -40,6 +40,7 @@ type flagpole struct {
 	OnlyNode           string
 	DryRun             bool
 	VLevel             int
+	KustomizeDir       string
 	Wait               time.Duration
 }
 
@@ -96,7 +97,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(
 		&flags.Discovery,
 		"discovery-mode", flags.Discovery,
-		fmt.Sprintf("defines the discovery mode to be used for join; use one of %s", actions.KnownDiscoveryMode()),
+		fmt.Sprintf("the discovery mode to be used for join; use one of %s", actions.KnownDiscoveryMode()),
 	)
 	cmd.Flags().DurationVar(
 		&flags.Wait,
@@ -107,6 +108,11 @@ func NewCommand() *cobra.Command {
 		&flags.VLevel,
 		"kubeadm-verbosity", "v", 0,
 		"Number for the log level verbosity for the kubeadm commands",
+	)
+	cmd.Flags().StringVarP(
+		&flags.KustomizeDir,
+		"kustomize-dir", "k", flags.KustomizeDir,
+		"the kustomize folder to be used for init,join and upgrade",
 	)
 	return cmd
 }
@@ -154,6 +160,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.Wait(flags.Wait),
 		actions.UpgradeVersion(upgradeVersion),
 		actions.VLevel(flags.VLevel),
+		actions.KustomizeDir(flags.KustomizeDir),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)

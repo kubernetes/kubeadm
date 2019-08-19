@@ -80,10 +80,7 @@ func copyCertificatesToNode(c *status.Cluster, n *status.Node) error {
 		).Silent().Run(); err != nil {
 			return errors.Wrapf(err, "failed to write %s", constants.KubeadmConfigPath)
 		}
-
 	}
-
-	fmt.Println()
 
 	return nil
 }

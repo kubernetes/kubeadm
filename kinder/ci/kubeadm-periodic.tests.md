@@ -82,7 +82,16 @@ the minimal supported version that is tested for external etcd.
 ### Discovery tests
 
 Kubeadm discovery tests are meant for testing alternative discovery methods for kubeadm join. Currently, master is
-the minimal supported version that is tested for external discovery variants.
+the minimal supported version that is tested for join discovery variants.
+
+| Version                                | e.g.              |
+| -------------------------------------- | ------            |
+| master<br />(ci/latest)                | v1.16.0-alpha...  |
+
+### Kustomize tests
+
+Kubeadm kustomize tests are meant for testing usage of kustomize patches with kubeadm init, join and kubeadm upgrade.
+Currently, master is the minimal supported version that is tested for kustomize.
 
 | Version                                | e.g.              |
 | -------------------------------------- | ------            |
