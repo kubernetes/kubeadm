@@ -35,7 +35,7 @@ import (
 //
 // The implementation assumes that the kubeadm/kubelet/kubectl binaries and all the necessary images
 // for the new kubernetes version are available in the /kinder/upgrade/{version} folder.
-func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, wait time.Duration, vLevel int) (err error) {
+func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
 	if upgradeVersion == nil {
 		return errors.New("kubeadm-upgrade actions requires the --upgrade-version parameter to be set")
 	}
@@ -44,14 +44,26 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, wait 
 
 	for _, n := range c.K8sNodes().EligibleForActions() {
 
+		// fail fast if required to use kustomize and kubeadm less than v1.16
+		if kustomizeDir != "" && n.MustKubeadmVersion().LessThan(constants.V1_16) {
+			return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")
+		}
+
+		// if kustomize copy patches to the node
+		if kustomizeDir != "" {
+			if err := copyPatchesToNode(n, kustomizeDir); err != nil {
+				return err
+			}
+		}
+
 		if err := upgradeKubeadmBinary(n, upgradeVersion); err != nil {
 			return err
 		}
 
 		if n.Name() == c.BootstrapControlPlane().Name() {
-			err = kubeadmUpgradeApply(c, n, upgradeVersion, wait, vLevel)
+			err = kubeadmUpgradeApply(c, n, upgradeVersion, kustomizeDir, wait, vLevel)
 		} else {
-			err = kubeadmUpgradeNode(c, n, upgradeVersion, wait, vLevel)
+			err = kubeadmUpgradeNode(c, n, upgradeVersion, kustomizeDir, wait, vLevel)
 		}
 		if err != nil {
 			return err
@@ -114,9 +126,15 @@ func upgradeKubeadmBinary(n *status.Node, upgradeVersion *K8sVersion.Version) er
 	return nil
 }
 
-func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration, vLevel int) error {
+func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, kustomizeDir string, wait time.Duration, vLevel int) error {
+	applyArgs := []string{
+		"upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
+	}
+	if kustomizeDir != "" {
+		applyArgs = append(applyArgs, fmt.Sprintf("--k=%s", constants.KustomizeDir))
+	}
 	if err := cp1.Command(
-		"kubeadm", "upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
+		"kubeadm", applyArgs...,
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -128,7 +146,7 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8
 	return nil
 }
 
-func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration, vLevel int) error {
+func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, kustomizeDir string, wait time.Duration, vLevel int) error {
 	// waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
 	// please note that this is a temporary workaround for a problem we are observing on upgrades while
 	// executing node upgrades immediately after control-plane upgrade.
@@ -141,8 +159,14 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 	// before two actions where required
 	if n.MustKubeadmVersion().AtLeast(constants.V1_15) {
 		// kubeadm upgrade node
+		nodeArgs := []string{
+			"upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
+		}
+		if kustomizeDir != "" {
+			nodeArgs = append(nodeArgs, fmt.Sprintf("--k=%s", constants.KustomizeDir))
+		}
 		if err := n.Command(
-			"kubeadm", "upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
+			"kubeadm", nodeArgs...,
 		).RunWithEcho(); err != nil {
 			return err
 		}

@@ -134,16 +134,16 @@ func waitFor(c *status.Cluster, n *status.Node, timeout time.Duration, condition
 
 		// run the condition in a go routine until it pass
 		go func() {
-			// creates an arbitrary skew before startig a wait loop
-			time.Sleep(time.Duration(rand.Intn(250)) * time.Millisecond)
+			// creates an arbitrary skew before starting a wait loop
+			time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 
 			for {
 				if x(c, n) {
 					pass <- true
 					break
 				}
-				// add a little delay before retry
-				time.Sleep(250 * time.Millisecond)
+				// add a little delay + jitter before retry
+				time.Sleep(1*time.Second + time.Duration(rand.Intn(500))*time.Millisecond)
 			}
 		}()
 	}

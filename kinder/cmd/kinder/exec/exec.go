@@ -68,7 +68,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// execute the command on selected target nodes
 	err = o.ExecCommand(args[0], args[1:])
 	if err != nil {
-		return errors.Wrap(err, "failed to copy files")
+		return errors.Wrap(err, "failed to exec command")
 	}
 
 	return nil

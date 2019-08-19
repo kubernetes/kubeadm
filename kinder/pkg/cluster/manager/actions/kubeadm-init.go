@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -34,12 +35,24 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, wait time.Duration, vLevel int) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
 	// fail fast if required to use automatic copy certs and kubeadm less than v1.14
 	if automaticCopyCerts && cp1.MustKubeadmVersion().LessThan(constants.V1_14) {
-		return errors.Wrapf(err, "--automatic-copy-certs can't be used with kubeadm older than v1.14")
+		return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
+	}
+
+	// fail fast if required to use kustomize and kubeadm less than v1.16
+	if kustomizeDir != "" && cp1.MustKubeadmVersion().LessThan(constants.V1_16) {
+		return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")
+	}
+
+	// if kustomize copy patches to the node
+	if kustomizeDir != "" {
+		if err := copyPatchesToNode(cp1, kustomizeDir); err != nil {
+			return err
+		}
 	}
 
 	// checks pre-loaded images available on the node (this will report missing images, if any)
@@ -64,9 +77,9 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, vLevel)
+		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, kustomizeDir, vLevel)
 	} else {
-		err = kubeadmInit(cp1, automaticCopyCerts, vLevel)
+		err = kubeadmInit(cp1, automaticCopyCerts, kustomizeDir, vLevel)
 	}
 	if err != nil {
 		return err
@@ -80,7 +93,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, vLevel int) error {
+func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) error {
 	initArgs := []string{
 		"init",
 		"--ignore-preflight-errors=all",
@@ -101,6 +114,9 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, vLevel int) error {
 			)
 		}
 	}
+	if kustomizeDir != "" {
+		initArgs = append(initArgs, "-k", constants.KustomizeDir)
+	}
 
 	if err := cp1.Command(
 		"kubeadm", initArgs...,
@@ -111,7 +127,7 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, vLevel int) error {
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, vLevel int) error {
+func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind; TODO: change from all > exact list of checks
@@ -137,14 +153,26 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, vLevel int
 		return err
 	}
 
+	controlplaneArgs := []string{
+		"init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
+	}
+	if kustomizeDir != "" {
+		controlplaneArgs = append(controlplaneArgs, "-k", constants.KustomizeDir)
+	}
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
+		"kubeadm", controlplaneArgs...,
 	).RunWithEcho(); err != nil {
 		return err
 	}
 
+	etcdArgs := []string{
+		"init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
+	}
+	if kustomizeDir != "" {
+		etcdArgs = append(etcdArgs, "-k", constants.KustomizeDir)
+	}
 	if err := cp1.Command(
-		"kubeadm", "init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
+		"kubeadm", etcdArgs...,
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -330,4 +358,42 @@ func writeKubeConfig(c *status.Cluster, hostAddress string, hostPort int32) erro
 	}
 
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
+}
+
+func copyPatchesToNode(n *status.Node, dir string) error {
+
+	n.Infof("Importing kustomize patches from %s", dir)
+
+	// creates the folder tree for kustomize patches
+	if err := n.Command("mkdir", "-p", constants.KustomizeDir).Silent().Run(); err != nil {
+		return errors.Wrapf(err, "failed to create %s folder", constants.KustomizeDir)
+	}
+
+	// copies kustomize patches
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		fmt.Printf("%s\n", file.Name())
+
+		hostPath := filepath.Join(dir, file.Name())
+		nodePath := filepath.Join(constants.KustomizeDir, file.Name())
+
+		content, err := ioutil.ReadFile(hostPath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read %s", hostPath)
+		}
+
+		if err := n.Command(
+			"cp", "/dev/stdin", nodePath,
+		).Stdin(
+			bytes.NewReader(content),
+		).Silent().Run(); err != nil {
+			return errors.Wrapf(err, "failed to write %s", nodePath)
+		}
+	}
+
+	return nil
 }
