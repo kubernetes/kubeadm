@@ -21,7 +21,7 @@ import (
 	kindCRI "sigs.k8s.io/kind/pkg/container/cri"
 )
 
-// CreateControlPlaneNode creates a kind(er) contol-plane node that uses containerd runtime internally
+// CreateControlPlaneNode creates a kind(er) control-plane node that uses containerd runtime internally
 func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
 	_, err := kindnodes.CreateControlPlaneNode(name, image, clusterLabel, listenAddress, port, mounts, portMappings)
 	return err
