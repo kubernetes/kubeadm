@@ -23,10 +23,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/manager"
+	"k8s.io/kubeadm/kinder/pkg/config"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindAPI "sigs.k8s.io/kind/pkg/cluster/config"
-	kindencoding "sigs.k8s.io/kind/pkg/cluster/config/encoding"
-	kindAPIv1alpha3 "sigs.k8s.io/kind/pkg/cluster/config/v1alpha3"
 )
 
 const (
@@ -121,7 +119,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 
 	// gets the kind config, which is prebuild by kinder in accordance to the CLI flags
-	cfg, err := NewConfig(flags.ControlPlanes, flags.Workers, flags.ImageName)
+	cfg, err := config.NewConfig(flags.ControlPlanes, flags.Workers, flags.ImageName)
 	if err != nil {
 		return errors.Wrap(err, "error initializing the cluster cfg")
 	}
@@ -129,7 +127,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// override the config with the one from file, if specified
 	if flags.Config != "" {
 		// load the config
-		cfg, err = kindencoding.Load(flags.Config)
+		cfg, err = config.LoadConfig(flags.Config, flags.ImageName)
 		if err != nil {
 			return errors.Wrap(err, "error loading config")
 		}
@@ -147,31 +145,4 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-// NewConfig returns the default config according to requested number of control-plane and worker nodes
-func NewConfig(controlPlanes, workers int, image string) (*kindAPI.Cluster, error) {
-	var latestPublicConfig = &kindAPIv1alpha3.Cluster{
-		Nodes: []kindAPIv1alpha3.Node{},
-	}
-
-	// adds the control-plane node(s)
-	for i := 0; i < controlPlanes; i++ {
-		latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, kindAPIv1alpha3.Node{Role: kindAPIv1alpha3.ControlPlaneRole, Image: image})
-	}
-
-	// adds the worker node(s), if any
-	for i := 0; i < workers; i++ {
-		latestPublicConfig.Nodes = append(latestPublicConfig.Nodes, kindAPIv1alpha3.Node{Role: kindAPIv1alpha3.WorkerRole, Image: image})
-	}
-
-	// apply defaults
-	kindencoding.Scheme.Default(latestPublicConfig)
-
-	// converts to internal config
-	var cfg = &kindAPI.Cluster{}
-	kindencoding.Scheme.Convert(latestPublicConfig, cfg, nil)
-
-	// unmarshal the file content into a `kind` Config
-	return cfg, nil
 }
