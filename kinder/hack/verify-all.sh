@@ -80,6 +80,12 @@ if [[ "${VERIFY_DEPS:-true}" == "true" ]]; then
   cd "${REPO_PATH}"
 fi
 
+if [[ "${VERIFY_STATICCHECK:-true}" == "true" ]]; then
+  echo "[*] Verifying staticcheck..."
+  hack/verify-staticcheck.sh || res=1
+  cd "${REPO_PATH}"
+fi
+
 if [[ "${VERIFY_GOTEST:-true}" == "true" ]]; then
   echo "[*] Verifying gotest..."
   hack/verify-gotest.sh || res=1
