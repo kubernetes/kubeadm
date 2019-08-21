@@ -18,7 +18,7 @@ limitations under the License.
 Package e2e implements support for running kubeadm e2e tests or kubernetes e2e test.
 
 It takes care of building upstream test suites if necessary, and provides "sane" defaults
-for simplifying test invokation.
+for simplifying test invocation.
 */
 package e2e
 
