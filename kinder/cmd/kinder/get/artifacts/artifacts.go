@@ -87,7 +87,7 @@ func NewCommand() *cobra.Command {
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	//checks that mutually exclusive flags are not set at the same time
 	exclusiveFlags := []string{onlyKubeadmFlagName, onlyKubeletFlagName, onlyBinariesFlagName, onlyImagesFLagName}
-	if checkExclusiveFlags(cmd.Flags(), exclusiveFlags) == false {
+	if !checkExclusiveFlags(cmd.Flags(), exclusiveFlags) {
 		return errors.Errorf("flags [%s] are mutually exclusive, please set only one of them", strings.Join(exclusiveFlags, ", "))
 	}
 
