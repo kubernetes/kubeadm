@@ -42,7 +42,6 @@ type Node struct {
 	kindNode        kindnodes.Node
 	cri             ContainerRuntime
 	kubeadmVersion  *K8sVersion.Version
-	settings        *NodeSettings
 	etcdImage       string
 	skip            bool
 	commandMutators []commandMutator

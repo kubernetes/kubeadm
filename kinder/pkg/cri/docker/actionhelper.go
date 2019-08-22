@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -29,7 +28,7 @@ import (
 func PreLoadUpgradeImages(n *status.Node, srcFolder string) error {
 	return n.Command(
 		"/bin/bash", "-c",
-		`find `+fmt.Sprintf("%s", srcFolder)+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
+		`find `+srcFolder+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Silent().Run()
 }
 

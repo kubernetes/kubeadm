@@ -186,13 +186,13 @@ func (w *Workflow) expandImports(file string) error {
 		if len(t.Args) != 0 {
 			return errors.Errorf("invalid workflow file %s: task #%d - args setting can't be combined with import directive", file, i+1)
 		}
-		if t.Force != false {
+		if t.Force {
 			return errors.Errorf("invalid workflow file %s: task #%d - force setting can't be combined with import directive", file, i+1)
 		}
 		if t.Timeout != 0 {
 			return errors.Errorf("invalid workflow file %s: task #%d - timeout setting can't be combined with import directive", file, i+1)
 		}
-		if t.IgnoreError != false {
+		if t.IgnoreError {
 			return errors.Errorf("invalid workflow file %s: task #%d - ignoreError setting can't be combined with import directive", file, i+1)
 		}
 

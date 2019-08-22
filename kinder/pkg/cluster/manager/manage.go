@@ -30,7 +30,6 @@ import (
 
 // ClusterManager manages kind(er) clusters
 type ClusterManager struct {
-	clusterName string
 	*status.Cluster
 }
 
