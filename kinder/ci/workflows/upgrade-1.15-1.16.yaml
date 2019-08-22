@@ -1,12 +1,12 @@
 version: 1
 summary: |
-  this workflow test kubeadm upgrades from Kubernetes ci/latest-1.14 version to Kubernetes ci/latest-1.15 version
-  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-upgrade-1-14-1-15
+  this workflow test kubeadm upgrades from Kubernetes ci/latest-1.15 version to Kubernetes ci/latest-1.16 version
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-upgrade-1-15-1-16
   config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml
   config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
 vars:
-  initVersion: "{{ resolve `ci/latest-1.14` }}"
-  upgradeVersion: "{{ resolve `ci/latest-1.15` }}"
+  initVersion: "{{ resolve `ci/latest-1.15` }}"
+  upgradeVersion: "{{ resolve `ci/latest-1.16` }}"
   controlPlaneNodes: 3
 tasks:
 - import: upgrade-tasks-automatic-copy-certs.yaml
