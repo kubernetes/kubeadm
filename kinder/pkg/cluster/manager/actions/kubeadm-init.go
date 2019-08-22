@@ -328,7 +328,7 @@ var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 
 // writeKubeConfig writes a fixed KUBECONFIG to dest
 // this should only be called on a control plane node
-// While copyng to the host machine the control plane address
+// While copying to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
 func writeKubeConfig(c *status.Cluster, hostAddress string, hostPort int32) error {
