@@ -30,10 +30,10 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/cri"
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 	kindnodes "sigs.k8s.io/kind/pkg/cluster/nodes"
-	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
 	kindCRI "sigs.k8s.io/kind/pkg/container/cri"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	kindlog "sigs.k8s.io/kind/pkg/log"
+	kindconcurrent "sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // CreateOptions holds all the options used at create time

@@ -21,40 +21,40 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha3"
+	kindv1alpha3 "sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 	"sigs.k8s.io/yaml"
 
-	kindconfig "k8s.io/kubeadm/kinder/third_party/kind/config"
+	kindinternalconfig "k8s.io/kubeadm/kinder/third_party/kind/config"
 )
 
 // The purpose of this package to wrap the public kind types and allow validation and defaulting.
 // The rest of kinder should import this package instead of the kind public type package.
 
 // Cluster is a type alias of the kind Cluster type
-type Cluster v1alpha3.Cluster
+type Cluster kindv1alpha3.Cluster
 
 // Node is a type alias of the kind Node type
-type Node v1alpha3.Node
+type Node kindv1alpha3.Node
 
 // NewConfig returns the default config according to requested number of control-plane and worker nodes
 func NewConfig(controlPlanes, workers int, image string) (*Cluster, error) {
-	var cfg = &v1alpha3.Cluster{
-		Nodes: []v1alpha3.Node{},
+	var cfg = &kindv1alpha3.Cluster{
+		Nodes: []kindv1alpha3.Node{},
 	}
 
 	// adds the control-plane node(s)
 	for i := 0; i < controlPlanes; i++ {
-		cfg.Nodes = append(cfg.Nodes, v1alpha3.Node{Role: v1alpha3.ControlPlaneRole, Image: image})
+		cfg.Nodes = append(cfg.Nodes, kindv1alpha3.Node{Role: kindv1alpha3.ControlPlaneRole, Image: image})
 	}
 
 	// adds the worker node(s), if any
 	for i := 0; i < workers; i++ {
-		cfg.Nodes = append(cfg.Nodes, v1alpha3.Node{Role: v1alpha3.WorkerRole, Image: image})
+		cfg.Nodes = append(cfg.Nodes, kindv1alpha3.Node{Role: kindv1alpha3.WorkerRole, Image: image})
 	}
 
 	// apply defaults and validate
-	kindconfig.ApplyClusterDefaults(cfg)
-	if err := kindconfig.ValidateCluster(cfg); err != nil {
+	applyClusterDefaults(cfg)
+	if err := kindinternalconfig.ValidateCluster(cfg); err != nil {
 		return nil, err
 	}
 	return (*Cluster)(cfg), nil
@@ -64,7 +64,7 @@ func NewConfig(controlPlanes, workers int, image string) (*Cluster, error) {
 // If path == "" then the default config is returned
 // If path == "-" then reads from stdin
 func LoadConfig(path, imageName string) (*Cluster, error) {
-	var cfg = &v1alpha3.Cluster{}
+	var cfg = &kindv1alpha3.Cluster{}
 	var err error
 	var contents []byte
 
@@ -89,9 +89,17 @@ func LoadConfig(path, imageName string) (*Cluster, error) {
 	}
 
 	// apply defaults and validate
-	kindconfig.ApplyClusterDefaults(cfg)
-	if err := kindconfig.ValidateCluster(cfg); err != nil {
+	applyClusterDefaults(cfg)
+	if err := kindinternalconfig.ValidateCluster(cfg); err != nil {
 		return nil, err
 	}
 	return (*Cluster)(cfg), nil
+}
+
+// applyClusterDefaults defaults a kind Cluster object
+func applyClusterDefaults(c *kindv1alpha3.Cluster) {
+	kindv1alpha3.SetDefaults_Cluster(c)
+	for i := range c.Nodes {
+		kindv1alpha3.SetDefaults_Node(&c.Nodes[i])
+	}
 }

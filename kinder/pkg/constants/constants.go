@@ -121,5 +121,5 @@ var (
 // other constants
 const (
 	// KinderVersion is the kinder CLI version
-	KinderVersion = "0.1.0-alpha.3"
+	KinderVersion = "0.1.0-alpha.4"
 )

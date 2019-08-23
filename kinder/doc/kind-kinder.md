@@ -82,8 +82,9 @@ back new feautures.
     - `DefaultImage` constant (*)
 - "sigs.k8s.io/kind/pkg/cluster/constants" for
     - constants
-- "sigs.k8s.io/kind/pkg/cluster/config/*" for
+- "sigs.k8s.io/kind/pkg/apis/config/*" for
     - kind configuration API, defaulting, Unmarshaling, validation
+    - `PatchJSON6902` struct
 - "sigs.k8s.io/kind/pkg/cluster/nodes" for
     - `Node` struct
     - `CreateControlPlaneNode`
@@ -98,7 +99,7 @@ back new feautures.
 - "sigs.k8s.io/kind/pkg/container/cri" for
     - `Mount` struct
     - `PortMapping` struct
-- "sigs.k8s.io/kind/pkg/concurrent" for
+- "sigs.k8s.io/kind/pkg/util/concurrent" for
     - `UntilError`
 - "sigs.k8s.io/kind/pkg/exec" (*) for
     - `Command`
@@ -108,8 +109,16 @@ back new feautures.
     - `TempDir`
     - `Copy`
 - "sigs.k8s.io/kind/pkg/log" for the spinner (*)
-- "sigs.k8s.io/kind/pkg/kustomize" for
-    - `PatchJSON6902` struct
-    - `Build`
+
+Some kind internal packages have been forked:  (see the third_party directory for readme's)
+
+- "sigs.k8s.io/kind/pkg/internal/apis/config" for
+    - external type validation
+- "sigs.k8s.io/kind/pkg/internal/cluster/kubeadm" for
+    - kubeadm config templates
+- "sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer" for
+    - loadbalancer config
+- "sigs.k8s.io/kind/pkg/internal/util/kustomize" for
+    - `Build` using external PatchJSON type
 
 (*) to be evaluated if removing dependency in future kinder versions

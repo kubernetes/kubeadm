@@ -1,5 +1,6 @@
-Forked from Kind v0.4.0 release branch to expose some functionality currently not
+Initially forked from Kind v0.4.0 release branch to expose some functionality currently not
 accessible using kind as a library.
+Forks have been updated to reflect v0.5.1.
 
 Having direct control on kubeadm config and on loadbalancer config is a specific necessity
 for kinder, because kinder supports containerd and docker as a container runtime installed inside the

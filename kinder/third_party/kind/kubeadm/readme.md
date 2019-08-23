@@ -1,1 +1,1 @@
-forked from "sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+forked from "sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
