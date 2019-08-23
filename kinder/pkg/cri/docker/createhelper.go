@@ -102,7 +102,7 @@ func createNode(name, image, clusterLabel, role string, mounts []kindCRI.Mount, 
 		"--entrypoint=/usr/local/bin/entrypoint",
 	}
 
-	// pass proxy environment variables to be used by node's docker deamon
+	// pass proxy environment variables to be used by node's docker daemon
 	proxyDetails, err := getProxyDetails()
 	if err != nil || proxyDetails == nil {
 		return errors.Wrap(err, "proxy setup error")
