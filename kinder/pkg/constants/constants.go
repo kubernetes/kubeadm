@@ -23,7 +23,7 @@ import (
 	kindconstants "sigs.k8s.io/kind/pkg/cluster/constants"
 )
 
-// constants inherithed from kind.
+// constants inherited from kind.
 // those values are replicated here with the goal to keep under strict control kind dependencies
 const (
 	// ControlPlaneNodeRoleValue identifies a node that hosts a Kubernetes
