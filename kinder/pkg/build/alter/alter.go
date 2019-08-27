@@ -277,7 +277,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 	// alter the image, tagged as tagImageAs, using the our tempdir as the context
 	log.Debug("Starting image alter ...")
 
-	// binds the BuildContext the the container
+	// binds the BuildContext the container
 	bc.BindToContainer(containerID)
 
 	// install the bits that are used to alter the image

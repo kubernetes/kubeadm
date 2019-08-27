@@ -36,7 +36,7 @@ import (
 	kindlog "sigs.k8s.io/kind/pkg/log"
 )
 
-// CreateOptions holds all the the options used at create time
+// CreateOptions holds all the options used at create time
 type CreateOptions struct {
 	externalLoadBalancer bool
 	externalEtcd         bool
