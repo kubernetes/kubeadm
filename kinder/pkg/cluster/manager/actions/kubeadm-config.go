@@ -26,11 +26,11 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
+	"k8s.io/kubeadm/kinder/pkg/config"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
 	"k8s.io/kubeadm/kinder/pkg/kubeadm"
 	kindinternalkustomize "k8s.io/kubeadm/kinder/third_party/kind/util/kustomize"
-	kindv1alpha3 "sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 )
 
 // kubeadmConfigOptionsall stores all the kinder flags that impact on the kubeadm config generation
@@ -192,7 +192,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 
 	// apply all the kinder specific settings using patches
 	var patches = []string{}
-	var jsonPatches = []kindv1alpha3.PatchJSON6902{}
+	var jsonPatches = []config.PatchJSON6902{}
 
 	// add patches for instructing kubeadm to use the CRI runtime engine  installed on a node
 	// NB. this is a no-op in case of containerd, because it is already the default in the raw config
@@ -430,9 +430,9 @@ const objectName = "config"
 // setPatchNames sets the targeted object name on every patch to be the fixed
 // name we use when generating config objects (we have one of each type, all of
 // which have the same fixed name)
-func setPatchNames(patches []string, jsonPatches []kindv1alpha3.PatchJSON6902) ([]string, []kindv1alpha3.PatchJSON6902) {
+func setPatchNames(patches []string, jsonPatches []config.PatchJSON6902) ([]string, []config.PatchJSON6902) {
 	fixedPatches := make([]string, len(patches))
-	fixedJSONPatches := make([]kindv1alpha3.PatchJSON6902, len(jsonPatches))
+	fixedJSONPatches := make([]config.PatchJSON6902, len(jsonPatches))
 	for i, patch := range patches {
 		// insert the generated name metadata
 		fixedPatches[i] = fmt.Sprintf("metadata:\nname: %s\n%s", objectName, patch)

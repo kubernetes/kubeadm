@@ -221,7 +221,7 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 		ServiceSubnet:                cfg.Networking.ServiceSubnet,
 		DisableDefaultCNI:            cfg.Networking.DisableDefaultCNI,
 		KubeadmConfigPatches:         cfg.KubeadmConfigPatches,
-		KubeadmConfigPatchesJSON6902: cfg.KubeadmConfigPatchesJSON6902,
+		KubeadmConfigPatchesJSON6902: config.ConvertPatchJSON6902List(cfg.KubeadmConfigPatchesJSON6902),
 	}
 	if err := c.WriteSettings(); err != nil {
 		return err

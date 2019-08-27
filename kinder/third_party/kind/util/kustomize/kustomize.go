@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/resmap"
 	"sigs.k8s.io/kustomize/v3/pkg/resource"
 
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
+	kinderconfig "k8s.io/kubeadm/kinder/pkg/config"
 )
 
 // Build takes a set of resource blobs (yaml), patches (strategic merge patch)
@@ -40,8 +40,8 @@ import (
 // and returns the `kustomize build` result as a yaml blob
 // It does this in-memory using the build cobra command
 //
-// NOTE: this fork of build uses the public PatchJSON6902 struct instead of forking the internal one
-func Build(resources, patches []string, patchesJSON6902 []v1alpha3.PatchJSON6902) (string, error) {
+// NOTE: this fork of build uses the kinder-aliased, public PatchJSON6902 struct instead of forking the kind-internal one
+func Build(resources, patches []string, patchesJSON6902 []kinderconfig.PatchJSON6902) (string, error) {
 	// write the resources and patches to an in memory fs with a generated
 	// kustomization.yaml
 	memFS := fs.MakeFakeFS()

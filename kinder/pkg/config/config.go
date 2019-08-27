@@ -36,6 +36,17 @@ type Cluster kindv1alpha3.Cluster
 // Node is a type alias of the kind Node type
 type Node kindv1alpha3.Node
 
+// PatchJSON6902 is a type alias of the kind PatchJSON6902 type
+type PatchJSON6902 kindv1alpha3.PatchJSON6902
+
+// ConvertPatchJSON6902List converts a []kindv1alpha3.PatchJSON6902 to []PatchJSON6902
+func ConvertPatchJSON6902List(plist []kindv1alpha3.PatchJSON6902) (converted []PatchJSON6902) {
+	for _, p := range plist {
+		converted = append(converted, PatchJSON6902(p))
+	}
+	return
+}
+
 // NewConfig returns the default config according to requested number of control-plane and worker nodes
 func NewConfig(controlPlanes, workers int, image string) (*Cluster, error) {
 	var cfg = &kindv1alpha3.Cluster{

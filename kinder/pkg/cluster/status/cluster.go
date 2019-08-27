@@ -23,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/kubeadm/kinder/pkg/config"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindv1alpha3 "sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 )
 
@@ -49,13 +49,13 @@ type Cluster struct {
 type ClusterSettings struct {
 	// kind configuration settings that are used to configure the cluster when
 	// generating the kubeadm config file.
-	IPFamily                     ClusterIPFamily              `json:"ipFamily,omitempty"`
-	APIServerPort                int32                        `json:"apiServerPort,omitempty"`
-	APIServerAddress             string                       `json:"apiServerAddress,omitempty"`
-	PodSubnet                    string                       `json:"podSubnet,omitempty"`
-	ServiceSubnet                string                       `json:"serviceSubnet,omitempty"`
-	KubeadmConfigPatches         []string                     `json:"kubeadmConfigPatches,omitempty"`
-	KubeadmConfigPatchesJSON6902 []kindv1alpha3.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
+	IPFamily                     ClusterIPFamily        `json:"ipFamily,omitempty"`
+	APIServerPort                int32                  `json:"apiServerPort,omitempty"`
+	APIServerAddress             string                 `json:"apiServerAddress,omitempty"`
+	PodSubnet                    string                 `json:"podSubnet,omitempty"`
+	ServiceSubnet                string                 `json:"serviceSubnet,omitempty"`
+	KubeadmConfigPatches         []string               `json:"kubeadmConfigPatches,omitempty"`
+	KubeadmConfigPatchesJSON6902 []config.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
 
 	// kind configuration settings that are used to disable installation of the default CNI pluging
 	DisableDefaultCNI bool `json:"disableDefaultCNI,omitempty"`
