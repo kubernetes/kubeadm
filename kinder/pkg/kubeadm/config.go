@@ -34,7 +34,7 @@ import (
 // always prefer using this alias instead of the internal type.
 type ConfigData kindinternalkubeadm.ConfigData
 
-// Config returns a kubeadm generated using the the config API version corresponding
+// Config returns a kubeadm generated using the config API version corresponding
 // to the kubeadmVersion and with the customizable settings based on data
 func Config(kubeadmVersion *K8sVersion.Version, data ConfigData) (config string, err error) {
 	// gets the config version corresponding to a kubeadm version

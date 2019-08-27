@@ -77,7 +77,7 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().BoolVar(
 		&flags.UsePhases, "use-phases",
-		false, "use the kubeadm phases subcommands instead of the the kubeadm top-level commands",
+		false, "use the kubeadm phases subcommands instead of the kubeadm top-level commands",
 	)
 	cmd.Flags().StringVar(
 		&flags.UpgradeVersion,
