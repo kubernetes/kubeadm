@@ -106,7 +106,7 @@ type Task struct {
 
 // NewWorkflow creates a new workflow as defined in a workflow file
 func NewWorkflow(file string) (*Workflow, error) {
-	// Checks if the worklow file exists
+	// Checks if the workflow file exists
 	if _, err := os.Stat(file); err != nil {
 		return nil, errors.Errorf("invalid workflow file: %s does not exist", file)
 	}
@@ -198,7 +198,7 @@ func (w *Workflow) expandImports(file string) error {
 
 		// reads the Import file
 		// if path are relative, consider as a base path the folder where the importing file is located.
-		// TODO: implement a check for avoinding circular imports
+		// TODO: implement a check for avoiding circular imports
 		path := t.Import
 		if !filepath.IsAbs(path) {
 			base := filepath.Dir(file)
