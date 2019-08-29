@@ -248,7 +248,7 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 
 	// Calico requires net.ipv4.conf.all.rp_filter to be set to 0 or 1.
 	// If you require loose RPF and you are not concerned about spoofing, this check can be disabled by setting the IgnoreLooseRPF configuration parameter to 'true'.
-	for _, cp := range c.ControlPlanes() {
+	for _, cp := range c.AllNodes() {
 		if err := cp.Command(
 			"sysctl", "-w", "net.ipv4.conf.all.rp_filter=1",
 		).Silent().Run(); err != nil {
