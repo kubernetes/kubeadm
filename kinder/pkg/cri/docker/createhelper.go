@@ -34,7 +34,7 @@ import (
 	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
-// CreateControlPlaneNode creates a kind(er) contol-plane node that uses docker runtime internally
+// CreateControlPlaneNode creates a kind(er) control-plane node that uses docker runtime internally
 func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
 	// gets a random host port for the API server
 	if port == 0 {
