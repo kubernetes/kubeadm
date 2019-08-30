@@ -9,7 +9,7 @@ vars:
   upgradeVersion: v1.13.5
   controlPlaneNodes: 1
   workerNodes: 2
-  baseImage: kindest/base:v20190403-1ebf15f
+  baseImage: kindest/base:v20190819-26e1eb5
   image: kindest/node:test
   clusterName: kinder-upgrade
 tasks:

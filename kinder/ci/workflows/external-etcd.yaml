@@ -4,7 +4,7 @@ summary: |
   cluster with an external etcd cluster.
 vars:
   kubernetesVersion: v1.14.1
-  baseImage: kindest/base:v20190403-1ebf15f
+  baseImage: kindest/base:v20190819-26e1eb5
   image: kindest/node:test
   clusterName: kinder-external-etcd
 tasks:

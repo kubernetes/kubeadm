@@ -4,7 +4,7 @@ summary: |
   discovery methods for kubeadm join.
 vars:
   kubernetesVersion: "{{ resolve `ci/latest` }}"
-  baseImage: kindest/base:v20190403-1ebf15f
+  baseImage: kindest/base:v20190819-26e1eb5
   image: kindest/node:test
   clusterName: kinder-discovery
 tasks:
