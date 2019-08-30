@@ -305,7 +305,10 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	images["k8s-dns-dnsmasq-nanny"] = ""
 	// images outside the scope of kubeadm, but still using the k8s version
 	images["hyperkube"] = k8sVersionV
-	images["cloud-controller-manager"] = k8sVersionV
+	// the cloud-controller-manager image was removed for version v1.16
+	if ver.Major() == 1 && ver.Minor() < 16 {
+		images["cloud-controller-manager"] = k8sVersionV
+	}
 	// test the conformance image, but only for newer versions as it was added in v1.13.0-alpha.2
 	conformanceMinVer := version.MustParseSemantic("v1.13.0-alpha.2")
 	if ver.AtLeast(conformanceMinVer) {
