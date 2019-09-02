@@ -9,6 +9,7 @@ vars:
   upgradeVersion: v1.13.5
   controlPlaneNodes: 1
   workerNodes: 2
+  externalEtcd: false
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-upgrade
@@ -49,6 +50,7 @@ tasks:
     - --image={{ .vars.image }}
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
+    - --external-etcd={{ .vars.externalEtcd }}
     - --loglevel=debug
   timeout: 5m
 - name: init
