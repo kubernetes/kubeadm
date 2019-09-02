@@ -8,5 +8,6 @@ vars:
   initVersion: "{{ resolve `ci/latest-1.12` }}"
   upgradeVersion: "{{ resolve `ci/latest-1.13` }}"
   controlPlaneNodes: 3
+  externalEtcd: true
 tasks:
 - import: upgrade-tasks.yaml
