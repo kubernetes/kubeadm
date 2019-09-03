@@ -78,6 +78,8 @@ back new feautures.
 
 - "sigs.k8s.io/kind/cmd/*" for
     - providing access to kind commands from a single UX
+- "sigs.k8s.io/kind/pkg/build/base" for
+    - building a containerd base image
 - "sigs.k8s.io/kind/pkg/build/node" for
     - `DefaultImage` constant (*)
 - "sigs.k8s.io/kind/pkg/cluster/constants" for

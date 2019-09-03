@@ -19,8 +19,8 @@ package build
 import (
 	"github.com/spf13/cobra"
 
+	"k8s.io/kubeadm/kinder/cmd/kinder/build/baseimage"
 	"k8s.io/kubeadm/kinder/cmd/kinder/build/nodevariant"
-	kindbaseimage "sigs.k8s.io/kind/cmd/kind/build/baseimage"
 	kindnodeimage "sigs.k8s.io/kind/cmd/kind/build/nodeimage"
 )
 
@@ -34,7 +34,7 @@ func NewCommand() *cobra.Command {
 		Long:  "Build the base node image (base-image) or the node image (node-image) or node image variants (node-variant)",
 	}
 	// add subcommands
-	cmd.AddCommand(kindbaseimage.NewCommand())
+	cmd.AddCommand(baseimage.NewCommand())
 	cmd.AddCommand(kindnodeimage.NewCommand())
 	cmd.AddCommand(nodevariant.NewCommand())
 	return cmd
