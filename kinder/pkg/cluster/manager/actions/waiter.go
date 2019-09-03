@@ -291,23 +291,23 @@ func staticPodHasVersion(pod, version string) func(c *status.Cluster, n *status.
 func kubeletHasRBAC(major, minor uint) func(c *status.Cluster, n *status.Node) bool {
 	return func(c *status.Cluster, n *status.Node) bool {
 		for i := 0; i < 5; i++ {
-			output1 := kubectlOutput(c.BootstrapControlPlane(),
+			output1 := kubectlOutput(n,
+				"auth",
+				"can-i",
 				"get",
-				"cm",
-				fmt.Sprintf("kubelet-config-%d.%d", major, minor),
 				"--kubeconfig=/etc/kubernetes/kubelet.conf",
-				"-n=kube-system",
-				"-o=jsonpath='{.metadata.name}'",
+				"--namespace=kube-system",
+				fmt.Sprintf("configmaps/kubelet-config-%d.%d", major, minor),
 			)
-			output2 := kubectlOutput(c.BootstrapControlPlane(),
+			output2 := kubectlOutput(n,
+				"auth",
+				"can-i",
 				"get",
-				"cm",
-				"kube-proxy",
 				"--kubeconfig=/etc/kubernetes/kubelet.conf",
-				"-n=kube-system",
-				"-o=jsonpath='{.metadata.name}'",
+				"--namespace=kube-system",
+				"configmaps/kube-proxy",
 			)
-			if output1 != "" && output2 != "" {
+			if output1 == "yes" && output2 == "yes" {
 				time.Sleep(1 * time.Second)
 				continue
 			}
