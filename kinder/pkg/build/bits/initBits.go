@@ -205,7 +205,7 @@ func installInitBinaries(c *BuildContext) error {
 }
 
 func configureKubelet(c *BuildContext) error {
-	// files for for the kubelet.service is created on the flight directly into the alter filesystem
+	// files for the kubelet.service is created on the flight directly into the alter filesystem
 	hsrc := filepath.Join(c.HostBitsPath(), "systemd")
 	if err := os.MkdirAll(hsrc, 0777); err != nil {
 		log.Errorf("failed to create %s folder! %v", hsrc, err)
