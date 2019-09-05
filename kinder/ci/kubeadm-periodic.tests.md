@@ -14,11 +14,11 @@ Kubeadm test spans across 5 Kubernetes versions:
 
 | Version          | e.g.   |                                                              |
 | ---------------- | ------ | ------------------------------------------------------------ |
-| master           | v1.16  | The release under current development                        |
-| current          | v1.15  | Current GA release                                           |
-| current -1/minor | V1.14  | Former GA release, still officially supported                |
-| current -2/minor | V1.13  | Former GA release, still officially supported for one more cycle |
-| current -3/minor | V1.12  | Former GA release that is no longer supported but still tested for upgrade and skew |
+| master           | v1.17  | The release under current development                        |
+| current          | v1.16  | Current GA release                                           |
+| current -1/minor | V1.15  | Former GA release, still officially supported                |
+| current -2/minor | V1.14  | Former GA release, still officially supported for one more cycle |
+| current -3/minor | V1.13  | Former GA release that is no longer supported but still tested for upgrade and skew |
 
 ## Type of tests
 
@@ -32,10 +32,10 @@ conformance. Following regular tests are verified using kind (no need of kinder 
 
 | Version          | e.g.   |                                                              |
 | ---------------- | ------ | ------------------------------------------------------------ |
-| master<br />(master branch) | v1.16.0-alpha...  | The release under current development  |
-| current<br />(release-1.15 branch) | v1.15.2-alpha...  | Current GA release              |
-| current -1/minor<br />(release-1.14 branch)  | V1.14.6-alpha...   | Former GA release, still officially supported |
-| current -2/minor<br />(release-1.13 branch)  | V1.13.10-alpha...  | Former GA release, still officially supported for one more cycle |
+| master<br />(master branch) | v1.17.0-alpha...  | The release under current development  |
+| current<br />(release-1.16 branch) | v1.16.2-alpha...  | Current GA release              |
+| current -1/minor<br />(release-1.15 branch)  | V1.15.6-alpha...   | Former GA release, still officially supported |
+| current -2/minor<br />(release-1.14 branch)  | V1.14.10-alpha...  | Former GA release, still officially supported for one more cycle |
 
 NB. currently kind tests are build Kubernetes from the selected branch. This is slightly different from what
 kinder is doing, that is to use an existing CI/Release build.
@@ -46,10 +46,10 @@ Upgrade tests are meant to verify the proper functioning of the `kubeadm upgrade
 
 | from                                    | e.g.              | to                                     | e.g.             |
 | --------------------------------------- | ----------------- | -------------------------------------- | ---------------- |
-| current<br />(ci/latest-1.15)           | v1.15.1-alpha...  | master<br />(ci/latest)                | v1.16.0-alpha... |
-| current -1/minor<br />(ci/latest-1.14)  | V1.14.6-alpha...  | current<br />(ci/latest-1.15)          | v1.15.1-alpha... |
-| current -2/minor<br />(ci/latest-1.13)  | V1.13.9-alpha...  | current -2/minor<br />(ci/latest-1.14) | V1.14.5-alpha... |
-| current -3/minor<br />(ci/latest-1.12)  | V1.12.10-alpha... | current -3/minor<br />(ci/latest-1.13) | V1.13.8-alpha... |
+| current<br />(ci/latest-1.16)           | v1.16.1-alpha...  | master<br />(ci/latest)                | v1.17.0-alpha... |
+| current -1/minor<br />(ci/latest-1.15)  | V1.15.6-alpha...  | current<br />(ci/latest-1.16)          | v1.16.1-alpha... |
+| current -2/minor<br />(ci/latest-1.14)  | V1.14.9-alpha...  | current -1/minor<br />(ci/latest-1.15) | V1.15.5-alpha... |
+| current -3/minor<br />(ci/latest-1.13)  | V1.13.10-alpha... | current -2/minor<br />(ci/latest-1.14) | V1.14.8-alpha... |
 
 NB. currently we are testing `ci/latest` and not (e.g.) `ci/latest-1.16`. That is because the 1.16 branch
 is aligned only periodically until the release is cut. At a certain point master will become 1.17 even
@@ -62,10 +62,10 @@ X on Y tests are meant to verify the proper functioning of kubeadm version X wit
 
 | kubeadm (X)                            | e.g.             | Kubernetes (Y)                         | e.g.              |
 | -------------------------------------- | ---------------- | -------------------------------------- | ----------------- |
-| master<br />(ci/latest)                | v1.16.0-alpha... | current<br />(ci/latest-1.15)          | v1.15.1-alpha...  |
-| current<br />(ci/latest-1.15)          | v1.15.1-alpha... | current -1/minor<br />(ci/latest-1.14) | V1.14.4-alpha...  |
-| current -1/minor<br />(ci/latest-1.14) | V1.14.6-alpha... | current -2/minor<br />(ci/latest-1.13) | V1.13.7-alpha...  |
-| current -2/minor<br />(ci/latest-1.13) | V1.13.9-alpha... | current -3/minor<br />(ci/latest-1.12) | V1.12.8-alpha...  |
+| master<br />(ci/latest)                | v1.17.0-alpha... | current<br />(ci/latest-1.16)          | v1.16.1-alpha...  |
+| current<br />(ci/latest-1.16)          | v1.16.1-alpha... | current -1/minor<br />(ci/latest-1.15) | V1.15.4-alpha...  |
+| current -1/minor<br />(ci/latest-1.15) | V1.15.6-alpha... | current -2/minor<br />(ci/latest-1.14) | V1.14.7-alpha...  |
+| current -2/minor<br />(ci/latest-1.14) | V1.14.9-alpha... | current -3/minor<br />(ci/latest-1.13) | V1.13.8-alpha...  |
 
 ### External etcd with secret copy tests
 
@@ -75,9 +75,9 @@ the minimal supported version that is tested for external etcd.
 
 | Version                                | e.g.              |
 | -------------------------------------- | ------            |
-| master<br />(ci/latest)                | v1.16.0-alpha...  |
-| current<br />(ci/latest-1.15)          | v1.15.2-alpha...  |
-| current -1/minor<br />(ci/latest-1.14) | v1.14.4-alpha...  |
+| master<br />(ci/latest)                | v1.17.0-alpha...  |
+| current<br />(ci/latest-1.16)          | v1.16.2-alpha...  |
+| current -1/minor<br />(ci/latest-1.15) | v1.15.4-alpha...  |
 
 ### Discovery tests
 
@@ -86,7 +86,7 @@ the minimal supported version that is tested for join discovery variants.
 
 | Version                                | e.g.              |
 | -------------------------------------- | ------            |
-| master<br />(ci/latest)                | v1.16.0-alpha...  |
+| master<br />(ci/latest)                | v1.17.0-alpha...  |
 
 ### Kustomize tests
 
@@ -95,4 +95,4 @@ Currently, master is the minimal supported version that is tested for kustomize.
 
 | Version                                | e.g.              |
 | -------------------------------------- | ------            |
-| master<br />(ci/latest)                | v1.16.0-alpha...  |
+| master<br />(ci/latest)                | v1.17.0-alpha...  |
