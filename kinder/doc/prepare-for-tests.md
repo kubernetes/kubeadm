@@ -1,6 +1,6 @@
 # Prepare for tests
 
-Before starting test with kinder, it necessary to get a node-image to be used as a base for nodes in the cluster.
+Before starting test with kinder, it is necessary to get a node-image to be used as a base for nodes in the cluster.
 
 As in kind, also in kinder in order to make your test will fast and repeatable, it is recommended to
 pack whatever you need during your test in the node-images.
@@ -44,7 +44,7 @@ kinder build node-image --base-image kindest/base:latest --image kindest/node:vX
 kinder build node-image --base-image kindest/base:latest --image kindest/node:vX --type bazel
 ```
 
-> NB see <https://github.com/kubernetes/kubeadm/blob/master/testing-pre-releases.md#change-the-target-version-number-when-building-a-local-release> for overriding
+> NB see <https://github.com/kubernetes/kubeadm/blob/master/docs/testing-pre-releases.md#change-the-target-version-number-when-building-a-local-release> for overriding
 the build version in case of `--type bazel`
 
 As an alternative, it is possible to pick an existing base image and customize it by adding a Kubernetes
