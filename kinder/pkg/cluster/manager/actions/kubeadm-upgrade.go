@@ -131,7 +131,7 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8
 		"upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
 	}
 	if kustomizeDir != "" {
-		applyArgs = append(applyArgs, fmt.Sprintf("--k=%s", constants.KustomizeDir))
+		applyArgs = append(applyArgs, fmt.Sprintf("-k=%s", constants.KustomizeDir))
 	}
 	if err := cp1.Command(
 		"kubeadm", applyArgs...,
