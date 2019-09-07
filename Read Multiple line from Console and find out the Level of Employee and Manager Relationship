@@ -1,0 +1,51 @@
+package com.java;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.*;
+
+class Exam {
+
+	public static void main(String[] args)   {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+		String line;
+		List<String> list = new ArrayList<String>();
+		int p = 0;
+		try {
+			while ((line = br.readLine()) != null) {
+				String[] tokens = line.split("\\s");
+				if(line.isEmpty()){
+					break;
+				}
+				//System.out.println(Arrays.toString(tokens));
+				String tokensstr = Arrays.toString(tokens);
+				if(tokensstr != null){
+					tokensstr = tokensstr.toString().substring(1, tokensstr.toString().length()-1);
+				}
+				list.add(tokensstr);
+			}
+			br.close();
+			
+			String[] employeeManager = list.get(0).split("/");
+			String employee = employeeManager[0];
+			String manager = employeeManager[1];
+			for (int i=1; i< list.size();i++) {
+				String[] empImediaterManager = list.get(i).split("/");
+				if(employee.equalsIgnoreCase(empImediaterManager[0])){
+					if(manager.equalsIgnoreCase(empImediaterManager[1])){
+						break;
+					}else{
+						p+=1;
+						employee = empImediaterManager[1];
+					}
+				}
+	        }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        System.out.println(p);
+	}
+
+}
