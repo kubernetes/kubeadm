@@ -44,10 +44,12 @@ Clone the kubeadm repository:
 git clone https://github.com/kubernetes/kubeadm.git
 ```
 
-And then build kinder
+This will create a directory named 'kubeadm'. You will find a subdirectory named 'kinder'.
+
+Then build kinder.
 
 ```bash
-cd kinder
+cd kubeadm/kinder
 GO111MODULE=on go install
 ```
 
