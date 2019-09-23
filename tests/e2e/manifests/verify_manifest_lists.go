@@ -69,7 +69,6 @@ const (
 
 	typeManifestList = "application/vnd.docker.distribution.manifest.list.v2+json"
 	typeManifest     = "application/vnd.docker.distribution.manifest.v2+json"
-	typeImage        = "application/vnd.docker.container.image.v1+json"
 	typeLayer        = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 	messageStart = `
