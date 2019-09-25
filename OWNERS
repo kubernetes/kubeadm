@@ -20,6 +20,7 @@ reviewers:
 - yagonobre
 - ereslibre
 - SataQiu
+- yastij
 # Might want to add @xiangpengzhao, @stealthybox, @kargakis, @jamiehannaford, @krousey, @dmmcquay, @liztio and/or @chuckha back in the future
 labels:
 - sig/cluster-lifecycle
