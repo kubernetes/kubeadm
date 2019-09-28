@@ -64,7 +64,7 @@ func NewCommand() *cobra.Command {
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 
-	// retrive config and artifacts from arguments
+	// retrieve config and artifacts from arguments
 	config := args[0]
 	artifacts := ""
 	if len(args) > 1 {

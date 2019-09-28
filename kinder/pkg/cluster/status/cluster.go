@@ -41,7 +41,7 @@ type Cluster struct {
 }
 
 // ClusterSettings defines a set of settings that will be stored in the cluster and re-used
-// by kinder during the cluster lifecyle.
+// by kinder during the cluster lifecycle.
 //
 // Storing value in the cluster is a specific necessity for kinder, because create nodes
 // and actions for setting up a working cluster can happen at different time

@@ -91,7 +91,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return errors.Errorf("flags [%s] are mutually exclusive, please set only one of them", strings.Join(exclusiveFlags, ", "))
 	}
 
-	// retrive src and dst from arguments
+	// retrieve src and dst from arguments
 	src := args[0]
 	dst := ""
 	if len(args) > 1 {

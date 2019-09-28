@@ -212,7 +212,7 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 		return err
 	}
 
-	// writes to the nodes the cluster settings that will be re-used by kinder during the cluster lifecyle.
+	// writes to the nodes the cluster settings that will be re-used by kinder during the cluster lifecycle.
 	c.Settings = &status.ClusterSettings{
 		IPFamily:                     status.ClusterIPFamily(cfg.Networking.IPFamily),
 		APIServerPort:                cfg.Networking.APIServerPort,
@@ -239,7 +239,7 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 }
 
 // nodeSpec describes a node to create purely from the container aspect
-// this does not inlude eg starting kubernetes (see actions for that)
+// this does not include eg starting kubernetes (see actions for that)
 type nodeSpec struct {
 	Name              string
 	Role              string
@@ -279,7 +279,7 @@ func nodesToCreate(clusterName string, cfg *config.Cluster, externalLoadBalancer
 			ExtraPortMappings: configNode.ExtraPortMappings,
 		}
 
-		// in case of control-plane nodes, inheriths network settings to be applied to the API servers
+		// in case of control-plane nodes, inherits network settings to be applied to the API servers
 		if role == constants.ControlPlaneNodeRoleValue {
 			desiredNode.APIServerPort = cfg.Networking.APIServerPort
 			desiredNode.APIServerAddress = cfg.Networking.APIServerAddress

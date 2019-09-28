@@ -48,7 +48,7 @@ type Node struct {
 }
 
 // NodeSettings defines a set of settings that will be stored in the node and re-used
-// by kinder during the node lifecyle.
+// by kinder during the node lifecycle.
 //
 // Storing value in the node is a specific necessity for kinder, because create nodes
 // and actions for setting up a working cluster can happen at different time
@@ -251,7 +251,7 @@ func (n *Node) WriteClusterSettings(settings *ClusterSettings) error {
 }
 
 // ReadClusterSettings reads from the node a set of cluster-wide settings that
-// are going to be re-used by kinder during the cluster lifecyle (after create)
+// are going to be re-used by kinder during the cluster lifecycle (after create)
 func (n *Node) ReadClusterSettings() (*ClusterSettings, error) {
 	lines, err := n.Command(
 		"cat", clusterSettingsPath,
@@ -272,7 +272,7 @@ func (n *Node) ReadClusterSettings() (*ClusterSettings, error) {
 const nodeSettingsPath = "/kinder/node-settings.yaml"
 
 // WriteNodeSettings stores in the node specific settings that will be re-used
-// by kinder during the cluster lifecyle (after create)
+// by kinder during the cluster lifecycle (after create)
 func (n *Node) WriteNodeSettings(settings *NodeSettings) error {
 	s, err := ksigsyaml.Marshal(*settings)
 	if err != nil {
@@ -299,7 +299,7 @@ func (n *Node) WriteNodeSettings(settings *NodeSettings) error {
 }
 
 // ReadNodeSettings reads from the node specific settings that
-// are going to be re-used by kinder during the cluster lifecyle (after create)
+// are going to be re-used by kinder during the cluster lifecycle (after create)
 func (n *Node) ReadNodeSettings() (*NodeSettings, error) {
 	lines, err := n.Command(
 		"cat", nodeSettingsPath,

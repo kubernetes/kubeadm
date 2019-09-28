@@ -28,7 +28,7 @@ Another difference from kind, is that kinder support skew from kubeadm version a
 K8s version, and as a consequence it was necessary to ensure that the code in
 this package is dependent on the kubeadm version installed on nodes.
 
-Nevertheless, kinder interally relies on kubeadm config template implemented in kind
+Nevertheless, kinder internally relies on kubeadm config template implemented in kind
 (temporary from a fork of kind an internal package); all the kinder specific settings
 are applied as kustomize patches.
 */
