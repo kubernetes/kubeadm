@@ -38,7 +38,7 @@ _Creating the cluster:_
 - kinder allows adding an external etcd to the cluster
 - kinder allows adding an external loadbalancer to the cluster even if less than two control-plane nodes
 
-_Actions on a runnig cluster:_
+_Actions on a running cluster:_
 - kinder support running actions on a running cluster (after `kinder create`)
 - kinder support running actions selectively on nodes
 - kinder support dry running actions
@@ -74,7 +74,7 @@ This is a curated list of what kinder is using from kind; please note that kinde
 kind packages that are not intended for public usage, but this was agreed with the
 [kind](https://github.com/kubernetes-sigs/kind) team as part of the process of exploring
 new use cases, share lesson learned, issues and solutions, and ultimately contribute
-back new feautures.
+back new features.
 
 - "sigs.k8s.io/kind/cmd/*" for
     - providing access to kind commands from a single UX

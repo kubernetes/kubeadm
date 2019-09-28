@@ -76,7 +76,7 @@ func (b *imageBits) Prepare(c *BuildContext) (map[string]string, error) {
 			return nil, errors.Wrapf(err, "failed to extract %s", src)
 		}
 
-		// keeps track of the image tarballs bit extracted from the souce
+		// keeps track of the image tarballs bit extracted from the source
 		for k, v := range images {
 			allImages[k] = v
 		}

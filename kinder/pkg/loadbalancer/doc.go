@@ -22,7 +22,7 @@ in kinder all the actions for setting up a working cluster can happen
 at different time while in kind everything - from create to a working K8s cluster -
 happens within an atomic operation.
 
-Nevertheless, kinder interally relies on loadbalancer config implemented in kind (temporary
+Nevertheless, kinder internally relies on loadbalancer config implemented in kind (temporary
 from a fork of kind an internal package)e, but this will be hopefully addressed).
 */
 package loadbalancer

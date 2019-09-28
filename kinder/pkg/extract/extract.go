@@ -190,7 +190,7 @@ func NewExtractor(src, dst string, options ...Option) (extractor *Extractor) {
 	return extractor
 }
 
-// SetFiles allows to override the default list of files that the extractor is expected to retrive.
+// SetFiles allows to override the default list of files that the extractor is expected to retrieve.
 func (e *Extractor) SetFiles(files []string) {
 	e.files = files
 }
