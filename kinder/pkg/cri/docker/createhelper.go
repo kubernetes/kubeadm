@@ -290,7 +290,7 @@ func waitForDocker(n *kindnodes.Node, until time.Time) bool {
 }
 
 // helper that calls `try()`` in a loop until the deadline `until`
-// has passed or `try()`returns true, returns wether try ever returned true
+// has passed or `try()`returns true, returns whether try ever returned true
 func tryUntil(until time.Time, try func() bool) bool {
 	for until.After(time.Now()) {
 		if try() {
