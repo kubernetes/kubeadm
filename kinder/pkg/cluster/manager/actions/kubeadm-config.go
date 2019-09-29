@@ -112,7 +112,7 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, dis
 
 // getControlPlaneAddress return the join address that is the control plane endpoint in case the cluster has
 // an external load balancer in front of the control-plane nodes, otherwise the address of the
-// boostrap control plane node.
+// bootstrap control plane node.
 func getControlPlaneAddress(c *status.Cluster) (string, string, int, error) {
 	// get the control plane endpoint, in case the cluster has an external load balancer in
 	// front of the control-plane nodes
