@@ -261,7 +261,7 @@ func getFromURLTimeoutSize(url string, timeout int, sizeOnly bool) (string, int,
 		fmt.Println()
 	}
 
-	return string(dst.Bytes()), sz, nil
+	return dst.String(), sz, nil
 }
 
 func getKubeadmConstants(releaseBranch string) (string, error) {
@@ -437,10 +437,8 @@ func verifyManifestList(manifest, imageName, tag string) error {
 		return fmt.Errorf("not a manifest list: %s", ml.MediaType)
 	}
 	aList := make([]string, len(archList))
-	for i := range archList { // copy into a temp slice.
-		aList[i] = archList[i]
-	}
-
+	// copy into a temp slice.
+	copy(aList, archList)
 	// traverse the manifests in the list.
 	for _, m := range ml.Manifests {
 		// skip unknown arches
@@ -574,7 +572,7 @@ func getReleaseVersions() (VersionList, error) {
 	if err != nil {
 		return versions, err
 	}
-	releases = string(formatted.Bytes())
+	releases = formatted.String()
 
 	// get list of tags.
 	lines := strings.Split(releases, "\n")
