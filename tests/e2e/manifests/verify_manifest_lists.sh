@@ -31,7 +31,7 @@ cd "$LPATH"
 
 # use go modules. this forces using the latest k8s.io/apimachinery package.
 export GO111MODULE=on
-go mod init
+go mod init verify-manifest-lists
 
 # run unit tests
 go test -v ./verify_manifest_lists.go ./verify_manifest_lists_test.go
