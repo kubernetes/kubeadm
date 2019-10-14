@@ -34,11 +34,13 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/apimachinery/pkg/util/wait"
 	kindfs "sigs.k8s.io/kind/pkg/fs"
 )
 
@@ -482,14 +484,37 @@ func saveVersionFile(addVersionFileToDst bool, dst string, version *K8sVersion.V
 	return nil
 }
 
+// Exponential backoff for httpGet (values exclude jitter):
+// 1, 2, 4, 8, 16, 32, 64, 128 s
+var httpGetBackoff = wait.Backoff{
+	Steps:    8,
+	Duration: 1000 * time.Millisecond,
+	Factor:   2.0,
+	Jitter:   0.1,
+}
+
 func httpGet(uri string) (int64, io.ReadCloser, error) {
-	resp, err := http.Get(uri)
+	var lastError error
+	var resp *http.Response
+	err := wait.ExponentialBackoff(httpGetBackoff, func() (bool, error) {
+		var err error
+		resp, err = http.Get(uri)
+		if err != nil {
+			log.Warnf("HTTP GET %s failed. Retry in few seconds", uri)
+			lastError = errors.Wrapf(err, "HTTP GET %s failed", uri)
+			return false, nil
+		}
+		if resp.StatusCode != http.StatusOK {
+			log.Warnf("HTTP GET %s failed: %s. Retry in few seconds", uri, resp.Status)
+			lastError = errors.Errorf("HTTP GET %s failed: %s", uri, resp.Status)
+			return false, nil
+		}
+		return true, nil
+	})
 	if err != nil {
-		return 0, nil, errors.Wrapf(err, "HTTP GET %s failed", uri)
+		return 0, nil, lastError
 	}
-	if resp.StatusCode != http.StatusOK {
-		return 0, nil, errors.Errorf("HTTP GET %s failed: %s", uri, resp.Status)
-	}
+
 	return resp.ContentLength, resp.Body, nil
 }
 
