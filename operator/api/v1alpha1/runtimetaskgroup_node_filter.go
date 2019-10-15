@@ -26,11 +26,11 @@ const (
 
 	// RuntimeTaskGroupNodeFilterHead forces the RuntimeTaskGroup controller to use only the first node
 	// returned by the NodeSelector.
-	RuntimeTaskGroupNodeFilterHead = RuntimeTaskGroupNodeFilter("First")
+	RuntimeTaskGroupNodeFilterHead = RuntimeTaskGroupNodeFilter("Head")
 
-	// RuntimeTaskGroupNodeFilterTail forces the RuntimeTaskGroup controller to use the the secondary nodes
-	// returned by the NodeSelector (all the nodes except the first).
-	RuntimeTaskGroupNodeFilterTail = RuntimeTaskGroupNodeFilter("Secondary")
+	// RuntimeTaskGroupNodeFilterTail forces the RuntimeTaskGroup controller to use all the nodes
+	// returned by the NodeSelector except the first one.
+	RuntimeTaskGroupNodeFilterTail = RuntimeTaskGroupNodeFilter("Tail")
 
 	// RuntimeTaskGroupNodeUnknownFilter is returned if the RuntimeTaskGroupNodeFilter cannot be determined.
 	RuntimeTaskGroupNodeUnknownFilter = RuntimeTaskGroupNodeFilter("")

@@ -31,26 +31,26 @@ type RuntimeTaskGroupPhase string
 const (
 	// RuntimeTaskGroupPhasePending is the first state a RuntimeTaskGroup is assigned by
 	// Operation controller after being created.
-	RuntimeTaskGroupPhasePending = RuntimeTaskGroupPhase("pending")
+	RuntimeTaskGroupPhasePending = RuntimeTaskGroupPhase("Pending")
 
 	// RuntimeTaskGroupPhaseRunning is the RuntimeTaskGroup state when it has
 	// started its actuation.
-	RuntimeTaskGroupPhaseRunning = RuntimeTaskGroupPhase("running")
+	RuntimeTaskGroupPhaseRunning = RuntimeTaskGroupPhase("Running")
 
 	// RuntimeTaskGroupPhasePaused is the RuntimeTaskGroup state when it is paused.
-	RuntimeTaskGroupPhasePaused = RuntimeTaskGroupPhase("paused")
+	RuntimeTaskGroupPhasePaused = RuntimeTaskGroupPhase("Paused")
 
 	// RuntimeTaskGroupPhaseSucceeded is the RuntimeTaskGroup state when all the
 	// RuntimeTasks are succeeded.
-	RuntimeTaskGroupPhaseSucceeded = RuntimeTaskGroupPhase("succeeded")
+	RuntimeTaskGroupPhaseSucceeded = RuntimeTaskGroupPhase("Succeeded")
 
 	// RuntimeTaskGroupPhaseFailed is the RuntimeTaskGroup state when the system
 	// might require user intervention.
-	RuntimeTaskGroupPhaseFailed = RuntimeTaskGroupPhase("failed")
+	RuntimeTaskGroupPhaseFailed = RuntimeTaskGroupPhase("Failed")
 
 	// RuntimeTaskGroupPhaseDeleted is the RuntimeTaskGroup state when the object
 	// is deleted and ready to be garbage collected by the API Server.
-	RuntimeTaskGroupPhaseDeleted = RuntimeTaskGroupPhase("deleted")
+	RuntimeTaskGroupPhaseDeleted = RuntimeTaskGroupPhase("Deleted")
 
 	//RuntimeTaskGroupPhaseUnknown is returned if the RuntimeTaskGroup state cannot be determined.
 	RuntimeTaskGroupPhaseUnknown = RuntimeTaskGroupPhase("")

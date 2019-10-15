@@ -20,9 +20,9 @@ package v1alpha1
 type RuntimeTaskGroupCreatePolicy string
 
 const (
-	// RuntimeTaskGroupCreateSequentialStrategy forces the RuntimeTaskGroup controller to create RuntimeTasks in sequential order.
+	// RuntimeTaskGroupCreateSerialStrategy forces the RuntimeTaskGroup controller to create RuntimeTasks in sequential order.
 	// New RuntimeTask are created only after the current RuntimeTime is completed successfully.
-	RuntimeTaskGroupCreateSequentialStrategy = RuntimeTaskGroupCreatePolicy("Sequential")
+	RuntimeTaskGroupCreateSerialStrategy = RuntimeTaskGroupCreatePolicy("Serial")
 
 	// RuntimeTaskGroupCreateUnknownStrategy is returned if the RuntimeTaskGroupCreatePolicy cannot be determined.
 	RuntimeTaskGroupCreateUnknownStrategy = RuntimeTaskGroupCreatePolicy("")
@@ -33,7 +33,7 @@ const (
 func (s *RuntimeTaskGroupSpec) GetTypedTaskGroupCreateStrategy() RuntimeTaskGroupCreatePolicy {
 	switch mode := RuntimeTaskGroupCreatePolicy(s.CreateStrategy); mode {
 	case
-		RuntimeTaskGroupCreateSequentialStrategy:
+		RuntimeTaskGroupCreateSerialStrategy:
 		return mode
 	default:
 		return RuntimeTaskGroupCreateUnknownStrategy

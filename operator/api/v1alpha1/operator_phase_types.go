@@ -30,26 +30,26 @@ type OperationPhase string
 
 const (
 	// OperationPhasePending is the first state a Operation is assigned after being created.
-	OperationPhasePending = OperationPhase("pending")
+	OperationPhasePending = OperationPhase("Pending")
 
 	// OperationPhaseRunning is the Operation state when it has
 	// started its actuation.
-	OperationPhaseRunning = OperationPhase("running")
+	OperationPhaseRunning = OperationPhase("Running")
 
 	// OperationPhasePaused is the Operation state when it is paused.
-	OperationPhasePaused = OperationPhase("paused")
+	OperationPhasePaused = OperationPhase("Paused")
 
 	// OperationPhaseSucceeded is the Operation state when all the
 	// desired RuntimeTasks are succeeded.
-	OperationPhaseSucceeded = OperationPhase("succeeded")
+	OperationPhaseSucceeded = OperationPhase("Succeeded")
 
 	// OperationPhaseFailed is the Operation state when the system
 	// might require user intervention.
-	OperationPhaseFailed = OperationPhase("failed")
+	OperationPhaseFailed = OperationPhase("Failed")
 
 	// OperationPhaseDeleted is the Operation state when the object
 	// is deleted and ready to be garbage collected by the API Server.
-	OperationPhaseDeleted = OperationPhase("deleted")
+	OperationPhaseDeleted = OperationPhase("Deleted")
 
 	//OperationPhaseUnknown is returned if the Operation state cannot be determined.
 	OperationPhaseUnknown = OperationPhase("")

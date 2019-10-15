@@ -31,26 +31,26 @@ type RuntimeTaskPhase string
 const (
 	// RuntimeTaskPhasePending is the first state a RuntimeTask is assigned by
 	// RuntimeTask controller after being created.
-	RuntimeTaskPhasePending = RuntimeTaskPhase("pending")
+	RuntimeTaskPhasePending = RuntimeTaskPhase("Pending")
 
 	// RuntimeTaskPhaseRunning is the RuntimeTask state when it has
 	// started its actuation.
-	RuntimeTaskPhaseRunning = RuntimeTaskPhase("running")
+	RuntimeTaskPhaseRunning = RuntimeTaskPhase("Running")
 
 	// RuntimeTaskPhasePaused is the RuntimeTask state when it is paused.
-	RuntimeTaskPhasePaused = RuntimeTaskPhase("paused")
+	RuntimeTaskPhasePaused = RuntimeTaskPhase("Paused")
 
 	// RuntimeTaskPhaseSucceeded is the RuntimeTask state when it has
 	// succeeded its actuation.
-	RuntimeTaskPhaseSucceeded = RuntimeTaskPhase("succeeded")
+	RuntimeTaskPhaseSucceeded = RuntimeTaskPhase("Succeeded")
 
 	// RuntimeTaskPhaseFailed is the RuntimeTask state when the system
 	// might require user intervention.
-	RuntimeTaskPhaseFailed = RuntimeTaskPhase("failed")
+	RuntimeTaskPhaseFailed = RuntimeTaskPhase("Failed")
 
 	// RuntimeTaskPhaseDeleted is the RuntimeTask state when the object
 	// is deleted and ready to be garbage collected by the API Server.
-	RuntimeTaskPhaseDeleted = RuntimeTaskPhase("deleted")
+	RuntimeTaskPhaseDeleted = RuntimeTaskPhase("Deleted")
 
 	//RuntimeTaskPhaseUnknown is returned if the RuntimeTask state cannot be determined.
 	RuntimeTaskPhaseUnknown = RuntimeTaskPhase("")
