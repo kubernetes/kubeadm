@@ -1,0 +1,12 @@
+apiVersion: operator.kubeadm.x-k8s.io/v1alpha1
+kind: RuntimeTask
+metadata:
+  name: task-sample
+spec:
+  # Add fields here
+  nodeName: kind-control-plane
+  commands:
+    - pass: {}
+    - fail: {}
+    - wait:
+        seconds: 10
