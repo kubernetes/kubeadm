@@ -485,11 +485,11 @@ func saveVersionFile(addVersionFileToDst bool, dst string, version *K8sVersion.V
 }
 
 // Exponential backoff for httpGet (values exclude jitter):
-// 1, 2, 4, 8, 16, 32, 64, 128 s
+// 0, 2, 5, 8 ... 322 s
 var httpGetBackoff = wait.Backoff{
-	Steps:    8,
-	Duration: 1000 * time.Millisecond,
-	Factor:   2.0,
+	Steps:    20,
+	Duration: 2000 * time.Millisecond,
+	Factor:   1.2,
 	Jitter:   0.1,
 }
 
