@@ -446,9 +446,6 @@ spec:
               description: NodeName is a request to schedule this RuntimeTask onto
                 a specific node.
               type: string
-            paused:
-              description: Paused indicates that the RuntimeTask is paused.
-              type: boolean
             recoveryMode:
               description: RecoveryMode sets the strategy to use when a command is
                 failed.
@@ -460,7 +457,7 @@ spec:
           properties:
             commandProgress:
               description: CommandProgress Please note that this field is only for
-                allowing a better
+                allowing a better visal representation of status
               type: string
             completionTime:
               description: CompletionTime represents time when the RuntimeTask was

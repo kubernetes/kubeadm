@@ -935,9 +935,6 @@ spec:
                       description: NodeName is a request to schedule this RuntimeTask
                         onto a specific node.
                       type: string
-                    paused:
-                      description: Paused indicates that the RuntimeTask is paused.
-                      type: boolean
                     recoveryMode:
                       description: RecoveryMode sets the strategy to use when a command
                         is failed.

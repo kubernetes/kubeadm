@@ -406,6 +406,7 @@ spec:
               description: CustomOperation enable definition of custom list of RuntimeTaskGroup.
               properties:
                 workflow:
+                  description: Workflow allows to define a custom list of RuntimeTaskGroup.
                   items:
                     properties:
                       apiVersion:
@@ -1448,10 +1449,6 @@ spec:
                                     description: NodeName is a request to schedule
                                       this RuntimeTask onto a specific node.
                                     type: string
-                                  paused:
-                                    description: Paused indicates that the RuntimeTask
-                                      is paused.
-                                    type: boolean
                                   recoveryMode:
                                     description: RecoveryMode sets the strategy to
                                       use when a command is failed.
@@ -1520,6 +1517,8 @@ spec:
                         type: object
                     type: object
                   type: array
+              required:
+              - workflow
               type: object
             executionMode:
               description: ExecutionMode indicates how the controller should handle
@@ -1538,7 +1537,10 @@ spec:
                 workflow.
               properties:
                 kubernetesVersion:
+                  description: KubernetesVersion specifies the target kubernetes version
                   type: string
+              required:
+              - kubernetesVersion
               type: object
           type: object
         status:

@@ -34,8 +34,8 @@ type OperatorDescriptor struct {
 
 // UpgradeOperationSpec provide declarative support for the kubeadm upgrade workflow.
 type UpgradeOperationSpec struct {
-	// +optional
-	KubernetesVersion string `json:"kubernetesVersion,omitempty"`
+	// KubernetesVersion specifies the target kubernetes version
+	KubernetesVersion string `json:"kubernetesVersion"`
 
 	// INSERT ADDITIONAL SPEC FIELDS -
 	// Important: Run "make" to regenerate code after modifying this file
@@ -50,5 +50,6 @@ type RenewCertificatesOperationSpec struct {
 
 // CustomOperationSpec enable definition of custom list of RuntimeTaskGroup.
 type CustomOperationSpec struct {
-	Workflow []RuntimeTaskGroup `json:"workflow,omitempty"`
+	// Workflow allows to define a custom list of RuntimeTaskGroup.
+	Workflow []RuntimeTaskGroup `json:"workflow"`
 }
