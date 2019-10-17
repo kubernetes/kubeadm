@@ -25,12 +25,14 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/data"
 )
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
@@ -256,9 +258,11 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 		}
 	}
 
-	if err := cp1.Command(
-		"kubectl", "apply", "--kubeconfig=/etc/kubernetes/admin.conf", "-f=https://docs.projectcalico.org/v3.8/manifests/calico.yaml",
-	).RunWithEcho(); err != nil {
+	// Apply a CNI plugin using a hardcoded manifest
+	cmd := cp1.Command("kubectl", "apply", "--kubeconfig=/etc/kubernetes/admin.conf", "-f", "-")
+	cp1.Infof("applying Calico version 3.8.2")
+	cmd.Stdin(strings.NewReader(data.CalicoCNI3_8_2))
+	if err := cmd.RunWithEcho(); err != nil {
 		return err
 	}
 
