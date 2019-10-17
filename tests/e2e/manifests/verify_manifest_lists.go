@@ -230,7 +230,9 @@ func getFromURLTimeoutSize(url string, timeout int, sizeOnly bool) (string, int,
 	if err != nil {
 		return "", -1, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != 200 {
 		return "", -1, fmt.Errorf("responded with status: %d", resp.StatusCode)
