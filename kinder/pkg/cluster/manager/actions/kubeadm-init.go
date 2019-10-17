@@ -262,6 +262,13 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 		return err
 	}
 
+	// Fix calico as per https://alexbrand.dev/post/creating-a-kind-cluster-with-calico-networking/
+	if err := cp1.Command(
+		"kubectl", "apply", "--kubeconfig=/etc/kubernetes/admin.conf", "-n=kube-system", "set", "env", "daemonset/calico-node", "FELIX_IGNORELOOSERPF=true",
+	).RunWithEcho(); err != nil {
+		return err
+	}
+
 	if len(c.Workers()) == 0 {
 		if err := cp1.Command(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "taint", "nodes", "--all", "node-role.kubernetes.io/master-",
