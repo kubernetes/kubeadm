@@ -1,0 +1,21 @@
+apiVersion: operator.kubeadm.x-k8s.io/v1alpha1
+kind: RuntimeTaskGroup
+metadata:
+  name: taskgroup-sample2
+spec:
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/master: ""
+  selector:
+    matchLabels:
+      app: a
+  template:
+    metadata:
+      labels:
+        app: a
+    spec:
+      commands:
+        - pass: {}
+        - pass: {}
+        - wait:
+            seconds: 10
