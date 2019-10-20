@@ -302,8 +302,13 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	images["k8s-dns-kube-dns"] = ""
 	images["k8s-dns-sidecar"] = ""
 	images["k8s-dns-dnsmasq-nanny"] = ""
+
 	// images outside the scope of kubeadm, but still using the k8s version
-	images["hyperkube"] = k8sVersionV
+
+	// the hyperkube image was removed for version v1.17
+	if ver.Major() == 1 && ver.Minor() < 17 {
+		images["hyperkube"] = k8sVersionV
+	}
 	// the cloud-controller-manager image was removed for version v1.16
 	if ver.Major() == 1 && ver.Minor() < 16 {
 		images["cloud-controller-manager"] = k8sVersionV
