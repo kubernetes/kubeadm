@@ -26,7 +26,19 @@ spec:
       - command:
         - /manager
         args:
-        - --enable-leader-election
+        - "--mode=manager"
+        - "--manager-pod=$(MY_POD_NAME)"
+        - "--manager-namespace=$(MY_POD_NAMESPACE)"
+        - "--enable-leader-election"
+        env:
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
         image: controller:latest
         name: manager
         resources:
