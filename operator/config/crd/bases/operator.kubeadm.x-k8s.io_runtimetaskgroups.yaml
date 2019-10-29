@@ -30,7 +30,6 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
-      description: RuntimeTaskGroup is the Schema for the runtimetaskgroups API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation

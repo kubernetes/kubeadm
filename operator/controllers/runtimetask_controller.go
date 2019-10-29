@@ -23,7 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "k8s.io/kubeadm/operator/api/v1alpha1"
+	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
 )
 
 // RuntimeTaskReconciler reconciles a RuntimeTask object
@@ -48,6 +48,6 @@ func (r *RuntimeTaskReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 // SetupWithManager configures the controller for calling the reconciler
 func (r *RuntimeTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.RuntimeTask{}).
+		For(&operatorv1.RuntimeTask{}).
 		Complete(r)
 }

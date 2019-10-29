@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	operatorv1alpha1 "k8s.io/kubeadm/operator/api/v1alpha1"
+	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,6 +35,8 @@ import (
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+
+//TODO: Add tests in a follow up PR
 
 var cfg *rest.Config
 var k8sClient client.Client
@@ -61,13 +63,13 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = operatorv1alpha1.AddToScheme(scheme.Scheme)
+	err = operatorv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = operatorv1alpha1.AddToScheme(scheme.Scheme)
+	err = operatorv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = operatorv1alpha1.AddToScheme(scheme.Scheme)
+	err = operatorv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
