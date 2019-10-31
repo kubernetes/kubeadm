@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -27,12 +28,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
 	"k8s.io/kubeadm/operator/operations"
 	"k8s.io/utils/pointer"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 )
 
 func getImage(c client.Client, namespace, name string) (string, error) {
@@ -285,4 +289,108 @@ func recordPausedChange(recorder record.EventRecorder, obj runtime.Object, curre
 		}
 		recorder.Event(obj, corev1.EventTypeNormal, reason, message)
 	}
+}
+
+func operationToTaskGroupRequests(c client.Client, o handler.MapObject) []ctrl.Request {
+	var result []ctrl.Request
+
+	operation, ok := o.Object.(*operatorv1.Operation)
+	if !ok {
+		return nil
+	}
+
+	actual, err := listTaskGroupsByLabels(c, operation.Labels)
+	if err != nil {
+		return nil
+	}
+
+	for _, ms := range actual.Items {
+		name := client.ObjectKey{Namespace: ms.Namespace, Name: ms.Name}
+		result = append(result, ctrl.Request{NamespacedName: name})
+	}
+
+	return result
+}
+
+func getOwnerOperation(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*operatorv1.Operation, error) {
+	//TODO: check for controller ref instead of Operation/Kind
+	for _, ref := range obj.OwnerReferences {
+		if ref.Kind == "Operation" && ref.APIVersion == operatorv1.GroupVersion.String() {
+			operation := &operatorv1.Operation{}
+			key := client.ObjectKey{
+				Namespace: obj.Namespace,
+				Name:      ref.Name,
+			}
+			err := c.Get(ctx, key, operation)
+			if err != nil {
+				return nil, errors.Wrapf(err, "error reading controller ref for %s/%s", obj.Namespace, obj.Name)
+			}
+			return operation, nil
+		}
+	}
+	return nil, nil
+}
+
+type matchingSelector struct {
+	selector labels.Selector
+}
+
+func (m matchingSelector) ApplyToList(opts *client.ListOptions) {
+	opts.LabelSelector = m.selector
+}
+
+func listNodesBySelector(c client.Client, selector *metav1.LabelSelector) (*corev1.NodeList, error) {
+	s, err := metav1.LabelSelectorAsSelector(selector)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert TaskGroup.Spec.NodeSelector to a selector")
+	}
+
+	o := matchingSelector{selector: s}
+
+	nodes := &corev1.NodeList{}
+	if err := c.List(
+		context.Background(), nodes,
+		o,
+	); err != nil {
+		return nil, err
+	}
+
+	return nodes, nil
+}
+
+func filterNodes(nodes *corev1.NodeList, filter operatorv1.RuntimeTaskGroupNodeFilter) []corev1.Node {
+	if len(nodes.Items) == 0 {
+		return nodes.Items
+	}
+
+	if filter == operatorv1.RuntimeTaskGroupNodeFilterAll || filter == operatorv1.RuntimeTaskGroupNodeUnknownFilter {
+		return nodes.Items
+	}
+
+	// in order to ensure a predictable result, nodes are sorted by name before applying the filter
+	sort.Slice(nodes.Items, func(i, j int) bool { return nodes.Items[i].Name < nodes.Items[j].Name })
+
+	if filter == operatorv1.RuntimeTaskGroupNodeFilterHead {
+		return nodes.Items[:1]
+	}
+
+	// filter == operatorv1alpha1.TaskGroupNodeFilterTail
+	return nodes.Items[1:]
+}
+
+func listTasksBySelector(c client.Client, selector *metav1.LabelSelector) (*operatorv1.RuntimeTaskList, error) {
+	selectorMap, err := metav1.LabelSelectorAsMap(selector)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert TaskGroup.Spec.Selector to a selector")
+	}
+
+	tasks := &operatorv1.RuntimeTaskList{}
+	if err := c.List(
+		context.Background(), tasks,
+		client.MatchingLabels(selectorMap),
+	); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
