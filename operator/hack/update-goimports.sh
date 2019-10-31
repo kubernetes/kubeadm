@@ -23,5 +23,5 @@ source "$(dirname "$0")/utils.sh"
 # cd to the root path
 cd_root_path
 
-# update go imports
-goimports -w ./
+# update go imports, skipping generated files
+git ls-files | grep "\.go$" | grep -v -e "zz_generated" | xargs goimports -local k8s.io/kubeadm/operator -w

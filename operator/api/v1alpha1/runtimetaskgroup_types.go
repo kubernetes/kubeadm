@@ -18,8 +18,9 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	operatorerrors "k8s.io/kubeadm/operator/errors"
 	"k8s.io/utils/pointer"
+
+	operatorerrors "k8s.io/kubeadm/operator/errors"
 )
 
 // RuntimeTaskGroupSpec defines the RuntimeTask template that applies to a group of nodes that should

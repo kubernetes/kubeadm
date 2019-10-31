@@ -25,8 +25,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
-	operatorerrors "k8s.io/kubeadm/operator/errors"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,6 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
+	operatorerrors "k8s.io/kubeadm/operator/errors"
 )
 
 // RuntimeTaskGroupReconciler reconciles a RuntimeTaskGroup object

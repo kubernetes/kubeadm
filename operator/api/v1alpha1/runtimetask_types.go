@@ -20,8 +20,9 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	operatorerrors "k8s.io/kubeadm/operator/errors"
 	"k8s.io/utils/pointer"
+
+	operatorerrors "k8s.io/kubeadm/operator/errors"
 )
 
 // RuntimeTaskSpec defines the desired state of RuntimeTask
