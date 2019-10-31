@@ -342,7 +342,7 @@ func (m matchingSelector) ApplyToList(opts *client.ListOptions) {
 func listNodesBySelector(c client.Client, selector *metav1.LabelSelector) (*corev1.NodeList, error) {
 	s, err := metav1.LabelSelectorAsSelector(selector)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert TaskGroup.Spec.NodeSelector to a map")
+		return nil, errors.Wrap(err, "failed to convert TaskGroup.Spec.NodeSelector to a selector")
 	}
 
 	o := matchingSelector{selector: s}
@@ -367,7 +367,7 @@ func filterNodes(nodes *corev1.NodeList, filter operatorv1.RuntimeTaskGroupNodeF
 		return nodes.Items
 	}
 
-	// in order to ensure a predictable results, nodes are sorted by name before applying the filter
+	// in order to ensure a predictable result, nodes are sorted by name before applying the filter
 	sort.Slice(nodes.Items, func(i, j int) bool { return nodes.Items[i].Name < nodes.Items[j].Name })
 
 	if filter == operatorv1.RuntimeTaskGroupNodeFilterHead {
@@ -381,7 +381,7 @@ func filterNodes(nodes *corev1.NodeList, filter operatorv1.RuntimeTaskGroupNodeF
 func listTasksBySelector(c client.Client, selector *metav1.LabelSelector) (*operatorv1.RuntimeTaskList, error) {
 	selectorMap, err := metav1.LabelSelectorAsMap(selector)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert TaskGroup.Spec.Selector to a map")
+		return nil, errors.Wrap(err, "failed to convert TaskGroup.Spec.Selector to a selector")
 	}
 
 	tasks := &operatorv1.RuntimeTaskList{}

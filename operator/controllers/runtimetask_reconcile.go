@@ -73,7 +73,7 @@ func reconcileTasks(nodes []corev1.Node, tasks *operatorv1.RuntimeTaskList) *tas
 
 	// Match the the current Task with desired Task (1 for each node in scope).
 	for _, t := range tasks.Items {
-		// in case a current objects has a corresponding desired object, match them
+		// in case a current task has a corresponding desired task, match them
 		// NB. if there are more that one match, we track this, but this is an inconsistency
 		// (more that one Task for the same node)
 		if v, ok := matchMap[t.Spec.NodeName]; ok {
@@ -82,7 +82,7 @@ func reconcileTasks(nodes []corev1.Node, tasks *operatorv1.RuntimeTaskList) *tas
 			continue
 		}
 
-		// in case a current objects does not have desired object, we track this, but this is an inconsistency
+		// in case a current task does not have desired task, we track this, but this is an inconsistency
 		// (a Task does not matching any existing node)
 		matchMap[t.Spec.NodeName] = newTaskGroupChildProxy(nil, t)
 	}
@@ -105,7 +105,7 @@ func reconcileTasks(nodes []corev1.Node, tasks *operatorv1.RuntimeTaskList) *tas
 	// ensure the list is sorted in a predictable way
 	sort.Slice(matchList.all, func(i, j int) bool { return matchList.all[i].name < matchList.all[j].name })
 
-	// Build all the derived views, so we can have a quick glance at objects in different states
+	// Build all the derived views, so we can have a quick glance at tasks in different states
 	matchList.deriveViews()
 
 	return matchList
@@ -117,7 +117,7 @@ func (t *taskReconcileList) deriveViews() {
 		case v.node != nil:
 			switch len(v.tasks) {
 			case 0:
-				// If there is not Task for a Node, the task has to be created by this controller
+				// If there is no Task for a Node, the task has to be created by this controller
 				t.tobeCreated = append(t.tobeCreated, v)
 			case 1:
 				// Failed (and not recovering)
@@ -144,7 +144,7 @@ func (t *taskReconcileList) deriveViews() {
 				t.invalid = append(t.invalid, v)
 			}
 		case v.node == nil:
-			// if there Task without matching node, this is an invalid condition
+			// if there is a Task without matching node, this is an invalid condition
 			t.invalid = append(t.invalid, v)
 		}
 	}

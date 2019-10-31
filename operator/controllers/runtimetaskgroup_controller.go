@@ -248,7 +248,7 @@ func (r *RuntimeTaskGroupReconciler) reconcileNormal(executionMode operatorv1.Op
 		//TODO: add a signature so we can detect if someone/something changes the taskgroup while it is processed
 	}
 
-	// if there are still Task to be created
+	// if there are still Tasks to be created
 	if len(tasks.tobeCreated) > 0 {
 		//TODO: manage different deployment strategy e.g. parallel
 
@@ -331,7 +331,7 @@ func (r *RuntimeTaskGroupReconciler) reconcilePhase(taskgroup *operatorv1.Runtim
 		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseSucceeded)
 	}
 
-	// Set the phase to "failed" if any of Status.ErrorReason or Status.ErrorMessage is not-nil.
+	// Set the phase to "failed" if any of Status.ErrorReason or Status.ErrorMessage is not nil.
 	if taskgroup.Status.ErrorReason != nil || taskgroup.Status.ErrorMessage != nil {
 		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseFailed)
 	}
