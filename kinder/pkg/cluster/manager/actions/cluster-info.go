@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 // CluterInfo actions prints the summary information about the cluster: list of nodes,
@@ -52,12 +53,27 @@ func CluterInfo(c *status.Cluster) error {
 		// NB. before v1.13 local etcd is listening on localhost only; after v1.13
 		// local etcd is listening on localhost and on the advertise address; we are
 		// using localhost to accommodate both the use cases
-		if err := cp1.Command(
-			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "exec", "-n=kube-system", fmt.Sprintf("etcd-%s", c.BootstrapControlPlane().Name()),
+
+		etcdArgs := []string{
+			"--kubeconfig=/etc/kubernetes/admin.conf", "exec", "-n=kube-system", fmt.Sprintf("etcd-%s", c.BootstrapControlPlane().Name()),
 			"--",
 			"etcdctl", fmt.Sprintf("--endpoints=https://127.0.0.1:2379"),
-			"--ca-file=/etc/kubernetes/pki/etcd/ca.crt", "--cert-file=/etc/kubernetes/pki/etcd/peer.crt", "--key-file=/etc/kubernetes/pki/etcd/peer.key",
-			"member", "list",
+		}
+		if cp1.MustKubeadmVersion().AtLeast(constants.V1_17) {
+			etcdArgs = append(etcdArgs,
+				"--cacert=/etc/kubernetes/pki/etcd/ca.crt", "--cert=/etc/kubernetes/pki/etcd/peer.crt", "--key=/etc/kubernetes/pki/etcd/peer.key",
+			)
+		} else {
+			// before v1.17, etcdctl was using --ca-file, --cert-file, --key-file flags
+			etcdArgs = append(etcdArgs,
+				"--ca-file=/etc/kubernetes/pki/etcd/ca.crt", "--cert-file=/etc/kubernetes/pki/etcd/peer.crt", "--key-file=/etc/kubernetes/pki/etcd/peer.key",
+			)
+		}
+
+		etcdArgs = append(etcdArgs, "member", "list")
+
+		if err := cp1.Command(
+			"kubectl", etcdArgs...,
 		).RunWithEcho(); err != nil {
 			return err
 		}

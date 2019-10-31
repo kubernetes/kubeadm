@@ -116,6 +116,9 @@ var (
 
 	// V1.16 minor version
 	V1_16 = K8sVersion.MustParseSemantic("v1.16.0-0")
+
+	// V1.17 minor version
+	V1_17 = K8sVersion.MustParseSemantic("v1.17.0-0")
 )
 
 // other constants
