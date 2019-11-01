@@ -14,8 +14,9 @@ new Kubernetes cluster from "bare" machines running into a container to a workin
 
 ## Differences
 
-All the [kind](https://github.com/kubernetes-sigs/kind) commands will be available in kinder,
-side by side with additional commands designed for helping kubeadm contributors.
+Kinder provider an UX designed for helping kubeadm contributors and for kubeadm E2E tests;
+Only few of the [kind](https://github.com/kubernetes-sigs/kind) commands will be available in kinder,
+because they are useful for the use cases targeted by kinder.
 
 _Building images:_
 - kinder support both containerd and docker as container runtime inside the images
@@ -77,7 +78,7 @@ new use cases, share lesson learned, issues and solutions, and ultimately contri
 back new features.
 
 - "sigs.k8s.io/kind/cmd/*" for
-    - providing access to kind commands from a single UX
+    - providing access to few kind commands useful for the use cases targeted by kinder
 - "sigs.k8s.io/kind/pkg/build/base" for
     - building a containerd base image
 - "sigs.k8s.io/kind/pkg/build/node" for
