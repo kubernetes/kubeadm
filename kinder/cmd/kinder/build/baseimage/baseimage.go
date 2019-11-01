@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/kubeadm/kinder/pkg/build/base"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 	kindbase "sigs.k8s.io/kind/pkg/build/base"
 )
 
@@ -51,7 +52,7 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
-		kindbase.DefaultImage,
+		constants.DefaultBaseImage,
 		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(

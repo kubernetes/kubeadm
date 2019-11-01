@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/build/alter"
-	kindebuildnode "sigs.k8s.io/kind/pkg/build/node"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 type flagpole struct {
@@ -50,12 +50,12 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
-		kindebuildnode.DefaultImage,
+		constants.DefaultNodeImage,
 		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
-		kindebuildnode.DefaultImage,
+		constants.DefaultBaseImage,
 		"name:tag of the source image; this can be a kindest/base image or kindest/node image",
 	)
 	cmd.Flags().StringVar(

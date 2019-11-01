@@ -26,6 +26,12 @@ import (
 // constants inherited from kind.
 // those values are replicated here with the goal to keep under strict control kind dependencies
 const (
+	// DefaultNodeImage is the default name:tag for a base image
+	DefaultBaseImage = "kindest/base:latest"
+
+	// DefaultNodeImage is the default name:tag for a node image
+	DefaultNodeImage = "kindest/node:latest"
+
 	// ControlPlaneNodeRoleValue identifies a node that hosts a Kubernetes
 	// control-plane.
 	//
