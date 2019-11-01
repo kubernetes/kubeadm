@@ -22,8 +22,6 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/cri/containerd"
 	"k8s.io/kubeadm/kinder/pkg/cri/docker"
-
-	kindCRI "sigs.k8s.io/kind/pkg/container/cri"
 )
 
 // CreateHelper provides CRI specific methods for node create
@@ -39,24 +37,24 @@ func NewCreateHelper(cri status.ContainerRuntime) (*CreateHelper, error) {
 }
 
 // CreateControlPlaneNode creates a kind(er) contol-plane node that uses the selected container runtime internally
-func (h *CreateHelper) CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
+func (h *CreateHelper) CreateControlPlaneNode(name, image, clusterLabel string) error {
 	switch h.cri {
 	case status.ContainerdRuntime:
-		return containerd.CreateControlPlaneNode(name, image, clusterLabel, listenAddress, port, mounts, portMappings)
+		return containerd.CreateControlPlaneNode(name, image, clusterLabel)
 	case status.DockerRuntime:
-		return docker.CreateControlPlaneNode(name, image, clusterLabel, listenAddress, port, mounts, portMappings)
+		return docker.CreateControlPlaneNode(name, image, clusterLabel)
 	}
 
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
 
 // CreateWorkerNode creates a kind(er) worker node node that uses the selected container runtime internally
-func (h *CreateHelper) CreateWorkerNode(name, image, clusterLabel string, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
+func (h *CreateHelper) CreateWorkerNode(name, image, clusterLabel string) error {
 	switch h.cri {
 	case status.ContainerdRuntime:
-		return containerd.CreateWorkerNode(name, image, clusterLabel, mounts, portMappings)
+		return containerd.CreateWorkerNode(name, image, clusterLabel)
 	case status.DockerRuntime:
-		return docker.CreateWorkerNode(name, image, clusterLabel, mounts, portMappings)
+		return docker.CreateWorkerNode(name, image, clusterLabel)
 	}
 
 	return errors.Errorf("unknown cri: %s", h.cri)

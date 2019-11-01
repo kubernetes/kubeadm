@@ -22,13 +22,13 @@ import (
 )
 
 // CreateControlPlaneNode creates a kind(er) control-plane node that uses containerd runtime internally
-func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
-	_, err := kindnodes.CreateControlPlaneNode(name, image, clusterLabel, listenAddress, port, mounts, portMappings)
+func CreateControlPlaneNode(name, image, clusterLabel string) error {
+	_, err := kindnodes.CreateControlPlaneNode(name, image, clusterLabel, "127.0.0.1", 0, []kindCRI.Mount{}, []kindCRI.PortMapping{})
 	return err
 }
 
 // CreateWorkerNode creates a kind(er) worker node node that uses containerd runtime internally
-func CreateWorkerNode(name, image, clusterLabel string, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
-	_, err := kindnodes.CreateWorkerNode(name, image, clusterLabel, mounts, portMappings)
+func CreateWorkerNode(name, image, clusterLabel string) error {
+	_, err := kindnodes.CreateWorkerNode(name, image, clusterLabel, []kindCRI.Mount{}, []kindCRI.PortMapping{})
 	return err
 }

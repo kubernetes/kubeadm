@@ -25,7 +25,6 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
-	kindkustomize "sigs.k8s.io/kind/pkg/kustomize"
 )
 
 // Cluster represents an existing kind(er) clusters
@@ -49,16 +48,7 @@ type Cluster struct {
 type ClusterSettings struct {
 	// kind configuration settings that are used to configure the cluster when
 	// generating the kubeadm config file.
-	IPFamily                     ClusterIPFamily               `json:"ipFamily,omitempty"`
-	APIServerPort                int32                         `json:"apiServerPort,omitempty"`
-	APIServerAddress             string                        `json:"apiServerAddress,omitempty"`
-	PodSubnet                    string                        `json:"podSubnet,omitempty"`
-	ServiceSubnet                string                        `json:"serviceSubnet,omitempty"`
-	KubeadmConfigPatches         []string                      `json:"kubeadmConfigPatches,omitempty"`
-	KubeadmConfigPatchesJSON6902 []kindkustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
-
-	// kind configuration settings that are used to disable installation of the default CNI pluging
-	DisableDefaultCNI bool `json:"disableDefaultCNI,omitempty"`
+	IPFamily ClusterIPFamily `json:"ipFamily,omitempty"`
 }
 
 // ClusterIPFamily defines cluster network IP family
