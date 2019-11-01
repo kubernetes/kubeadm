@@ -53,8 +53,6 @@ func Config(kubeadmVersion *K8sVersion.Version, data ConfigData) (config string,
 		templateSource = kindinternalkubeadm.ConfigTemplateBetaV1
 	case "v1alpha3":
 		templateSource = kindinternalkubeadm.ConfigTemplateAlphaV3
-	case "v1alpha2":
-		templateSource = kindinternalkubeadm.ConfigTemplateAlphaV2
 	default:
 		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -82,10 +80,8 @@ func Config(kubeadmVersion *K8sVersion.Version, data ConfigData) (config string,
 // getKubeadmConfigVersion returns the kubeadm config version corresponding to a Kubernetes kubeadmVersion
 func getKubeadmConfigVersion(kubeadmVersion *K8sVersion.Version) (string, error) {
 	// returns the corresponding config version
-	// nb v1alpha1 (that is Kubernetes v1.10.0) is out of support
-	if kubeadmVersion.LessThan(constants.V1_12) {
-		return "v1alpha2", nil
-	}
+	// nb v1alpha1 (that is Kubernetes v1.10.0) is out of support,
+	// v1alpha2 (that is Kuberntes v1.11.0) is out of support.
 
 	if kubeadmVersion.LessThan(constants.V1_13) {
 		return "v1alpha3", nil

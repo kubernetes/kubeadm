@@ -47,8 +47,6 @@ func GetAutomaticCopyCertsPatches(kubeadmVersion *K8sVersion.Version) ([]string,
 	case "v1beta1":
 		fallthrough
 	case "v1alpha3":
-		fallthrough
-	case "v1alpha2":
 		// no-op: certificate key was not supported in those release of the kubeadm config API;
 		// the --certificate-key flag should be used instead
 		return []string{}, nil

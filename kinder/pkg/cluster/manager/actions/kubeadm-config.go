@@ -314,7 +314,6 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	// if the node is the bootstrap control plane, then all the objects used as init time
 	if n == c.BootstrapControlPlane() {
 		return selectYamlFramentByKind(patched,
-			"MasterConfiguration", //v1alpha2
 			"ClusterConfiguration",
 			"InitConfiguration",
 			"KubeletConfiguration",
@@ -323,7 +322,6 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 
 	// otherwise select only the JoinConfiguration
 	return selectYamlFramentByKind(patched,
-		"NodeConfiguration", //v1alpha2
 		"JoinConfiguration",
 	), nil
 }

@@ -41,8 +41,6 @@ func GetKubeDNSPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
 		return kubeDNSPatchv1beta1, nil
 	case "v1alpha3":
 		return kubeDNSPatchv1alpha3, nil
-	case "v1alpha2":
-		return kubeDNSPatchv1alpha2, nil
 	}
 
 	return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
@@ -64,13 +62,6 @@ dns:
 
 const kubeDNSPatchv1alpha3 = `apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
-metadata:
-  name: config
-featureGates:
-  CoreDNS: false`
-
-const kubeDNSPatchv1alpha2 = `apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
 metadata:
   name: config
 featureGates:
