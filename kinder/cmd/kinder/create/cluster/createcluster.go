@@ -81,7 +81,7 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().StringVar(
 		&flags.ImageName,
-		"image", "",
+		"image", constants.DefaultNodeImage,
 		"node docker image to use for booting the cluster",
 	)
 	cmd.Flags().BoolVar(
