@@ -24,13 +24,14 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/tools/record"
-	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
-	operatorerrors "k8s.io/kubeadm/operator/errors"
-	"k8s.io/kubeadm/operator/operations"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
+	operatorerrors "k8s.io/kubeadm/operator/errors"
+	"k8s.io/kubeadm/operator/operations"
 )
 
 // OperationReconciler reconciles a Operation object

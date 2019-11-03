@@ -31,12 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
-	"k8s.io/kubeadm/operator/operations"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+
+	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
+	"k8s.io/kubeadm/operator/operations"
 )
 
 func getImage(c client.Client, namespace, name string) (string, error) {

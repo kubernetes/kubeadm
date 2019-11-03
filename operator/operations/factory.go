@@ -18,6 +18,7 @@ package operations
 
 import (
 	"github.com/pkg/errors"
+
 	operatorv1 "k8s.io/kubeadm/operator/api/v1alpha1"
 )
 
