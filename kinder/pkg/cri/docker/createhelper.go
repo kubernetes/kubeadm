@@ -17,232 +17,112 @@ limitations under the License.
 package docker
 
 import (
-	"fmt"
-	"net"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/kubeadm/kinder/pkg/cluster/cmd"
+	"k8s.io/kubeadm/kinder/pkg/cri/util"
 
-	K8sVersion "k8s.io/apimachinery/pkg/util/version"
-	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindnodes "sigs.k8s.io/kind/pkg/cluster/nodes"
-	kindCRI "sigs.k8s.io/kind/pkg/container/cri"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
-// CreateControlPlaneNode creates a kind(er) control-plane node that uses docker runtime internally
-func CreateControlPlaneNode(name, image, clusterLabel string) error {
-	// gets a random host port for the API server
-	port, err := getPort()
-	if err != nil {
-		return errors.Wrap(err, "failed to get port for API server")
-	}
-
-	// add api server port mapping
-	portMappings := append([]kindCRI.PortMapping{}, kindCRI.PortMapping{
-		ListenAddress: "127.0.0.1",
-		HostPort:      port,
-		ContainerPort: constants.APIServerPort,
-	})
-	return createNode(
-		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, []kindCRI.Mount{}, portMappings,
-		// publish selected port for the API server
-		"--expose", fmt.Sprintf("%d", port),
-	)
-}
-
-// CreateWorkerNode creates a kind(er) worker node node that uses the docker runtime internally
-func CreateWorkerNode(name, image, clusterLabel string) error {
-	return createNode(name, image, clusterLabel, constants.WorkerNodeRoleValue, []kindCRI.Mount{}, []kindCRI.PortMapping{})
-}
-
-// helper used to get a free TCP port for the API server
-func getPort() (int32, error) {
-	dummyListener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	defer dummyListener.Close()
-	port := dummyListener.Addr().(*net.TCPAddr).Port
-	return int32(port), nil
-}
-
-// createNode `docker run`s the node image, note that due to
-// images/node/entrypoint being the entrypoint, this container will
-// effectively be paused until we call actuallyStartNode(...)
-func createNode(name, image, clusterLabel, role string, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping, extraArgs ...string) error {
-	runArgs := []string{
-		"-d", // run the container detached
-		"-t", // allocate a tty for entrypoint logs
-		// running containers in a container requires privileged
-		// NOTE: we could try to replicate this with --cap-add, and use less
-		// privileges, but this flag also changes some mounts that are necessary
-		// including some ones docker would otherwise do by default.
-		// for now this is what we want. in the future we may revisit this.
-		"--privileged",
-		"--security-opt", "seccomp=unconfined", // also ignore seccomp
-		"--tmpfs", "/tmp", // various things depend on working /tmp
-		"--tmpfs", "/run", // systemd wants a writable /run
-		// some k8s things want /lib/modules
-		"-v", "/lib/modules:/lib/modules:ro",
-		"--hostname", name, // make hostname match container name
-		"--name", name, // ... and set the container name
-		// label the node with the cluster ID
-		"--label", clusterLabel,
-		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
-		// explicitly set the entrypoint
-		"--entrypoint=/usr/local/bin/entrypoint",
-	}
-
-	// pass proxy environment variables to be used by node's docker daemon
-	proxyDetails, err := getProxyDetails()
-	if err != nil || proxyDetails == nil {
-		return errors.Wrap(err, "proxy setup error")
-	}
-	for key, val := range proxyDetails.Envs {
-		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
-	}
-
-	// adds node specific args
-	runArgs = append(runArgs, extraArgs...)
-
-	if kinddocker.UsernsRemap() {
-		// We need this argument in order to make this command work
-		// in systems that have userns-remap enabled on the docker daemon
-		runArgs = append(runArgs, "--userns=host")
-	}
-
-	err = kinddocker.Run(
-		image,
-		kinddocker.WithRunArgs(runArgs...),
-		kinddocker.WithContainerArgs(
-			// explicitly pass the entrypoint argument
-			"/sbin/init",
-		),
-		kinddocker.WithMounts(mounts),
-		kinddocker.WithPortMappings(portMappings),
-	)
+// CreateNode creates a container that internally hosts the docker cri runtime
+func CreateNode(cluster, name, image, role string) error {
+	args, err := util.CommonArgs(cluster, name, role)
 	if err != nil {
 		return err
 	}
 
-	handle := kindnodes.FromName(name)
+	args, err = util.RunArgsForNode(role, args)
+	if err != nil {
+		return err
+	}
+
+	// Add run args for docker in docker
+	args = runArgsForDocker(args)
+
+	// Specify the image to run
+	args = append(args, image)
+
+	// dd container args for docker in docker
+	args = containerArgsForDocker(args)
+
+	// creates the container
+	if err := kindexec.Command("docker", args...).Run(); err != nil {
+		return err
+	}
 
 	// Deletes the machine-id embedded in the node image and regenerate a new one.
 	// This is necessary because both kubelet and other components like weave net
 	// use machine-id internally to distinguish nodes.
-	if err := handle.Command("rm", "-f", "/etc/machine-id").Run(); err != nil {
-		return errors.Wrap(err, "machine-id-setup error")
-	}
-
-	if err := handle.Command("systemd-machine-id-setup").Run(); err != nil {
-		return errors.Wrap(err, "machine-id-setup error")
+	if err := fixMachineID(name); err != nil {
+		return err
 	}
 
 	// we need to change a few mounts once we have the container
 	// we'd do this ahead of time if we could, but --privileged implies things
 	// that don't seem to be configurable, and we need that flag
-	if err := fixMounts(handle); err != nil {
+	if err := fixMounts(name); err != nil {
 		return err
 	}
 
 	// signal the node container entrypoint to continue booting into systemd
-	if err := signalStart(handle); err != nil {
+	if err := signalStart(name); err != nil {
 		return err
 	}
 
 	// wait for docker to be ready
-	if !waitForDocker(handle, time.Now().Add(time.Second*30)) {
-		return errors.Errorf("timed out waiting for docker to be ready on node %s", handle.Name())
+	if !waitForDocker(name, time.Now().Add(time.Second*30)) {
+		return errors.Errorf("timed out waiting for docker to be ready on node %s", name)
 	}
 
 	// load the docker image artifacts into the docker daemon
-	loadImages(handle)
+	loadImages(name)
 
 	return nil
 }
 
-// proxyDetails contains proxy settings discovered on the host
-type proxyDetails struct {
-	Envs map[string]string
-	// future proxy details here
+func fixMachineID(name string) error {
+	if err := cmd.NewProxyCmd(name, "rm", "-f", "/etc/machine-id").Silent().Run(); err != nil {
+		return errors.Wrap(err, "machine-id-setup error")
+	}
+	if err := cmd.NewProxyCmd(name, "systemd-machine-id-setup").Silent().Run(); err != nil {
+		return errors.Wrap(err, "machine-id-setup error")
+	}
+	return nil
 }
 
-const (
-	// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
-	defaultNetwork = "bridge"
-	httpProxy      = "HTTP_PROXY"
-	httpsProxy     = "HTTPS_PROXY"
-	noProxy        = "NO_PROXY"
-)
+func runArgsForDocker(args []string) []string {
+	args = append(args,
+		// define a minimal etcd (insecure, single node, not exposed to the host machine)
+		"--entrypoint=/usr/local/bin/entrypoint",
+	)
 
-// getProxyDetails returns a struct with the host environment proxy settings
-// that should be passed to the nodes
-func getProxyDetails() (*proxyDetails, error) {
-	var proxyEnvs = []string{httpProxy, httpsProxy, noProxy}
-	var val string
-	var details proxyDetails
-	details.Envs = make(map[string]string)
-
-	proxySupport := false
-
-	for _, name := range proxyEnvs {
-		val = os.Getenv(name)
-		if val != "" {
-			proxySupport = true
-			details.Envs[name] = val
-			details.Envs[strings.ToLower(name)] = val
-		} else {
-			val = os.Getenv(strings.ToLower(name))
-			if val != "" {
-				proxySupport = true
-				details.Envs[name] = val
-				details.Envs[strings.ToLower(name)] = val
-			}
-		}
-	}
-
-	// Specifically add the docker network subnets to NO_PROXY if we are using proxies
-	if proxySupport {
-		subnets, err := getSubnets(defaultNetwork)
-		if err != nil {
-			return nil, err
-		}
-		noProxyList := strings.Join(append(subnets, details.Envs[noProxy]), ",")
-		details.Envs[noProxy] = noProxyList
-		details.Envs[strings.ToLower(noProxy)] = noProxyList
-	}
-
-	return &details, nil
+	return args
 }
 
-// getSubnets returns a slice of subnets for a specified network
-func getSubnets(networkName string) ([]string, error) {
-	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
-	lines, err := kinddocker.NetworkInspect([]string{networkName}, format)
-	if err != nil {
-		return nil, err
-	}
-	return strings.Split(lines[0], " "), nil
+func containerArgsForDocker(args []string) []string {
+	args = append(args,
+		"/sbin/init",
+	)
+
+	return args
 }
 
 // fixMounts will correct mounts in the node container to meet the right
 // sharing and permissions for systemd and Docker / Kubernetes
-func fixMounts(n *kindnodes.Node) error {
+func fixMounts(name string) error {
 	// Check if userns-remap is enabled
 	if kinddocker.UsernsRemap() {
 		// The binary /bin/mount should be owned by root:root in order to execute
 		// the following mount commands
-		if err := n.Command("chown", "root:root", "/bin/mount").Run(); err != nil {
+		if err := cmd.NewProxyCmd(name, "chown", "root:root", "/bin/mount").Silent().Run(); err != nil {
 			return err
 		}
 		// The binary /bin/mount should have the setuid bit
-		if err := n.Command("chmod", "-s", "/bin/mount").Run(); err != nil {
+		if err := cmd.NewProxyCmd(name, "chmod", "-s", "/bin/mount").Silent().Run(); err != nil {
 			return err
 		}
 	}
@@ -251,17 +131,17 @@ func fixMounts(n *kindnodes.Node) error {
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	// however, we need other things from `docker run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
-	if err := n.Command("mount", "-o", "remount,ro", "/sys").Run(); err != nil {
+	if err := cmd.NewProxyCmd(name, "mount", "-o", "remount,ro", "/sys").Silent().Run(); err != nil {
 		return err
 	}
 	// kubernetes needs shared mount propagation
-	if err := n.Command("mount", "--make-shared", "/").Run(); err != nil {
+	if err := cmd.NewProxyCmd(name, "mount", "--make-shared", "/").Silent().Run(); err != nil {
 		return err
 	}
-	if err := n.Command("mount", "--make-shared", "/run").Run(); err != nil {
+	if err := cmd.NewProxyCmd(name, "mount", "--make-shared", "/run").Silent().Run(); err != nil {
 		return err
 	}
-	if err := n.Command("mount", "--make-shared", "/var/lib/docker").Run(); err != nil {
+	if err := cmd.NewProxyCmd(name, "mount", "--make-shared", "/var/lib/docker").Silent().Run(); err != nil {
 		return err
 	}
 	return nil
@@ -269,16 +149,15 @@ func fixMounts(n *kindnodes.Node) error {
 
 // signalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
 // see images/node/entrypoint
-func signalStart(n *kindnodes.Node) error {
-	return kinddocker.Kill("SIGUSR1", n.Name())
+func signalStart(name string) error {
+	return kinddocker.Kill("SIGUSR1", name)
 }
 
 // waitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
-func waitForDocker(n *kindnodes.Node, until time.Time) bool {
+func waitForDocker(name string, until time.Time) bool {
 	return tryUntil(until, func() bool {
-		cmd := n.Command("systemctl", "is-active", "docker")
-		out, err := kindexec.CombinedOutputLines(cmd)
+		out, err := cmd.NewProxyCmd(name, "systemctl", "is-active", "docker").Silent().RunAndCapture()
 		if err != nil {
 			return false
 		}
@@ -298,38 +177,14 @@ func tryUntil(until time.Time, try func() bool) bool {
 }
 
 // loadImages loads image tarballs stored on the node into docker on the node
-func loadImages(n *kindnodes.Node) {
+func loadImages(name string) {
 	// load images cached on the node into docker
-	if err := n.Command(
+	if err := cmd.NewProxyCmd(name,
 		"/bin/bash", "-c",
 		// use xargs to load images in parallel
 		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
-	).Run(); err != nil {
+	).Silent().Run(); err != nil {
 		log.Warningf("Failed to preload docker images: %v", err)
 		return
-	}
-
-	// if this fails, we don't care yet, but try to get the kubernetes version
-	// and see if we can skip retagging for amd64
-	// if this fails, we can just assume some unknown version and re-tag
-	// in a future release of kind, we can probably drop v1.11 support
-	// and remove the logic below this comment entirely
-	if rawVersion, err := n.KubeVersion(); err == nil {
-		if ver, err := K8sVersion.ParseGeneric(rawVersion); err == nil {
-			if !ver.LessThan(K8sVersion.MustParseSemantic("v1.12.0")) {
-				return
-			}
-		}
-	}
-
-	// for older releases, we need the images to have the arch in their name
-	// bazel built images were missing these, newer releases do not use them
-	// for any builds ...
-	// retag images that are missing -amd64 as image:tag -> image-amd64:tag
-	if err := n.Command(
-		"/bin/bash", "-c",
-		`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v amd64 | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-amd64:/)"'`,
-	).Run(); err != nil {
-		log.Warningf("Failed to re-tag docker images: %v", err)
 	}
 }

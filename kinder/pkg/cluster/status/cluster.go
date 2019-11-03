@@ -22,9 +22,11 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
+	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // Cluster represents an existing kind(er) clusters
@@ -61,9 +63,28 @@ const (
 	IPv6Family ClusterIPFamily = "ipv6"
 )
 
-// GetNodesFromDocker returns a new cluster created by discovering
+// ListClusters is part of the providers.Provider interface
+func ListClusters() ([]string, error) {
+	cmd := kindexec.Command("docker",
+		"ps",
+		"-q",         // quiet output for parsing
+		"-a",         // show stopped nodes
+		"--no-trunc", // don't truncate
+		// filter for nodes with the cluster label
+		"--filter", "label="+constants.ClusterLabelKey,
+		// format to include the cluster name
+		"--format", fmt.Sprintf(`{{.Label "%s"}}`, constants.ClusterLabelKey),
+	)
+	lines, err := kindexec.CombinedOutputLines(cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list clusters")
+	}
+	return sets.NewString(lines...).List(), nil
+}
+
+// FromDocker returns a new cluster status created by discovering
 // and inspecting existing containers nodes
-func GetNodesFromDocker(name string) (c *Cluster, err error) {
+func FromDocker(name string) (c *Cluster, err error) {
 	// create a cluster context from current nodes
 	ctx := kindcluster.NewContext(name)
 
@@ -72,13 +93,13 @@ func GetNodesFromDocker(name string) (c *Cluster, err error) {
 	}
 
 	log.Debugf("Reading containers list for cluster %s", ctx.Name())
-	nodes, err := ctx.ListNodes()
+	nodes, err := c.listNodes()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, n := range nodes {
-		log.Debugf("Adding node %s to the cluster", n.Name())
+		log.Debugf("Adding node %s to the cluster", n)
 		node, err := NewNode(n)
 		if err != nil {
 			return nil, err
@@ -96,6 +117,25 @@ func GetNodesFromDocker(name string) (c *Cluster, err error) {
 	c.workers.Sort()
 
 	return c, nil
+}
+
+// ListNodes is part of the providers.Provider interface
+func (c *Cluster) listNodes() ([]string, error) {
+	cmd := kindexec.Command("docker",
+		"ps",
+		"-q",         // quiet output for parsing
+		"-a",         // show stopped nodes
+		"--no-trunc", // don't truncate
+		// filter for nodes with the cluster label
+		"--filter", fmt.Sprintf("label=%s=%s", constants.ClusterLabelKey, c.Name()),
+		// format to include the cluster name
+		"--format", `{{.Names}}`,
+	)
+	nodes, err := kindexec.CombinedOutputLines(cmd)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list nodes for cluster %s", c.Name())
+	}
+	return nodes, nil
 }
 
 // Validate the cluster has a consistent set of nodes

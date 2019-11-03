@@ -17,18 +17,25 @@ limitations under the License.
 package containerd
 
 import (
-	kindnodes "sigs.k8s.io/kind/pkg/cluster/nodes"
-	kindCRI "sigs.k8s.io/kind/pkg/container/cri"
+	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
-// CreateControlPlaneNode creates a kind(er) control-plane node that uses containerd runtime internally
-func CreateControlPlaneNode(name, image, clusterLabel string) error {
-	_, err := kindnodes.CreateControlPlaneNode(name, image, clusterLabel, "127.0.0.1", 0, []kindCRI.Mount{}, []kindCRI.PortMapping{})
-	return err
-}
+// CreateNode creates a container that internally hosts the containerd cri runtime
+func CreateNode(cluster, name, image, role string) error {
+	args, err := util.CommonArgs(cluster, name, role)
+	if err != nil {
+		return err
+	}
 
-// CreateWorkerNode creates a kind(er) worker node node that uses containerd runtime internally
-func CreateWorkerNode(name, image, clusterLabel string) error {
-	_, err := kindnodes.CreateWorkerNode(name, image, clusterLabel, []kindCRI.Mount{}, []kindCRI.PortMapping{})
-	return err
+	args, err = util.RunArgsForNode(role, args)
+	if err != nil {
+		return err
+	}
+
+	// Specify the image to run
+	args = append(args, image)
+
+	// creates the container
+	return kindexec.Command("docker", args...).Run()
 }

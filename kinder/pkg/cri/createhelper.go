@@ -18,10 +18,14 @@ package cri
 
 import (
 	"github.com/pkg/errors"
+	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	"k8s.io/kubeadm/kinder/third_party/kind/loadbalancer"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/cri/containerd"
 	"k8s.io/kubeadm/kinder/pkg/cri/docker"
+	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // CreateHelper provides CRI specific methods for node create
@@ -36,26 +40,53 @@ func NewCreateHelper(cri status.ContainerRuntime) (*CreateHelper, error) {
 	}, nil
 }
 
-// CreateControlPlaneNode creates a kind(er) contol-plane node that uses the selected container runtime internally
-func (h *CreateHelper) CreateControlPlaneNode(name, image, clusterLabel string) error {
+// CreateNode creates a container that internally hosts the selected cri runtime
+func (h *CreateHelper) CreateNode(cluster, name, image, role string) error {
 	switch h.cri {
 	case status.ContainerdRuntime:
-		return containerd.CreateControlPlaneNode(name, image, clusterLabel)
+		return containerd.CreateNode(cluster, name, image, role)
 	case status.DockerRuntime:
-		return docker.CreateControlPlaneNode(name, image, clusterLabel)
+		return docker.CreateNode(cluster, name, image, role)
 	}
-
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
 
-// CreateWorkerNode creates a kind(er) worker node node that uses the selected container runtime internally
-func (h *CreateHelper) CreateWorkerNode(name, image, clusterLabel string) error {
-	switch h.cri {
-	case status.ContainerdRuntime:
-		return containerd.CreateWorkerNode(name, image, clusterLabel)
-	case status.DockerRuntime:
-		return docker.CreateWorkerNode(name, image, clusterLabel)
+// CreateExternalEtcd creates a container hosting a single node, insecure, external etcd cluster
+func (h *CreateHelper) CreateExternalEtcd(cluster, name, image string) error {
+	args, err := util.CommonArgs(cluster, name, constants.ExternalEtcdNodeRoleValue)
+	if err != nil {
+		return err
 	}
 
-	return errors.Errorf("unknown cri: %s", h.cri)
+	// Add etcd run args
+	args = util.RunArgsForExternalEtcd(args)
+
+	// Specify the image to run
+	args = append(args, image)
+
+	// Add container args for starting a single node, insecure etcd
+	args = util.ContainerArgsForExternalEtcd(cluster, args)
+
+	// creates the container
+	return kindexec.Command("docker", args...).Run()
+}
+
+// CreateExternalLoadBalancer creates a container hosting an external load balancer
+func (h *CreateHelper) CreateExternalLoadBalancer(cluster, name string) error {
+	args, err := util.CommonArgs(cluster, name, constants.ExternalLoadBalancerNodeRoleValue)
+	if err != nil {
+		return err
+	}
+
+	// Add load balancer run args
+	args, err = util.RunArgsForExternalLoadBalancer(args)
+	if err != nil {
+		return err
+	}
+
+	// Specify the image to run
+	args = append(args, loadbalancer.Image)
+
+	// creates the container
+	return kindexec.Command("docker", args...).Run()
 }
