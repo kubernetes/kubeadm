@@ -1,0 +1,11 @@
+version: 1
+summary: |
+  This workflow tests the proper functioning of deploying an HA
+  cluster with secret copy using an external etcd cluster
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-external-etcd-1.17
+  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml
+  config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
+vars:
+  kubernetesVersion: "{{ resolve `ci/latest-1.17` }}"
+tasks:
+- import: external-etcd.yaml
