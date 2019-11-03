@@ -82,8 +82,6 @@ back new features.
     - building a containerd base image
 - "sigs.k8s.io/kind/pkg/cluster/constants" for
     - constants
-- "sigs.k8s.io/kind/pkg/cluster/config/*" for
-    - kind configuration API, defaulting, Unmarshaling, validation
 - "sigs.k8s.io/kind/pkg/cluster/nodes" for
     - `Node` struct
     - `CreateControlPlaneNode`

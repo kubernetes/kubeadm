@@ -17,13 +17,10 @@ limitations under the License.
 package cluster
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/manager"
-	"k8s.io/kubeadm/kinder/pkg/config"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
@@ -64,11 +61,6 @@ func NewCommand() *cobra.Command {
 		&flags.Name,
 		"name", constants.DefaultClusterName,
 		"cluster name")
-	cmd.Flags().StringVar(
-		&flags.Config, configFlagName,
-		"",
-		"path to a kind config file",
-	)
 	cmd.Flags().IntVar(
 		&flags.ControlPlanes,
 		controlPlaneNodesFlagName, 1,
@@ -106,37 +98,16 @@ func NewCommand() *cobra.Command {
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	var err error
 
-	//TODO: refactor this...
-	if cmd.Flags().Changed(configFlagName) && (cmd.Flags().Changed(controlPlaneNodesFlagName) ||
-		cmd.Flags().Changed(workerNodesFLagName) ||
-		cmd.Flags().Changed(externalEtcdFlagName) ||
-		cmd.Flags().Changed(externalLoadBalancerFlagName)) {
-		return errors.Errorf("flag --%s can't be used in combination with --%s flags", configFlagName, strings.Join([]string{controlPlaneNodesFlagName, workerNodesFLagName, externalEtcdFlagName, externalLoadBalancerFlagName}, ","))
-	}
-
 	if flags.ControlPlanes < 0 || flags.Workers < 0 {
 		return errors.Errorf("flags --%s and --%s should not be a negative number", controlPlaneNodesFlagName, workerNodesFLagName)
-	}
-
-	// gets the kind config, which is prebuild by kinder in accordance to the CLI flags
-	cfg, err := config.NewConfig(flags.ControlPlanes, flags.Workers, flags.ImageName)
-	if err != nil {
-		return errors.Wrap(err, "error initializing the cluster cfg")
-	}
-
-	// override the config with the one from file, if specified
-	if flags.Config != "" {
-		// load the config
-		cfg, err = config.LoadConfig(flags.Config, flags.ImageName)
-		if err != nil {
-			return errors.Wrap(err, "error loading config")
-		}
 	}
 
 	// get a kinder cluster manager
 	if err = manager.CreateCluster(
 		flags.Name,
-		cfg,
+		manager.ControlPlanes(flags.ControlPlanes),
+		manager.Workers(flags.Workers),
+		manager.Image(flags.ImageName),
 		manager.ExternalLoadBalancer(flags.ExternalLoadBalancer),
 		manager.ExternalEtcd(flags.ExternalEtcd),
 		manager.Retain(flags.Retain),

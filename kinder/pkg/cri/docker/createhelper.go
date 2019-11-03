@@ -35,32 +35,29 @@ import (
 )
 
 // CreateControlPlaneNode creates a kind(er) control-plane node that uses docker runtime internally
-func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
+func CreateControlPlaneNode(name, image, clusterLabel string) error {
 	// gets a random host port for the API server
-	if port == 0 {
-		p, err := getPort()
-		if err != nil {
-			return errors.Wrap(err, "failed to get port for API server")
-		}
-		port = p
+	port, err := getPort()
+	if err != nil {
+		return errors.Wrap(err, "failed to get port for API server")
 	}
 
 	// add api server port mapping
-	portMappingsWithAPIServer := append(portMappings, kindCRI.PortMapping{
-		ListenAddress: listenAddress,
+	portMappings := append([]kindCRI.PortMapping{}, kindCRI.PortMapping{
+		ListenAddress: "127.0.0.1",
 		HostPort:      port,
 		ContainerPort: constants.APIServerPort,
 	})
 	return createNode(
-		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts, portMappingsWithAPIServer,
+		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, []kindCRI.Mount{}, portMappings,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
 	)
 }
 
 // CreateWorkerNode creates a kind(er) worker node node that uses the docker runtime internally
-func CreateWorkerNode(name, image, clusterLabel string, mounts []kindCRI.Mount, portMappings []kindCRI.PortMapping) error {
-	return createNode(name, image, clusterLabel, constants.WorkerNodeRoleValue, mounts, portMappings)
+func CreateWorkerNode(name, image, clusterLabel string) error {
+	return createNode(name, image, clusterLabel, constants.WorkerNodeRoleValue, []kindCRI.Mount{}, []kindCRI.PortMapping{})
 }
 
 // helper used to get a free TCP port for the API server

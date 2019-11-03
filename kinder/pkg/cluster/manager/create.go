@@ -25,19 +25,20 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	"k8s.io/kubeadm/kinder/pkg/config"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 	kindnodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
-	kindCRI "sigs.k8s.io/kind/pkg/container/cri"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	kindlog "sigs.k8s.io/kind/pkg/log"
 )
 
 // CreateOptions holds all the options used at create time
 type CreateOptions struct {
+	controlPlanes        int
+	workers              int
+	image                string
 	externalLoadBalancer bool
 	externalEtcd         bool
 	retain               bool
@@ -45,6 +46,27 @@ type CreateOptions struct {
 
 // CreateOption is a configuration option supplied to Create
 type CreateOption func(*CreateOptions)
+
+// ControlPlanes sets the number of control plane nodes for create
+func ControlPlanes(controlPlanes int) CreateOption {
+	return func(c *CreateOptions) {
+		c.controlPlanes = controlPlanes
+	}
+}
+
+// Workers sets the number of worker nodes for create
+func Workers(workers int) CreateOption {
+	return func(c *CreateOptions) {
+		c.workers = workers
+	}
+}
+
+// Image sets the image for create
+func Image(image string) CreateOption {
+	return func(c *CreateOptions) {
+		c.image = image
+	}
+}
 
 // ExternalEtcd instruct create to add an external etcd to the cluster
 func ExternalEtcd(externalEtcd bool) CreateOption {
@@ -70,7 +92,7 @@ func Retain(retain bool) CreateOption {
 }
 
 // CreateCluster creates a new kinder cluster
-func CreateCluster(clusterName string, cfg *config.Cluster, options ...CreateOption) error {
+func CreateCluster(clusterName string, options ...CreateOption) error {
 	flags := &CreateOptions{}
 	for _, o := range options {
 		o(flags)
@@ -90,9 +112,9 @@ func CreateCluster(clusterName string, cfg *config.Cluster, options ...CreateOpt
 
 	fmt.Printf("Creating cluster %q ...\n", clusterName)
 
-	// attempt to explicitly pull the required node images if they doesn't exist locally
+	// attempt to explicitly pull the required node image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	ensureNodeImages(status, cfg)
+	ensureNodeImage(status, flags.image)
 
 	// define the cluster label that identifies all the nodes in the cluster
 	// NB. this should be consistent with kind
@@ -114,7 +136,6 @@ func CreateCluster(clusterName string, cfg *config.Cluster, options ...CreateOpt
 		status,
 		clusterName,
 		clusterLabel,
-		cfg,
 		flags,
 	); err != nil {
 		return handleErr(err)
@@ -127,11 +148,11 @@ func CreateCluster(clusterName string, cfg *config.Cluster, options ...CreateOpt
 	return nil
 }
 
-func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel string, cfg *config.Cluster, flags *CreateOptions) error {
+func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel string, flags *CreateOptions) error {
 	defer spinner.End(false)
 
 	// compute the desired nodes, and inform the user that we are setting them up
-	desiredNodes := nodesToCreate(clusterName, cfg, flags.externalLoadBalancer)
+	desiredNodes := nodesToCreate(clusterName, flags)
 	numberOfNodes := len(desiredNodes)
 	if flags.externalEtcd {
 		numberOfNodes++
@@ -139,27 +160,17 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 	spinner.Start("Preparing nodes " + strings.Repeat("📦", numberOfNodes))
 
 	// detect CRI runtime installed into images before actually creating nodes
-	var createHelperMap = map[string]*cri.CreateHelper{}
-	for _, n := range desiredNodes {
-		if n.Role != constants.ExternalLoadBalancerNodeRoleValue {
-			if _, ok := createHelperMap[n.Image]; ok {
-				continue
-			}
+	runtime, err := status.InspectCRIinImage(flags.image)
+	if err != nil {
+		log.Errorf("Error detecting CRI for images %s! %v", flags.image, err)
+		return err
+	}
+	log.Infof("Detected %s container runtime for image %s", runtime, flags.image)
 
-			runtime, err := status.InspectCRIinImage(n.Image)
-			if err != nil {
-				log.Errorf("Error detecting CRI for images %s! %v", n.Image, err)
-				return err
-			}
-			log.Infof("Detected %s container runtime for image %s", runtime, n.Image)
-
-			createHelper, err := cri.NewCreateHelper(runtime)
-			if err != nil {
-				log.Errorf("Error creating NewCreateHelper for CRI %s! %v", n.Image, err)
-				return err
-			}
-			createHelperMap[n.Image] = createHelper
-		}
+	createHelper, err := cri.NewCreateHelper(runtime)
+	if err != nil {
+		log.Errorf("Error creating NewCreateHelper for CRI %s! %v", flags.image, err)
+		return err
 	}
 
 	// create all of the node containers, concurrently
@@ -167,16 +178,16 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 	for _, desiredNode := range desiredNodes {
 		desiredNode := desiredNode // capture loop variable
 		fns = append(fns, func() error {
-			var createHelper *cri.CreateHelper
-			if desiredNode.Role != constants.ExternalLoadBalancerNodeRoleValue {
-				if _, ok := createHelperMap[desiredNode.Image]; !ok {
-					return errors.Errorf("Unable to find create helper for image %s", desiredNode.Image)
-				}
-				createHelper = createHelperMap[desiredNode.Image]
+			switch desiredNode.Role {
+			case constants.ExternalLoadBalancerNodeRoleValue:
+				return CreateExternalLoadBalancerNode(desiredNode.Name, constants.LoadBalancerImage, clusterLabel)
+			case constants.ControlPlaneNodeRoleValue:
+				return createHelper.CreateControlPlaneNode(desiredNode.Name, flags.image, clusterLabel)
+			case constants.WorkerNodeRoleValue:
+				return createHelper.CreateWorkerNode(desiredNode.Name, flags.image, clusterLabel)
+			default:
+				return nil
 			}
-
-			// create the node into a container (~= docker run -d)
-			return desiredNode.create(createHelper, clusterLabel)
 		})
 	}
 
@@ -214,14 +225,7 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 
 	// writes to the nodes the cluster settings that will be re-used by kinder during the cluster lifecycle.
 	c.Settings = &status.ClusterSettings{
-		IPFamily:                     status.ClusterIPFamily(cfg.Networking.IPFamily),
-		APIServerPort:                cfg.Networking.APIServerPort,
-		APIServerAddress:             cfg.Networking.APIServerAddress,
-		PodSubnet:                    cfg.Networking.PodSubnet,
-		ServiceSubnet:                cfg.Networking.ServiceSubnet,
-		DisableDefaultCNI:            cfg.Networking.DisableDefaultCNI,
-		KubeadmConfigPatches:         cfg.KubeadmConfigPatches,
-		KubeadmConfigPatchesJSON6902: cfg.KubeadmConfigPatchesJSON6902,
+		IPFamily: status.IPv4Family, // support for ipv6 is still WIP
 	}
 	if err := c.WriteSettings(); err != nil {
 		return err
@@ -241,92 +245,47 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 // nodeSpec describes a node to create purely from the container aspect
 // this does not include eg starting kubernetes (see actions for that)
 type nodeSpec struct {
-	Name              string
-	Role              string
-	Image             string
-	ExtraMounts       []kindCRI.Mount
-	ExtraPortMappings []kindCRI.PortMapping
-	APIServerPort     int32
-	APIServerAddress  string
+	Name string
+	Role string
 }
 
 // nodesToCreate return the list of nodes to create for the cluster
-func nodesToCreate(clusterName string, cfg *config.Cluster, externalLoadBalancer bool) []nodeSpec {
-	desiredNodes := []nodeSpec{}
+func nodesToCreate(clusterName string, flags *CreateOptions) []nodeSpec {
+	var desiredNodes []nodeSpec
 
-	// nodes are named based on the cluster name and their role, with a counter
-	counter := make(map[string]int)
-	nameMaker := func(role string) string {
-		count := 1
-		suffix := ""
-		if v, ok := counter[role]; ok {
-			count += v
-			suffix = fmt.Sprintf("%d", count)
-		}
-		counter[role] = count
-		return fmt.Sprintf("%s-%s%s", clusterName, role, suffix)
-	}
-
-	// prepare nodes explicitly defined in config
-	for _, configNode := range cfg.Nodes {
-		role := string(configNode.Role)
-
+	// prepare nodes explicitly
+	for n := 0; n < flags.controlPlanes; n++ {
+		role := constants.ControlPlaneNodeRoleValue
 		desiredNode := nodeSpec{
-			Name:              nameMaker(role),
-			Image:             configNode.Image,
-			Role:              role,
-			ExtraMounts:       configNode.ExtraMounts,
-			ExtraPortMappings: configNode.ExtraPortMappings,
+			Name: fmt.Sprintf("%s-%s-%d", clusterName, role, n+1),
+			Role: role,
 		}
-
-		// in case of control-plane nodes, inherits network settings to be applied to the API servers
-		if role == constants.ControlPlaneNodeRoleValue {
-			desiredNode.APIServerPort = cfg.Networking.APIServerPort
-			desiredNode.APIServerAddress = cfg.Networking.APIServerAddress
+		desiredNodes = append(desiredNodes, desiredNode)
+	}
+	for n := 0; n < flags.workers; n++ {
+		role := constants.WorkerNodeRoleValue
+		desiredNode := nodeSpec{
+			Name: fmt.Sprintf("%s-%s-%d", clusterName, role, n+1),
+			Role: role,
 		}
-
 		desiredNodes = append(desiredNodes, desiredNode)
 	}
 
 	// add an external load balancer if explicitly requested or if there are multiple control planes
-	if externalLoadBalancer || counter[constants.ControlPlaneNodeRoleValue] > 1 {
+	if flags.externalLoadBalancer || flags.controlPlanes > 1 {
 		role := constants.ExternalLoadBalancerNodeRoleValue
 		desiredNodes = append(desiredNodes, nodeSpec{
-			Name:             nameMaker(role),
-			Image:            constants.LoadBalancerImage,
-			Role:             role,
-			ExtraMounts:      []kindCRI.Mount{}, // There is no way to configure mounts for external load balancer
-			APIServerAddress: cfg.Networking.APIServerAddress,
-			APIServerPort:    cfg.Networking.APIServerPort,
+			Name: fmt.Sprintf("%s-%s", clusterName, role),
+			Role: role,
 		})
-
-		// makes control-plane nodes internal
-		for _, d := range desiredNodes {
-			if d.Role == constants.ControlPlaneNodeRoleValue {
-				d.APIServerPort = 0              // replaced with a random port
-				d.APIServerAddress = "127.0.0.1" // only the LB needs to be non-local
-			}
-		}
 	}
 
 	return desiredNodes
 }
 
-func (d *nodeSpec) create(createHelper *cri.CreateHelper, clusterLabel string) error {
-	switch d.Role {
-	case constants.ExternalLoadBalancerNodeRoleValue:
-		return CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort)
-	case constants.ControlPlaneNodeRoleValue:
-		return createHelper.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts, d.ExtraPortMappings)
-	case constants.WorkerNodeRoleValue:
-		return createHelper.CreateWorkerNode(d.Name, d.Image, clusterLabel, d.ExtraMounts, d.ExtraPortMappings)
-	}
-	return errors.Errorf("unknown node role: %s", d.Role)
-}
-
 // CreateExternalLoadBalancerNode creates a docker container hosting an external loadbalancer
-func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress string, port int32) error {
-	_, err := kindnodes.CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress, port)
+func CreateExternalLoadBalancerNode(name, image, clusterLabel string) error {
+	_, err := kindnodes.CreateExternalLoadBalancerNode(name, image, clusterLabel, "127.0.0.1", 0)
 	return err
 }
 
@@ -361,28 +320,11 @@ func CreateExternalEtcd(name, etcdImage string) error {
 	)
 }
 
-// ensureNodeImages ensures that the node images used by the create
-// configuration are present
-func ensureNodeImages(status *kindlog.Status, cfg *config.Cluster) {
-	// pull each required image
-	var images = map[string]interface{}{}
-	for _, n := range cfg.Nodes {
-		image := n.Image
+// ensureNodeImage ensures that the node image used by the create is present
+func ensureNodeImage(status *kindlog.Status, image string) {
+	status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
 
-		if _, ok := images[image]; ok {
-			continue
-		}
-
-		// prints user friendly message
-		if strings.Contains(image, "@sha256:") {
-			image = strings.Split(image, "@sha256:")[0]
-		}
-		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
-
-		// attempt to explicitly pull the image if it doesn't exist locally
-		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = kinddocker.PullIfNotPresent(image, 4)
-
-		images[image] = nil
-	}
+	// attempt to explicitly pull the image if it doesn't exist locally
+	// we don't care if this errors, we'll still try to run which also pulls
+	_, _ = kinddocker.PullIfNotPresent(image, 4)
 }

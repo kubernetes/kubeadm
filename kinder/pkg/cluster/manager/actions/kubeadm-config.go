@@ -67,6 +67,12 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, dis
 		return errors.Wrap(err, "failed to get kubernetes version from node")
 	}
 
+	// gets the IP of the bootstrap control plane node
+	controlPlaneIP, controlPlaneIPV6, err := c.BootstrapControlPlane().IP()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get IP for node: %s", c.BootstrapControlPlane().Name())
+	}
+
 	// get the control plane endpoint, in case the cluster has an external load balancer in
 	// front of the control-plane nodes
 	controlPlaneEndpoint, controlPlaneEndpointIPv6, ControlPlanePort, err := getControlPlaneAddress(c)
@@ -76,6 +82,7 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, dis
 
 	// configure the right protocol addresses
 	if c.Settings.IPFamily == status.IPv6Family {
+		controlPlaneIP = controlPlaneIPV6
 		controlPlaneEndpoint = controlPlaneEndpointIPv6
 	}
 
@@ -85,10 +92,10 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, dis
 		KubernetesVersion:    kubeVersion,
 		ControlPlaneEndpoint: fmt.Sprintf("%s:%d", controlPlaneEndpoint, ControlPlanePort),
 		APIBindPort:          constants.APIServerPort,
-		APIServerAddress:     c.Settings.APIServerAddress,
+		APIServerAddress:     controlPlaneIP,
 		Token:                constants.Token,
-		PodSubnet:            c.Settings.PodSubnet,
-		ServiceSubnet:        c.Settings.ServiceSubnet,
+		PodSubnet:            "192.168.0.0/16", // default for calico
+		ServiceSubnet:        "",               // let kubeadm apply default
 		ControlPlane:         true,
 		IPv6:                 c.Settings.IPFamily == status.IPv6Family,
 	}
@@ -289,24 +296,6 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 
 		patches = append(patches, externalEtcdPatch)
 	}
-
-	// if the cluster is using default PodSubnet, add the external calico patch
-	// (otherwise use the value provided in the kind config at create time)
-	if c.Settings.PodSubnet == constants.PodSubnet {
-		calicoPatch, err := kubeadm.GetCalicoPatch(kubeadmVersion)
-		if err != nil {
-			return "", err
-		}
-		patches = append(patches, calicoPatch)
-	}
-
-	// After kinder patches, we append the patches from the kind config eventually
-	// provided by the user at create time.
-	// NB. patches from cluster settings MUST go after default patches in order to
-	// allow user to kustomize everything, overriding also kinder default kustomizations
-	// if necessary
-	patches = append(patches, c.Settings.KubeadmConfigPatches...)
-	jsonPatches = append(jsonPatches, c.Settings.KubeadmConfigPatchesJSON6902...)
 
 	// fix all the patches to have name metadata matching the generated config
 	patches, jsonPatches = setPatchNames(patches, jsonPatches)

@@ -313,7 +313,7 @@ func copyKubeConfigToHost(c *status.Cluster) error {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
-	if err := writeKubeConfig(c, c.Settings.APIServerAddress, hostPort); err != nil {
+	if err := writeKubeConfig(c, hostPort); err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
@@ -342,7 +342,7 @@ var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 // While copying to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
-func writeKubeConfig(c *status.Cluster, hostAddress string, hostPort int32) error {
+func writeKubeConfig(c *status.Cluster, hostPort int32) error {
 	lines, err := c.BootstrapControlPlane().Command("cat", "/etc/kubernetes/admin.conf").Silent().RunAndCapture()
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
@@ -353,7 +353,7 @@ func writeKubeConfig(c *status.Cluster, hostAddress string, hostPort int32) erro
 	for _, line := range lines {
 		match := serverAddressRE.FindStringSubmatch(line)
 		if len(match) > 1 {
-			addr := net.JoinHostPort(hostAddress, fmt.Sprintf("%d", hostPort))
+			addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", hostPort))
 			line = fmt.Sprintf("%s https://%s", match[1], addr)
 		}
 		buff.WriteString(line)
