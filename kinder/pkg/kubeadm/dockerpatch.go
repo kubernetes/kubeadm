@@ -45,17 +45,6 @@ func GetDockerPatch(kubeadmVersion *K8sVersion.Version, ControlPlane bool) ([]st
 		basePatch = dockerPatchv1beta1
 	case "v1alpha3":
 		basePatch = dockerPatchv1alpha3
-	case "v1alpha2":
-		// kind kubeadm config template for v1alpha2 returns only MasterConfiguration or NodeConfiguration
-		// so we should create patches accordingly
-		if ControlPlane {
-			return []string{
-				fmt.Sprintf(dockerPatchv1alpha2, "MasterConfiguration"),
-			}, nil
-		}
-		return []string{
-			fmt.Sprintf(dockerPatchv1alpha2, "NodeConfiguration"),
-		}, nil
 	default:
 		return nil, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -83,13 +72,6 @@ nodeRegistration:
   criSocket: /var/run/dockershim.sock`
 
 const dockerPatchv1alpha3 = `apiVersion: kubeadm.k8s.io/v1alpha3
-kind: %s
-metadata:
-  name: config
-nodeRegistration:
-  criSocket: /var/run/dockershim.sock`
-
-const dockerPatchv1alpha2 = `apiVersion: kubeadm.k8s.io/v1alpha2
 kind: %s
 metadata:
   name: config

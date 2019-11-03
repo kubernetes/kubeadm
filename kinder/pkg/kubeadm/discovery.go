@@ -48,9 +48,6 @@ func GetRemoveTokenPatch(kubeadmVersion *K8sVersion.Version) (kindkustomize.Patc
 		patch = removeTokenPatchv1beta1
 	case "v1alpha3":
 		patch = removeTokenPatchv1alpha3
-	case "v1alpha2":
-		kind = "NodeConfiguration"
-		patch = removeTokenPatchv1alpha2
 	default:
 		return kindkustomize.PatchJSON6902{}, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -80,14 +77,6 @@ const removeTokenPatchv1alpha3 = `
 - op: remove
   path: "/discoveryTokenUnsafeSkipCAVerification"`
 
-const removeTokenPatchv1alpha2 = `
-- op: remove
-  path: "/discoveryTokenAPIServers"
-- op: remove
-  path: "/token"
-- op: remove
-  path: "/discoveryTokenUnsafeSkipCAVerification"`
-
 // GetFileDiscoveryPatch returns the kubeadm config patch that will instruct kubeadm
 // to use FileDiscovery.
 func GetFileDiscoveryPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
@@ -108,8 +97,6 @@ func GetFileDiscoveryPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
 		patch = fileDiscoveryPatchv1beta1
 	case "v1alpha3":
 		patch = fileDiscoveryPatchv1alpha3
-	case "v1alpha2":
-		patch = fileDiscoveryPatchv1alpha2
 	default:
 		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -139,12 +126,6 @@ metadata:
   name: config
 discoveryFile: %s`
 
-const fileDiscoveryPatchv1alpha2 = `apiVersion: kubeadm.k8s.io/v1alpha2
-kind: NodeConfiguration
-metadata:
-  name: config
-discoveryFile: %s`
-
 // GetTLSBootstrapPatch returns the kubeadm config patch that will instruct kubeadm
 // to use a TLSBootstrap token.
 // NB. for sake of semplicity, we are using the same Token already used for Token discovery
@@ -166,8 +147,6 @@ func GetTLSBootstrapPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
 		patch = tlsBootstrapPatchv1beta1
 	case "v1alpha3":
 		patch = tlsBootstrapPatchv1alpha3
-	case "v1alpha2":
-		patch = tlsBootstrapPatchv1alpha2
 	default:
 		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -191,12 +170,6 @@ discovery:
 
 const tlsBootstrapPatchv1alpha3 = `apiVersion: kubeadm.k8s.io/v1alpha3
 kind: JoinConfiguration
-metadata:
-  name: config
-tlsBootstrapToken: %s`
-
-const tlsBootstrapPatchv1alpha2 = `apiVersion: kubeadm.k8s.io/v1alpha2
-kind: NodeConfiguration
 metadata:
   name: config
 tlsBootstrapToken: %s`

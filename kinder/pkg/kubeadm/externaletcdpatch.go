@@ -45,8 +45,6 @@ func GetExternalEtcdPatch(kubeadmVersion *K8sVersion.Version, etcdIP string) (st
 		externalEtcdPatch = externalEtcdPatchv1beta1
 	case "v1alpha3":
 		externalEtcdPatch = externalEtcdPatchv1alpha3
-	case "v1alpha2":
-		externalEtcdPatch = externalEtcdPatchv1alpha2
 	default:
 		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -80,12 +78,3 @@ etcd:
   external:
     endpoints:
     - http://%s:2379`
-
-const externalEtcdPatchv1alpha2 = `apiVersion: kubeadm.k8s.io/v1alpha2
-kind: MasterConfiguration
-metadata:
-  name: config
-etcd:
-  external:
-    endpoints:
-	- http://%s:2379`
