@@ -46,7 +46,7 @@ func NewClusterManager(clusterName string) (c *ClusterManager, err error) {
 	}
 
 	// Gets the all the cluster nodes from docker
-	x, err := status.GetNodesFromDocker(clusterName)
+	x, err := status.FromDocker(clusterName)
 	if err != nil {
 		return nil, err
 	}

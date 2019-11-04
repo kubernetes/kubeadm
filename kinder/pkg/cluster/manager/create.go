@@ -28,7 +28,6 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
-	kindnodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	kindlog "sigs.k8s.io/kind/pkg/log"
@@ -116,10 +115,6 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 	// we don't care if this errors, we'll still try to run which also pulls
 	ensureNodeImage(status, flags.image)
 
-	// define the cluster label that identifies all the nodes in the cluster
-	// NB. this should be consistent with kind
-	clusterLabel := fmt.Sprintf("%s=%s", constants.ClusterLabelKey, clusterName)
-
 	handleErr := func(err error) error {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		if !flags.retain {
@@ -135,7 +130,6 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 	if err := createNodes(
 		status,
 		clusterName,
-		clusterLabel,
 		flags,
 	); err != nil {
 		return handleErr(err)
@@ -148,7 +142,7 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 	return nil
 }
 
-func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel string, flags *CreateOptions) error {
+func createNodes(spinner *kindlog.Status, clusterName string, flags *CreateOptions) error {
 	defer spinner.End(false)
 
 	// compute the desired nodes, and inform the user that we are setting them up
@@ -180,11 +174,9 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 		fns = append(fns, func() error {
 			switch desiredNode.Role {
 			case constants.ExternalLoadBalancerNodeRoleValue:
-				return CreateExternalLoadBalancerNode(desiredNode.Name, constants.LoadBalancerImage, clusterLabel)
-			case constants.ControlPlaneNodeRoleValue:
-				return createHelper.CreateControlPlaneNode(desiredNode.Name, flags.image, clusterLabel)
-			case constants.WorkerNodeRoleValue:
-				return createHelper.CreateWorkerNode(desiredNode.Name, flags.image, clusterLabel)
+				return createHelper.CreateExternalLoadBalancer(clusterName, desiredNode.Name)
+			case constants.ControlPlaneNodeRoleValue, constants.WorkerNodeRoleValue:
+				return createHelper.CreateNode(clusterName, desiredNode.Name, flags.image, desiredNode.Role)
 			default:
 				return nil
 			}
@@ -199,7 +191,7 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 	// add an external etcd if explicitly requested
 	if flags.externalEtcd {
 		log.Info("Getting required etcd image...")
-		c, err := status.GetNodesFromDocker(clusterName)
+		c, err := status.FromDocker(clusterName)
 		if err != nil {
 			return err
 		}
@@ -214,11 +206,13 @@ func createNodes(spinner *kindlog.Status, clusterName string, clusterLabel strin
 		_, _ = kinddocker.PullIfNotPresent(etcdImage, 4)
 
 		log.Info("Creating external etcd...")
-		CreateExternalEtcd(clusterName, etcdImage)
+		if err := createHelper.CreateExternalEtcd(clusterName, fmt.Sprintf("%s-etcd", clusterName), etcdImage); err != nil {
+			return err
+		}
 	}
 
 	// get the cluster
-	c, err := status.GetNodesFromDocker(clusterName)
+	c, err := status.FromDocker(clusterName)
 	if err != nil {
 		return err
 	}
@@ -275,49 +269,12 @@ func nodesToCreate(clusterName string, flags *CreateOptions) []nodeSpec {
 	if flags.externalLoadBalancer || flags.controlPlanes > 1 {
 		role := constants.ExternalLoadBalancerNodeRoleValue
 		desiredNodes = append(desiredNodes, nodeSpec{
-			Name: fmt.Sprintf("%s-%s", clusterName, role),
+			Name: fmt.Sprintf("%s-lb", clusterName),
 			Role: role,
 		})
 	}
 
 	return desiredNodes
-}
-
-// CreateExternalLoadBalancerNode creates a docker container hosting an external loadbalancer
-func CreateExternalLoadBalancerNode(name, image, clusterLabel string) error {
-	_, err := kindnodes.CreateExternalLoadBalancerNode(name, image, clusterLabel, "127.0.0.1", 0)
-	return err
-}
-
-// CreateExternalEtcd creates a docker container with an external etcd node
-func CreateExternalEtcd(name, etcdImage string) error {
-	// define name and labels mocking a kind external etcd node
-	containerName := fmt.Sprintf("%s-%s", name, constants.ExternalEtcdNodeRoleValue)
-
-	runArgs := []string{
-		"-d",                        // run the container detached
-		"--hostname", containerName, // make hostname match container name
-		"--name", containerName, // ... and set the container name
-		// label the node with the cluster ID
-		"--label", fmt.Sprintf("%s=%s", constants.ClusterLabelKey, name),
-		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, constants.ExternalEtcdNodeRoleValue),
-	}
-
-	// define a minimal etcd (insecure, single node, not exposed to the host machine)
-	containerArgs := []string{
-		"etcd",
-		"--name", fmt.Sprintf("%s-etcd", name),
-		"--advertise-client-urls", "http://127.0.0.1:2379",
-		"--listen-client-urls", "http://0.0.0.0:2379",
-	}
-
-	// create the etcd container
-	return kinddocker.Run(
-		etcdImage,
-		kinddocker.WithRunArgs(runArgs...),
-		kinddocker.WithContainerArgs(containerArgs...),
-	)
 }
 
 // ensureNodeImage ensures that the node image used by the create is present
