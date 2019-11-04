@@ -359,3 +359,19 @@ func (n *Node) CopyTo(source, dest string) error {
 func (n *Node) KubeVersion() (version string, err error) {
 	return n.kindNode.KubeVersion()
 }
+
+// MustKubeVersion returns the Kubernetes version installed on the node or panics
+// if a valid Kubernetes version can't be identified.
+func (n *Node) MustKubeVersion() *K8sVersion.Version {
+	v, err := n.KubeVersion()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	sv, err := K8sVersion.ParseSemantic(v)
+	if err != nil {
+		panic(err)
+	}
+
+	return sv
+}

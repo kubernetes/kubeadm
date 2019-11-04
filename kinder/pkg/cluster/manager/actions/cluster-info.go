@@ -59,12 +59,13 @@ func CluterInfo(c *status.Cluster) error {
 			"--",
 			"etcdctl", fmt.Sprintf("--endpoints=https://127.0.0.1:2379"),
 		}
-		if cp1.MustKubeadmVersion().AtLeast(constants.V1_17) {
+
+		// Before v1.17 the etcd version installed by default by kubeadm was using --ca-file, --cert-file, --key-file flags; in newer etcd releases those flags are renamed
+		if cp1.MustKubeVersion().AtLeast(constants.V1_17) {
 			etcdArgs = append(etcdArgs,
 				"--cacert=/etc/kubernetes/pki/etcd/ca.crt", "--cert=/etc/kubernetes/pki/etcd/peer.crt", "--key=/etc/kubernetes/pki/etcd/peer.key",
 			)
 		} else {
-			// before v1.17, etcdctl was using --ca-file, --cert-file, --key-file flags
 			etcdArgs = append(etcdArgs,
 				"--ca-file=/etc/kubernetes/pki/etcd/ca.crt", "--cert-file=/etc/kubernetes/pki/etcd/peer.crt", "--key-file=/etc/kubernetes/pki/etcd/peer.key",
 			)
