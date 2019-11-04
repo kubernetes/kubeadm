@@ -34,7 +34,6 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	kinddelete "sigs.k8s.io/kind/cmd/kind/delete"
 	kindexport "sigs.k8s.io/kind/cmd/kind/export"
-	kindload "sigs.k8s.io/kind/cmd/kind/load"
 	kindlog "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -76,7 +75,6 @@ func NewCommand() *cobra.Command {
 	// add kind top level subcommands re-used without changes
 	cmd.AddCommand(kinddelete.NewCommand())
 	cmd.AddCommand(kindexport.NewCommand())
-	cmd.AddCommand(kindload.NewCommand())
 
 	// add kind commands commands customized in kind
 	cmd.AddCommand(build.NewCommand())

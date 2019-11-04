@@ -21,7 +21,6 @@ import (
 
 	"k8s.io/kubeadm/kinder/cmd/kinder/build/baseimage"
 	"k8s.io/kubeadm/kinder/cmd/kinder/build/nodevariant"
-	kindnodeimage "sigs.k8s.io/kind/cmd/kind/build/nodeimage"
 )
 
 // NewCommand returns a new cobra.Command for building
@@ -35,7 +34,6 @@ func NewCommand() *cobra.Command {
 	}
 	// add subcommands
 	cmd.AddCommand(baseimage.NewCommand())
-	cmd.AddCommand(kindnodeimage.NewCommand())
 	cmd.AddCommand(nodevariant.NewCommand())
 	return cmd
 }
