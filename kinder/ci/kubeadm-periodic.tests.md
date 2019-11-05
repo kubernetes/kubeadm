@@ -28,7 +28,7 @@ might be eventually repeated across all/a subset of the Kubernetes versions in s
 ### Regular tests
 
 Kubeadm regular test are meant to create a cluster with `kubeadm init`, `kubeadm join` and then verify cluster
-conformance. Following regular tests are verified using kind (no need of kinder customization so far):
+conformance.
 
 | Version          | e.g.   |                                                              |
 | ---------------- | ------ | ------------------------------------------------------------ |
@@ -36,9 +36,6 @@ conformance. Following regular tests are verified using kind (no need of kinder 
 | current<br />(release-1.16 branch) | v1.16.2-alpha...  | Current GA release              |
 | current -1/minor<br />(release-1.15 branch)  | V1.15.6-alpha...   | Former GA release, still officially supported |
 | current -2/minor<br />(release-1.14 branch)  | V1.14.10-alpha...  | Former GA release, still officially supported for one more cycle |
-
-NB. currently kind tests are build Kubernetes from the selected branch. This is slightly different from what
-kinder is doing, that is to use an existing CI/Release build.
 
 ### Upgrade tests
 
