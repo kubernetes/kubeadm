@@ -293,7 +293,7 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 	fmt.Printf(
 		"Cluster creation complete. You can now use the cluster with:\n\n"+
 
-			"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
+			"export KUBECONFIG=\"$(kinder get kubeconfig-path --name=%q)\"\n"+
 			"kubectl cluster-info\n",
 		c.Name(),
 	)
