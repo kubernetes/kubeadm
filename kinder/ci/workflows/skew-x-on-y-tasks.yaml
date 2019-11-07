@@ -66,6 +66,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 5m
 - name: cluster-info
   description: |
@@ -75,6 +76,7 @@ tasks:
     - do
     - cluster-info
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: e2e
   description: |
     Runs Kubernetes e2e test (conformance)
@@ -85,6 +87,7 @@ tasks:
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=05-e2e
     - --parallel
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 25m
 - name: get-logs
   description: |
@@ -110,6 +113,7 @@ tasks:
     - do
     - kubeadm-reset
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
 - name: delete
   description: |
@@ -119,4 +123,5 @@ tasks:
     - delete
     - cluster
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
