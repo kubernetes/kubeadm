@@ -14,9 +14,12 @@ vars:
   image: kindest/node:test
   clusterName: kinder-upgrade
 tasks:
-# Important! this workflow differs from upgrade-stable-master because
-# - e2-kubeadm is not run (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
+# Important! this workflow differs from upgrade-tasks-automatic-copy-certs.yaml
+# - e2e-kubeadm is not run (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
 # - it does not use the automatic copy certs feature, available in kubeadm since v1.14 only
+# TODO: once 1.13 is no longer tested:
+# - delete this file
+# - rename upgrade-tasks-automatic-copy-certs.yaml to upgrade-tasks.yaml
 - name: pull-base-image
   description: |
     pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
