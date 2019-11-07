@@ -38,7 +38,7 @@ URL="https://github.com/client9/misspell"
 echo "Cloning ${URL} in ${TMP_DIR}..."
 git clone --quiet --depth=1 "${URL}" "${TMP_DIR}"
 pushd "${TMP_DIR}" > /dev/null
-go mod init
+go mod init misspell
 popd > /dev/null
 
 # build misspell
