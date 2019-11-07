@@ -407,8 +407,8 @@ func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 func (n *Node) CopyFrom(source, dest string) error {
 	cmd := kindexec.Command(
 		"docker", "cp",
-		source,          // from the source file
-		n.name+":"+dest, // to the node, at dest
+		n.name+":"+source, // from the node, at source
+		dest,              // to the host, at dest
 	)
 	return cmd.Run()
 }
@@ -417,8 +417,8 @@ func (n *Node) CopyFrom(source, dest string) error {
 func (n *Node) CopyTo(source, dest string) error {
 	cmd := kindexec.Command(
 		"docker", "cp",
-		n.name+":"+source, // from the node, at src
-		dest,              // to the host
+		source,          // from the host, at source
+		n.name+":"+dest, // to the node, at dest
 	)
 	return cmd.Run()
 }
