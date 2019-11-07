@@ -98,7 +98,7 @@ tasks:
   args:
     - test
     - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-upgrade
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
 - name: cluster-info-after
@@ -117,7 +117,7 @@ tasks:
   args:
     - test
     - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-upgrade
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e
     - --parallel
     - --name={{ .vars.clusterName }}
     - --loglevel=debug

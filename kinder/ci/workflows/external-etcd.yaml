@@ -72,7 +72,7 @@ tasks:
   args:
     - test
     - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-cluster-creation
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
 - name: e2e
@@ -82,7 +82,7 @@ tasks:
   args:
     - test
     - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-cluster-creation
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e
     - --parallel
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
