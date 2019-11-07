@@ -154,12 +154,16 @@ func (c *ClusterManager) CopyFile(source, target string) error {
 
 	if teargetNodes == nil {
 		fmt.Printf("Copying from %s ...\n", sourceNodes[0].Name())
-		sourceNodes[0].CopyFrom(sourcePath, targetPath)
+		if err := sourceNodes[0].CopyFrom(sourcePath, targetPath); err != nil {
+			return err
+		}
 	}
 
 	for _, n := range teargetNodes {
 		fmt.Printf("Copying to %s ...\n", n.Name())
-		n.CopyTo(sourcePath, targetPath)
+		if err := n.CopyTo(sourcePath, targetPath); err != nil {
+			return err
+		}
 	}
 	return nil
 }
