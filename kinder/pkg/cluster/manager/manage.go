@@ -122,12 +122,12 @@ func (c *ClusterManager) CopyFile(source, target string) error {
 		return err
 	}
 
-	teargetNodes, targetPath, err := c.ResolveNodesPath(target)
+	targetNodes, targetPath, err := c.ResolveNodesPath(target)
 	if err != nil {
 		return err
 	}
 
-	if sourceNodes == nil && teargetNodes == nil {
+	if sourceNodes == nil && targetNodes == nil {
 		return errors.Errorf("at least one between source and target must be a node/nodes in the cluster")
 	}
 
@@ -142,24 +142,28 @@ func (c *ClusterManager) CopyFile(source, target string) error {
 		}
 	}
 
-	if teargetNodes != nil && len(teargetNodes) == 0 {
+	if targetNodes != nil && len(targetNodes) == 0 {
 		return errors.Errorf("no target node matches given criteria")
 	}
 
-	if sourceNodes != nil && teargetNodes != nil {
+	if sourceNodes != nil && targetNodes != nil {
 		// create tmp folder
 		// cp locally
 		return errors.Errorf("copy between nodes not implemented yet!")
 	}
 
-	if teargetNodes == nil {
+	if targetNodes == nil {
 		fmt.Printf("Copying from %s ...\n", sourceNodes[0].Name())
-		sourceNodes[0].CopyFrom(sourcePath, targetPath)
+		if err := sourceNodes[0].CopyFrom(sourcePath, targetPath); err != nil {
+			return err
+		}
 	}
 
-	for _, n := range teargetNodes {
+	for _, n := range targetNodes {
 		fmt.Printf("Copying to %s ...\n", n.Name())
-		n.CopyTo(sourcePath, targetPath)
+		if err := n.CopyTo(sourcePath, targetPath); err != nil {
+			return err
+		}
 	}
 	return nil
 }
