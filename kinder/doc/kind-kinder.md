@@ -98,7 +98,6 @@ back new features.
 - "sigs.k8s.io/kind/pkg/fs" (*) for
     - `TempDir`
     - `Copy`
-- "sigs.k8s.io/kind/pkg/log" for the spinner (*)
 - "sigs.k8s.io/kind/pkg/kustomize" for
     - `PatchJSON6902` struct
     - `Build`
