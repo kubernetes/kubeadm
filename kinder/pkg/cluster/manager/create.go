@@ -18,7 +18,6 @@ package manager
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -30,7 +29,6 @@ import (
 	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
-	kindlog "sigs.k8s.io/kind/pkg/log"
 )
 
 // CreateOptions holds all the options used at create time
@@ -106,14 +104,11 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 		return errors.Errorf("a cluster with the name %q already exists", clusterName)
 	}
 
-	status := kindlog.NewStatus(os.Stdout)
-	status.MaybeWrapLogrus(log.StandardLogger())
-
 	fmt.Printf("Creating cluster %q ...\n", clusterName)
 
 	// attempt to explicitly pull the required node image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	ensureNodeImage(status, flags.image)
+	ensureNodeImage(flags.image)
 
 	handleErr := func(err error) error {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
@@ -128,7 +123,6 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 
 	// Create node containers as defined in the kind config
 	if err := createNodes(
-		status,
 		clusterName,
 		flags,
 	); err != nil {
@@ -142,16 +136,14 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 	return nil
 }
 
-func createNodes(spinner *kindlog.Status, clusterName string, flags *CreateOptions) error {
-	defer spinner.End(false)
-
+func createNodes(clusterName string, flags *CreateOptions) error {
 	// compute the desired nodes, and inform the user that we are setting them up
 	desiredNodes := nodesToCreate(clusterName, flags)
 	numberOfNodes := len(desiredNodes)
 	if flags.externalEtcd {
 		numberOfNodes++
 	}
-	spinner.Start("Preparing nodes " + strings.Repeat("📦", numberOfNodes))
+	fmt.Printf("Preparing nodes %s\n", strings.Repeat("📦", numberOfNodes))
 
 	// detect CRI runtime installed into images before actually creating nodes
 	runtime, err := status.InspectCRIinImage(flags.image)
@@ -232,7 +224,6 @@ func createNodes(spinner *kindlog.Status, clusterName string, flags *CreateOptio
 		}
 	}
 
-	spinner.End(true)
 	return nil
 }
 
@@ -278,8 +269,8 @@ func nodesToCreate(clusterName string, flags *CreateOptions) []nodeSpec {
 }
 
 // ensureNodeImage ensures that the node image used by the create is present
-func ensureNodeImage(status *kindlog.Status, image string) {
-	status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
+func ensureNodeImage(image string) {
+	fmt.Printf("Ensuring node image (%s) 🖼\n", image)
 
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls

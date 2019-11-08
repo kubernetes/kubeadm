@@ -34,7 +34,6 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	kinddelete "sigs.k8s.io/kind/cmd/kind/delete"
 	kindexport "sigs.k8s.io/kind/cmd/kind/export"
-	kindlog "sigs.k8s.io/kind/pkg/log"
 )
 
 const defaultLevel = log.WarnLevel
@@ -69,7 +68,7 @@ func NewCommand() *cobra.Command {
 		&flags.LogLevel,
 		"loglevel",
 		defaultLevel.String(),
-		"logrus log level "+kindlog.LevelsString(),
+		"logrus log level [panic, fatal, error, warning, info, debug, trace]",
 	)
 
 	// add kind top level subcommands re-used without changes
@@ -117,10 +116,6 @@ func Main() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "15:04:05",
-		// we force colors because this only forces over the isTerminal check
-		// and this will not be accurately checkable later on when we wrap
-		// the logger output with our logutil.StatusFriendlyWriter
-		ForceColors: kindlog.IsTerminal(log.StandardLogger().Out),
 	})
 	if err := Run(); err != nil {
 		os.Exit(1)
