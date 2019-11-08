@@ -63,7 +63,7 @@ func (r *RuntimeTaskGroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		).
 		Complete(r)
 
-	r.recorder = mgr.GetEventRecorderFor("taskgroup-controller")
+	r.recorder = mgr.GetEventRecorderFor("runtime-taskgroup-controller")
 	return err
 }
 
