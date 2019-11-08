@@ -395,3 +395,43 @@ func listTasksBySelector(c client.Client, selector *metav1.LabelSelector) (*oper
 
 	return tasks, nil
 }
+
+func taskGroupToTaskRequests(c client.Client, o handler.MapObject) []ctrl.Request {
+	var result []ctrl.Request
+
+	taskgroup, ok := o.Object.(*operatorv1.RuntimeTaskGroup)
+	if !ok {
+		return nil
+	}
+
+	actual, err := listTasksBySelector(c, &taskgroup.Spec.Selector)
+	if err != nil {
+		return nil
+	}
+
+	for _, ms := range actual.Items {
+		name := client.ObjectKey{Namespace: ms.Namespace, Name: ms.Name}
+		result = append(result, ctrl.Request{NamespacedName: name})
+	}
+
+	return result
+}
+
+func getOwnerTaskGroup(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*operatorv1.RuntimeTaskGroup, error) {
+	//TODO: check for controller ref instead of Operation/Kind
+	for _, ref := range obj.OwnerReferences {
+		if ref.Kind == "TaskGroup" && ref.APIVersion == operatorv1.GroupVersion.String() {
+			taskgroup := &operatorv1.RuntimeTaskGroup{}
+			key := client.ObjectKey{
+				Namespace: obj.Namespace,
+				Name:      ref.Name,
+			}
+			err := c.Get(ctx, key, taskgroup)
+			if err != nil {
+				return nil, errors.Wrapf(err, "error reading controller ref for %s/%s", obj.Namespace, obj.Name)
+			}
+			return taskgroup, nil
+		}
+	}
+	return nil, nil
+}

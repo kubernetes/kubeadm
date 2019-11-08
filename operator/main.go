@@ -123,10 +123,10 @@ func main() {
 
 	if managerMode(mode) == modeAgent {
 		if err = (&controllers.RuntimeTaskReconciler{
-			Client: mgr.GetClient(),
-			//NodeName:  nodeName,
-			//Operation: operation,
-			Log: ctrl.Log.WithName("controllers").WithName("RuntimeTask").WithValues("node-name", nodeName),
+			Client:    mgr.GetClient(),
+			NodeName:  nodeName,
+			Operation: operation,
+			Log:       ctrl.Log.WithName("controllers").WithName("RuntimeTask").WithValues("node-name", nodeName),
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "RuntimeTask")
 			os.Exit(1)
