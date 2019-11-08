@@ -58,6 +58,7 @@ tasks:
     - kubeadm-init
     - --name={{ .vars.clusterName }}
     - --automatic-copy-certs
+    - --loglevel=debug
   timeout: 5m
 - name: join
   description: |
@@ -68,6 +69,7 @@ tasks:
     - kubeadm-join
     - --name={{ .vars.clusterName }}
     - --automatic-copy-certs
+    - --loglevel=debug
   timeout: 5m
 - name: cluster-info
   description: |
@@ -77,6 +79,7 @@ tasks:
     - do
     - cluster-info
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: e2e-kubeadm
   description: |
     Runs kubeadm e2e test
@@ -84,8 +87,9 @@ tasks:
   args:
     - test
     - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-upgrade
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: e2e
   description: |
     Runs Kubernetes e2e test (conformance)
@@ -93,9 +97,10 @@ tasks:
   args:
     - test
     - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=05-e2e
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e
     - --parallel
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 25m
 - name: get-logs
   description: |
@@ -121,6 +126,7 @@ tasks:
     - do
     - kubeadm-reset
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
 - name: delete
   description: |
@@ -130,5 +136,5 @@ tasks:
     - delete
     - cluster
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
-

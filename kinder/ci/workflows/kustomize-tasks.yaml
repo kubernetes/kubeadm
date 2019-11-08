@@ -126,6 +126,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - /tmp/verify-kustomize.sh
       - "@cp*:/kinder/verify-kustomize.sh"
+      - --loglevel=debug
   - name: init
     description: |
       Initializes the Kubernetes cluster with version "kubernetesVersion"
@@ -156,6 +157,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - "@cp*"
       - /kinder/verify-kustomize.sh
+      - --loglevel=debug
   - name: upgrade
     description: |
       upgrades the cluster to Kubernetes "upgradeVersion"
@@ -166,6 +168,7 @@ tasks:
       - --upgrade-version={{ .vars.kubernetesVersion }}
       - -k=/tmp/kubeadm-patches
       - --name={{ .vars.clusterName }}
+      - --loglevel=debug
   - name: run verify-kustomize.sh on controlplane nodes after upgrades
     cmd: kinder
     args:
@@ -173,6 +176,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - "@cp*"
       - /kinder/verify-kustomize.sh
+      - --loglevel=debug
   - name: get-logs
     description: |
       Collects all the test logs

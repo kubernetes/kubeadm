@@ -58,6 +58,7 @@ tasks:
     - kubeadm-init
     - --name={{ .vars.clusterName }}
     - --automatic-copy-certs
+    - --loglevel=debug
   timeout: 5m
 - name: join
   description: |
@@ -68,6 +69,7 @@ tasks:
     - kubeadm-join
     - --name={{ .vars.clusterName }}
     - --automatic-copy-certs
+    - --loglevel=debug
   timeout: 5m
 - name: cluster-info-before
   description: |
@@ -77,6 +79,7 @@ tasks:
     - do
     - cluster-info
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: upgrade
   description: |
     upgrades the cluster to Kubernetes "upgradeVersion"
@@ -86,6 +89,7 @@ tasks:
     - kubeadm-upgrade
     - --upgrade-version={{ .vars.upgradeVersion }}
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 5m
 - name: e2e-kubeadm-after
   description: |
@@ -94,8 +98,9 @@ tasks:
   args:
     - test
     - e2e-kubeadm
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm-after-upgrade
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: cluster-info-after
   description: |
     Runs cluster-info on the cluster after upgrade
@@ -104,6 +109,7 @@ tasks:
     - do
     - cluster-info
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: e2e-after
   description: |
     Runs Kubernetes e2e test (conformance) on the cluster with Kubernetes "upgradeVersion"
@@ -111,9 +117,10 @@ tasks:
   args:
     - test
     - e2e
-    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-after-upgrade
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e
     - --parallel
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   timeout: 25m
 - name: get-logs
   description: |
@@ -139,6 +146,7 @@ tasks:
     - do
     - kubeadm-reset
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
 - name: delete
   description: |
@@ -148,4 +156,5 @@ tasks:
     - delete
     - cluster
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
   force: true
