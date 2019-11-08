@@ -17,6 +17,7 @@ limitations under the License.
 package workflow
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -51,13 +52,25 @@ type junitTestSuite struct {
 	Cases    []junitTestCase
 }
 
+// cdata and cdataHelper are types for managing string fields wrapped in <![CDATA[...]]>
+type cdata string
+type cdataHelper struct {
+	C string `xml:",cdata"`
+}
+
+// MarshalXML marshals a cdata field.
+func (c cdata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	e.EncodeElement(cdataHelper{string(c)}, start)
+	return nil
+}
+
 // junitTestCase implements junit TestCase standard object
 type junitTestCase struct {
 	XMLName   xml.Name `xml:"testcase"`
 	ClassName string   `xml:"classname,attr"`
 	Name      string   `xml:"name,attr"`
 	Time      float64  `xml:"time,attr"`
-	Failure   string   `xml:"failure,omitempty"`
+	Failure   cdata    `xml:"failure,omitempty"`
 	Skipped   string   `xml:"skipped,omitempty"`
 }
 
@@ -78,13 +91,13 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 	// if this is the case record test case as skipped and exits with error
 	if !t.Force {
 		if c.failed {
-			return c.registerTestCase(t.Name, withSkipped("skipping because a predecessor task failed"))
+			return c.registerTestCase(t.Name, nil, withSkipped("skipping because a predecessor task failed"))
 		}
 		if c.timedOut {
-			return c.registerTestCase(t.Name, withSkipped("skipping because a predecessor task timed-out"))
+			return c.registerTestCase(t.Name, nil, withSkipped("skipping because a predecessor task timed-out"))
 		}
 		if c.canceled {
-			return c.registerTestCase(t.Name, withSkipped("skipping because task workflow was canceled by the user"))
+			return c.registerTestCase(t.Name, nil, withSkipped("skipping because task workflow was canceled by the user"))
 		}
 	}
 
@@ -101,12 +114,13 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		return errors.Wrapf(err, "error creating %q log file", taskLog)
 	}
 
+	errBuf := &bytes.Buffer{}
 	t.Cmd.Stdout = writer
-	t.Cmd.Stderr = writer
+	t.Cmd.Stderr = io.MultiWriter(writer, errBuf)
 
 	if verbose {
 		t.Cmd.Stdout = io.MultiWriter(writer, os.Stdout)
-		t.Cmd.Stderr = io.MultiWriter(writer, os.Stderr)
+		t.Cmd.Stderr = io.MultiWriter(writer, errBuf, os.Stderr)
 	}
 
 	// outputs a command overview before executing it
@@ -126,7 +140,10 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		c.failed = true
 
 		// record test case timeout and exits with error
-		return c.registerTestCase(t.Name, withFailure(err.Error()), withDuration(time.Since(start)))
+		return c.registerTestCase(t.Name, err,
+			withFailure(errBuf.String()+"\n"+err.Error()),
+			withDuration(time.Since(start)),
+		)
 	}
 
 	// starts a go ruting responsible for waiting the command completes
@@ -144,7 +161,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		// if the command completed without an error or if we are ignoring errors, record the test case success and exit
 		if err == nil || t.IgnoreError {
 			// record test case timeout as success
-			return c.registerTestCase(t.Name,
+			return c.registerTestCase(t.Name, nil,
 				withDuration(time.Since(start)),
 			)
 		}
@@ -155,8 +172,8 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		cleanup(t.Cmd)
 
 		// otherwise record test case failure and exits with error
-		return c.registerTestCase(t.Name,
-			withFailure(err.Error()),
+		return c.registerTestCase(t.Name, err,
+			withFailure(errBuf.String()+"\n"+err.Error()),
 			withDuration(time.Since(start)),
 		)
 
@@ -168,7 +185,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		cleanup(t.Cmd)
 
 		// record test case cancellation and exits with error
-		return c.registerTestCase(t.Name,
+		return c.registerTestCase(t.Name, nil,
 			withFailure("task was canceled by the user"),
 			withDuration(time.Since(start)),
 		)
@@ -181,7 +198,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		cleanup(t.Cmd)
 
 		// record test case timeout and exits with error
-		return c.registerTestCase(t.Name,
+		return c.registerTestCase(t.Name, nil,
 			withFailure(fmt.Sprintf("timeout. task did not completed in less than %s as expected", t.Timeout)),
 			withDuration(time.Since(start)),
 		)
@@ -244,7 +261,7 @@ func withDuration(duration time.Duration) testCaseOption {
 }
 func withFailure(message string) testCaseOption {
 	return func(t *junitTestCase) {
-		t.Failure = message
+		t.Failure = cdata(message)
 	}
 }
 
@@ -255,7 +272,7 @@ func withSkipped(message string) testCaseOption {
 }
 
 // registerTestCase register task output as a test case result
-func (c *taskCmdRunner) registerTestCase(name string, options ...testCaseOption) error {
+func (c *taskCmdRunner) registerTestCase(name string, err error, options ...testCaseOption) error {
 	tc := &junitTestCase{
 		ClassName: "kinder.test.workflow",
 		Name:      name,
@@ -269,7 +286,7 @@ func (c *taskCmdRunner) registerTestCase(name string, options ...testCaseOption)
 	c.suite.Tests++
 	if tc.Failure != "" {
 		c.suite.Failures++
-		return errors.New(tc.Failure)
+		return err
 	}
 
 	if tc.Skipped != "" {
