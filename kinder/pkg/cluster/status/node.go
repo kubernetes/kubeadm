@@ -47,6 +47,7 @@ type Node struct {
 	ipv6            string
 	cri             ContainerRuntime
 	kubeadmVersion  *K8sVersion.Version
+	etcdImage       string
 	skip            bool
 	commandMutators []commandMutator
 }
