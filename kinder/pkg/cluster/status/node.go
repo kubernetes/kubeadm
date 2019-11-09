@@ -40,17 +40,15 @@ type commandMutator = func(*cmd.ProxyCmd) *cmd.ProxyCmd
 // Node defines a K8s node running in a kinde(er) docker container or a container hosting
 // one external dependency of the cluster, like etcd or the load balancer.
 type Node struct {
-	name              string
-	role              string
-	ports             map[int32]int32
-	ipv4              string
-	ipv6              string
-	kubernetesVersion string
-	cri               ContainerRuntime
-	kubeadmVersion    *K8sVersion.Version
-	etcdImage         string
-	skip              bool
-	commandMutators   []commandMutator
+	name            string
+	role            string
+	ports           map[int32]int32
+	ipv4            string
+	ipv6            string
+	cri             ContainerRuntime
+	kubeadmVersion  *K8sVersion.Version
+	skip            bool
+	commandMutators []commandMutator
 }
 
 // NodeSettings defines a set of settings that will be stored in the node and re-used
@@ -425,10 +423,6 @@ func (n *Node) CopyTo(source, dest string) error {
 
 // KubeVersion returns the Kubernetes version installed on the node
 func (n *Node) KubeVersion() (version string, err error) {
-	// use the cached version first
-	if n.kubernetesVersion != "" {
-		return n.kubernetesVersion, nil
-	}
 	// grab kubernetes version from the node image
 	lines, err := n.Command("cat", "/kind/version").RunAndCapture()
 	if err != nil {
@@ -437,10 +431,7 @@ func (n *Node) KubeVersion() (version string, err error) {
 	if len(lines) != 1 {
 		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	version = lines[0]
-	n.kubernetesVersion = version
-
-	return version, nil
+	return lines[0], nil
 }
 
 // MustKubeVersion returns the Kubernetes version installed on the node or panics
