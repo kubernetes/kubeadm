@@ -24,40 +24,35 @@ import (
 func TestAppendEtcdctlCertArgs(t *testing.T) {
 	tests := []struct {
 		name          string
-		inputImage    string
+		inputVersion  string
 		inputArgs     []string
 		expectedArgs  []string
 		expectedError bool
 	}{
 		{
 			name:         "valid: version 3.4",
-			inputImage:   "etcd:3.4.0",
+			inputVersion: "3.4.0",
 			expectedArgs: etcdCertArgsNew,
 		},
 		{
 			name:         "valid: version 4.0",
-			inputImage:   "etcd:4.0.0",
+			inputVersion: "4.0.0",
 			expectedArgs: etcdCertArgsNew,
 		},
 		{
 			name:         "valid: old version",
-			inputImage:   "etcd:3.3.17",
+			inputVersion: "3.3.17",
 			expectedArgs: etcdCertArgsOld,
 		},
 		{
 			name:         "valid: append to existing args",
-			inputImage:   "etcd:3.4.0",
+			inputVersion: "3.4.0",
 			inputArgs:    []string{"foo"},
 			expectedArgs: append([]string{"foo"}, etcdCertArgsNew...),
 		},
 		{
-			name:          "invalid: image string missing ':'",
-			inputImage:    "3.4.0",
-			expectedError: true,
-		},
-		{
 			name:          "invalid: image tag is not semver",
-			inputImage:    "etcd:111",
+			inputVersion:  "111",
 			expectedError: true,
 		},
 	}
@@ -65,7 +60,7 @@ func TestAppendEtcdctlCertArgs(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			args := test.inputArgs
-			err := appendEtcdctlCertArgs(test.inputImage, &args)
+			err := appendEtcdctlCertArgs(test.inputVersion, &args)
 			if (err != nil) != test.expectedError {
 				t.Fatalf("expected error: %v, found %v, error: %v", test.expectedError, err != nil, err)
 			}
@@ -74,6 +69,48 @@ func TestAppendEtcdctlCertArgs(t *testing.T) {
 			}
 			if !reflect.DeepEqual(args, test.expectedArgs) {
 				t.Fatalf("expected args: %v, found %v", test.expectedArgs, args)
+			}
+		})
+	}
+}
+
+func TestParseEtcdctlVersion(t *testing.T) {
+	tests := []struct {
+		name            string
+		inputLines      []string
+		expectedVersion string
+		expectedError   bool
+	}{
+		{
+			name: "valid: version 3.1.0",
+			inputLines: []string{
+				"etcdctl version: 3.1.0",
+				"API version: 2",
+			},
+			expectedVersion: "3.1.0",
+		},
+		{
+			name: "invalid: missing ':' on first line",
+			inputLines: []string{
+				"etcdctl version 3.1.0",
+			},
+			expectedError: true,
+		},
+		{
+			name:          "invalid: empty input",
+			inputLines:    []string{},
+			expectedError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			version, err := parseEtcdctlVersion(test.inputLines)
+			if (err != nil) != test.expectedError {
+				t.Fatalf("expected error: %v, found %v, error: %v", test.expectedError, err != nil, err)
+			}
+			if version != test.expectedVersion {
+				t.Fatalf("expected version: %s, found: %s", test.expectedVersion, version)
 			}
 		})
 	}
