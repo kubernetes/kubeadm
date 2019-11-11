@@ -46,7 +46,6 @@ type Node struct {
 	ipv4            string
 	ipv6            string
 	cri             ContainerRuntime
-	kubeadmVersion  *K8sVersion.Version
 	etcdImage       string
 	skip            bool
 	commandMutators []commandMutator
@@ -179,19 +178,15 @@ func (n *Node) Infof(message string, args ...interface{}) {
 // MustKubeadmVersion returns the kubeadm version installed on the node or panics
 // if a valid kubeadm version can't be identified.
 func (n *Node) MustKubeadmVersion() *K8sVersion.Version {
-	_, err := n.KubeadmVersion()
+	kubeadmVersion, err := n.KubeadmVersion()
 	if err != nil {
 		panic(err.Error())
 	}
-	return n.kubeadmVersion
+	return kubeadmVersion
 }
 
 // KubeadmVersion returns the kubeadm version installed on the node
 func (n *Node) KubeadmVersion() (*K8sVersion.Version, error) {
-	if n.kubeadmVersion != nil {
-		return n.kubeadmVersion, nil
-	}
-
 	lines, err := cmd.NewProxyCmd(n.Name(), "kubeadm", "version", "-o=short").Silent().RunAndCapture()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get kubeadm version")
@@ -199,12 +194,12 @@ func (n *Node) KubeadmVersion() (*K8sVersion.Version, error) {
 	if len(lines) != 1 {
 		return nil, errors.Errorf("kubeadm version should only be one line, got %d lines", len(lines))
 	}
-	n.kubeadmVersion, err = K8sVersion.ParseSemantic(lines[0])
+	kubeadmVersion, err := K8sVersion.ParseSemantic(lines[0])
 	if err != nil {
 		return nil, errors.Wrapf(err, "%q is not a valid kubeadm version", lines[0])
 	}
 
-	return n.kubeadmVersion, nil
+	return kubeadmVersion, nil
 }
 
 // EtcdImage returns the etcdImage that should be used with the kubernetes version
