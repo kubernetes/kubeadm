@@ -18,20 +18,21 @@ package status
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/util/homedir"
 
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // Cluster represents an existing kind(er) clusters
 type Cluster struct {
-	*kindcluster.Context
+	name                 string
 	Settings             *ClusterSettings
 	allNodes             NodeList
 	k8sNodes             NodeList
@@ -82,17 +83,38 @@ func ListClusters() ([]string, error) {
 	return sets.NewString(lines...).List(), nil
 }
 
+// IsKnown returns true if a cluster exists with the given name.
+// If obtaining the list of known clusters fails the function returns an error.
+func IsKnown(name string) (bool, error) {
+	list, err := ListClusters()
+	if err != nil {
+		return false, err
+	}
+	for _, cluster := range list {
+		if cluster == name {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// KubeConfigPath returns the kubeconfig path for a cluster name
+func KubeConfigPath(name string) string {
+	c := Cluster{
+		name: name,
+	}
+	return c.KubeConfigPath()
+}
+
 // FromDocker returns a new cluster status created by discovering
 // and inspecting existing containers nodes
 func FromDocker(name string) (c *Cluster, err error) {
 	// create a cluster context from current nodes
-	ctx := kindcluster.NewContext(name)
-
 	c = &Cluster{
-		Context: ctx,
+		name: name,
 	}
 
-	log.Debugf("Reading containers list for cluster %s", ctx.Name())
+	log.Debugf("Reading container list for cluster %s", name)
 	nodes, err := c.listNodes()
 	if err != nil {
 		return nil, err
@@ -119,6 +141,21 @@ func FromDocker(name string) (c *Cluster, err error) {
 	return c, nil
 }
 
+// Name returns the cluster's name
+func (c *Cluster) Name() string {
+	return c.name
+}
+
+// KubeConfigPath returns the path to where the Kubeconfig would be placed
+// by kinder based on the configuration.
+func (c *Cluster) KubeConfigPath() string {
+	// configDir matches the standard directory expected by kubectl etc
+	configDir := filepath.Join(homedir.HomeDir(), ".kube")
+	// note that the file name match kind config files. Maybe we want to change this in the future.
+	fileName := fmt.Sprintf("kind-config-%s", c.name)
+	return filepath.Join(configDir, fileName)
+}
+
 // ListNodes is part of the providers.Provider interface
 func (c *Cluster) listNodes() ([]string, error) {
 	cmd := kindexec.Command("docker",
@@ -127,13 +164,13 @@ func (c *Cluster) listNodes() ([]string, error) {
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
-		"--filter", fmt.Sprintf("label=%s=%s", constants.ClusterLabelKey, c.Name()),
+		"--filter", fmt.Sprintf("label=%s=%s", constants.ClusterLabelKey, c.name),
 		// format to include the cluster name
 		"--format", `{{.Names}}`,
 	)
 	nodes, err := kindexec.CombinedOutputLines(cmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list nodes for cluster %s", c.Name())
+		return nil, errors.Wrapf(err, "failed to list nodes for cluster %s", c.name)
 	}
 	return nodes, nil
 }
@@ -159,7 +196,7 @@ func (c *Cluster) ReadSettings() (err error) {
 	log.Debug("Reading cluster settings...")
 	c.Settings, err = c.BootstrapControlPlane().ReadClusterSettings()
 	if err != nil {
-		return errors.Wrapf(err, "failed to read cluster settings from node %s", c.BootstrapControlPlane().Name())
+		return errors.Wrapf(err, "failed to read cluster settings from node %s", c.BootstrapControlPlane().name)
 	}
 	return nil
 }
@@ -169,7 +206,7 @@ func (c *Cluster) WriteSettings() error {
 	log.Debug("Writings cluster settings...")
 	for _, n := range c.K8sNodes() {
 		if err := n.WriteClusterSettings(c.Settings); err != nil {
-			return errors.Wrapf(err, "failed to write cluster settings to node %s", n.Name())
+			return errors.Wrapf(err, "failed to write cluster settings to node %s", n.name)
 		}
 	}
 	return nil
@@ -303,7 +340,7 @@ func (c *Cluster) SelectNodes(nodeSelector string) (nodes NodeList, err error) {
 		}
 	}
 
-	nodeName := fmt.Sprintf("%s-%s", c.Name(), nodeSelector)
+	nodeName := fmt.Sprintf("%s-%s", c.name, nodeSelector)
 	for _, n := range c.K8sNodes() {
 		if strings.EqualFold(nodeName, n.Name()) {
 			return toNodeList(n), nil
