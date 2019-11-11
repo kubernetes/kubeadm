@@ -64,11 +64,10 @@ func CluterInfo(c *status.Cluster) error {
 		etcdArgs := []string{
 			"--kubeconfig=/etc/kubernetes/admin.conf", "exec", "-n=kube-system", fmt.Sprintf("etcd-%s", c.BootstrapControlPlane().Name()),
 			"--",
-			"etcdctl",
 		}
 
-		// Get the version of etcdctl
-		versionArgs := append(etcdArgs, "version")
+		// Get the version of etcdctl from the etcd binary
+		versionArgs := append(etcdArgs, "etcd", "--version")
 		lines, err := cp1.Command("kubectl", versionArgs...).RunAndCapture()
 		if err != nil {
 			return err
@@ -78,13 +77,14 @@ func CluterInfo(c *status.Cluster) error {
 			return err
 		}
 
+		cp1.Infof("Using etcdctl version: %s\n", etcdctlVersion)
+		etcdArgs = append(etcdArgs, "etcdctl", "--endpoints=https://127.0.0.1:2379")
+
 		// Append version specific etcdctl certificate flags
 		if err := appendEtcdctlCertArgs(etcdctlVersion, &etcdArgs); err != nil {
 			return err
 		}
-
-		fmt.Printf("Using etcdctl version: %s\n", etcdctlVersion)
-		etcdArgs = append(etcdArgs, "--endpoints=https://127.0.0.1:2379", "member", "list")
+		etcdArgs = append(etcdArgs, "member", "list")
 
 		if err := cp1.Command(
 			"kubectl", etcdArgs...,
