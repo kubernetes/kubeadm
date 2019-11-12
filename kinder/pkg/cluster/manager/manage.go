@@ -24,7 +24,6 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 	kexec "sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -37,7 +36,7 @@ type ClusterManager struct {
 // a kind(er) cluster with a current status discovered by the actual containers nodes
 func NewClusterManager(clusterName string) (c *ClusterManager, err error) {
 	// Check if the cluster clusterName already exists
-	known, err := kindcluster.IsKnown(clusterName)
+	known, err := status.IsKnown(clusterName)
 	if err != nil {
 		return nil, err
 	}

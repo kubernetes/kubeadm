@@ -26,9 +26,9 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
-	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
+	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // CreateOptions holds all the options used at create time
@@ -96,7 +96,7 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 	}
 
 	// Check if the cluster name already exists
-	known, err := kindcluster.IsKnown(clusterName)
+	known, err := status.IsKnown(clusterName)
 	if err != nil {
 		return err
 	}
@@ -113,11 +113,23 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 	handleErr := func(err error) error {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		if !flags.retain {
-			ctx := kindcluster.NewContext(clusterName)
-			ctx.Delete()
+			if c, err := status.FromDocker(clusterName); err != nil {
+				log.Error(err)
+			} else {
+				for _, n := range c.AllNodes() {
+					if err := kindexec.Command(
+						"docker",
+						"rm",
+						"-f", // force the container to be deleted now
+						"-v", // delete volumes
+						n.Name(),
+					).Run(); err != nil {
+						return errors.Wrapf(err, "failed to delete node %s", n.Name())
+					}
+				}
+			}
 		}
 		log.Error(err)
-
 		return err
 	}
 

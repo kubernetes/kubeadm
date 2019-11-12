@@ -21,10 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/test/e2e"
-	kindcluster "sigs.k8s.io/kind/pkg/cluster"
 )
 
 type flagpole struct {
@@ -113,7 +113,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// if not explicitly set, gets the kubeconfig file for the selected kind cluster
 	if flags.kubeconfig == "" {
 		// Check if the cluster name already exists
-		known, err := kindcluster.IsKnown(flags.Name)
+		known, err := status.IsKnown(flags.Name)
 		if err != nil {
 			return err
 		}
@@ -121,9 +121,8 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			return errors.Errorf("a cluster with the name %q does not exists", flags.Name)
 		}
 
-		// create a cluster context from current nodes a gets the kubeconfig file
-		ctx := kindcluster.NewContext(flags.Name)
-		flags.kubeconfig = ctx.KubeConfigPath()
+		// Gets the kubeconfig file for the cluster name
+		flags.kubeconfig = status.KubeConfigPath(flags.Name)
 	}
 	// instruct e2e-kubeadm.test to use the kubeconfig file (if not already set into test-flags)
 	if _, ok := testFlags["kubeconfig"]; !ok {
