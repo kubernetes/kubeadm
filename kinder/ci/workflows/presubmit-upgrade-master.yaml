@@ -29,8 +29,8 @@ tasks:
     - node-image-variant
     - --base-image={{ .vars.baseImage }}
     - --image={{ .vars.image }}
-    - --with-init-artifacts={{ .vars.kubernetesVersion }}
-    - --with-kubeadm={{ .vars.kubeadmVersion }}
+    - --with-init-artifacts={{ .vars.initVersion }}
+    - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
     - --loglevel=debug
   timeout: 10m
 - name: create-cluster
@@ -69,6 +69,16 @@ tasks:
     - --automatic-copy-certs
     - --loglevel=debug
   timeout: 5m
+- name: upgrade
+  description: |
+    upgrades the cluster to Kubernetes "upgradeVersion"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-upgrade
+    - --upgrade-version={{ .vars.upgradeVersion }}
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: cluster-info
   description: |
     Runs cluster-info
