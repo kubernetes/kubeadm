@@ -28,6 +28,7 @@ package workflow
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -216,7 +217,7 @@ func (w *Workflow) expandImports(file string) error {
 				w.Vars[k] = v
 				continue
 			}
-			log.Infof("var %s in workflow file %s is shadowed by var %[1]s in parent workflow file %[3]s", k, path, file)
+			log.Debugf("var %s in workflow file %s is shadowed by var %[1]s in parent workflow file %[3]s", k, path, file)
 		}
 
 		// merge the env vars from the import file into the parent file
@@ -226,7 +227,7 @@ func (w *Workflow) expandImports(file string) error {
 				w.Env[k] = v
 				continue
 			}
-			log.Infof("env var %s in workflow file %s is shadowed by env var %[1]s in parent workflow file %[3]s", k, path, file)
+			log.Debugf("env var %s in workflow file %s is shadowed by env var %[1]s in parent workflow file %[3]s", k, path, file)
 		}
 
 		// import all tasks from the import file into the parent file, removing task name prefix
@@ -241,7 +242,7 @@ func (w *Workflow) expandImports(file string) error {
 }
 
 // Run executes a workflow
-func (w *Workflow) Run(dryRun, verbose, exitOnError bool, artifacts string) (err error) {
+func (w *Workflow) Run(out io.Writer, dryRun, verbose, exitOnError bool, artifacts string) (err error) {
 
 	// get a new taskCmdBuilder, responsible for creating taskCmd commands
 	taskCmdBuilder, err := newTaskCmdBuilder(w)
@@ -307,14 +308,14 @@ func (w *Workflow) Run(dryRun, verbose, exitOnError bool, artifacts string) (err
 	foundError := false
 	// Executes taskCmds
 	for _, tcmd := range tcmds {
-		fmt.Printf("# %s\n", tcmd.Name)
-		fmt.Printf("%s\n\n", tcmd.CmdText)
+		fmt.Fprintf(out, "# %s\n", tcmd.Name)
+		fmt.Fprintf(out, "%s\n\n", tcmd.CmdText)
 
 		if !dryRun {
 			err := taskCmdRunner.Run(tcmd, artifacts, verbose)
 			if err != nil {
 				foundError = true
-				fmt.Printf(" %v\n\n", err)
+				fmt.Fprintf(out, " %v\n\n", err)
 
 				if exitOnError {
 					return err
@@ -323,7 +324,7 @@ func (w *Workflow) Run(dryRun, verbose, exitOnError bool, artifacts string) (err
 				continue
 			}
 
-			fmt.Printf(" completed!\n\n")
+			fmt.Fprintf(out, " completed!\n\n")
 		}
 	}
 
@@ -332,10 +333,10 @@ func (w *Workflow) Run(dryRun, verbose, exitOnError bool, artifacts string) (err
 		taskCmdRunner.ReportSummary()
 
 		if err := taskCmdRunner.DumpJUnitRunner(artifacts); err != nil {
-			fmt.Printf("%v\n", err)
+			fmt.Fprintf(out, "%v\n", err)
 			return err
 		}
-		fmt.Printf("see junit-runner.xml and task logs files for more details\n\n")
+		fmt.Fprintf(out, "see junit-runner.xml and task logs files for more details\n\n")
 	}
 
 	if foundError {

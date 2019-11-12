@@ -46,5 +46,7 @@ while read -r file; do
 done <<< "$FILES"
 
 if [[ "${ERR}" == "1" ]]; then
+    echo ""
+    echo "Found errors in workflow files! See output above..."
     exit 1
 fi

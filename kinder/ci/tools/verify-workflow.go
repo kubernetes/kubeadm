@@ -17,7 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 
 	ktestworkflow "k8s.io/kubeadm/kinder/pkg/test/workflow"
@@ -25,16 +26,18 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("error: missing file argument")
-		fmt.Println("usage: verify-workflow some-file.yaml")
+		log.Infoln("error: missing file argument")
+		log.Infoln("usage: verify-workflow some-file.yaml")
 		os.Exit(1)
 	}
 	file := os.Args[1]
-	fmt.Printf("Verifying %s...", file)
-	_, err := ktestworkflow.NewWorkflow(file)
+	log.Infof("Verifying %s...", file)
+	w, err := ktestworkflow.NewWorkflow(file)
 	if err != nil {
-		fmt.Printf("FAILED\n%v\n", err)
-		os.Exit(1)
+		log.Fatalf("error: failed to create workflow: %v\n", err)
 	}
-	fmt.Println("OK")
+	if err := w.Run(ioutil.Discard, true, false, true, "ARTIFACTS"); err != nil {
+		log.Fatalf("error: failed to run workflow: %v\n", err)
+	}
+	log.Infof("%s OK", file)
 }
