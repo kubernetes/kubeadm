@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/cmd/kinder/get/artifacts"
-	kindgetcluster "sigs.k8s.io/kind/cmd/kind/get/clusters"
+	"k8s.io/kubeadm/kinder/cmd/kinder/get/clusters"
 	kindgetkubeconfig "sigs.k8s.io/kind/cmd/kind/get/kubeconfigpath"
 	kindgetnodes "sigs.k8s.io/kind/cmd/kind/get/nodes"
 )
@@ -34,8 +34,9 @@ func NewCommand() *cobra.Command {
 		Long:  "Gets one of [clusters, nodes, kubeconfig-path, artifacts]",
 	}
 
+	cmd.AddCommand(clusters.NewCommand())
+
 	// add kind top level subcommands re-used without changes
-	cmd.AddCommand(kindgetcluster.NewCommand())
 	cmd.AddCommand(kindgetnodes.NewCommand())
 	cmd.AddCommand(kindgetkubeconfig.NewCommand())
 
