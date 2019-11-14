@@ -18,6 +18,7 @@ package workflow
 
 import (
 	"github.com/spf13/cobra"
+	"os"
 
 	"k8s.io/kubeadm/kinder/pkg/test/workflow"
 )
@@ -76,5 +77,5 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return w.Run(flags.DryRun, flags.Verbose, flags.ExitOnError, artifacts)
+	return w.Run(os.Stdout, flags.DryRun, flags.Verbose, flags.ExitOnError, artifacts)
 }

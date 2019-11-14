@@ -92,7 +92,7 @@ var funcMap = template.FuncMap{
 // expand takes a string that might contain a golang template and process it
 // using Vars and Env variables as a context
 func (c *taskCmdBuilder) expand(text string) (string, error) {
-	templ, err := template.New("").Funcs(funcMap).Parse(text)
+	templ, err := template.New("").Option("missingkey=error").Funcs(funcMap).Parse(text)
 	if err != nil {
 		return "", errors.Wrapf(err, "%q is not a valid expression", text)
 	}
