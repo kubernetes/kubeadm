@@ -203,7 +203,7 @@ instructions are provided for bazel only, but other builds methods supported by 
 
 See also:
 
-- [Build and test with Bazel](https://github.com/kubernetes/community/blob/master/contributors/devel/bazel.md)
+- [Build and test with Bazel](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/bazel.md)
 - [Change the target version number when building a local release](#change-the-target-version-number-when-building-a-local-release)
 
 ### Build .debs packages

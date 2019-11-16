@@ -15,7 +15,7 @@ Please note that this document will only cover details on the `kubeadm*.yaml` fi
 these files contain.
 
 For example, let's have a look at this file:
-[kubeadm.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kind.yaml)
+[kubeadm-kinder.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml)
 
 It contains a list of jobs such as:
 ```
@@ -33,11 +33,11 @@ As a very high level summary, the way this works is when a job is invoked all th
 are passed to a CLI tool called kubetest, which then instantiates the job container and then the deployment tool
 inside it. Please note that kubetest is not required and test authors can decide to call any bash script instead.
 
-The SIG also uses another deployment tool called [kinder](https://github.com/kubernetes/kubeadm/kinder).
+The SIG also uses another deployment tool called [kinder](https://github.com/kubernetes/kubeadm/tree/master/kinder).
 kinder is based on kind and it's used for upgrades and version skew tests, but it does not require kubetest integration.
 
 Kinder uses test workflow files that run sequences of tasks, such as "upgrade", "run e2e conformance tests", "run e2e kubeadm tests".
-An example of such a workflow file can be seen [here](https://github.com/kubernetes/kubeadm/blob/master/kinder/ci/workflows/upgrade-stable-master.yaml).
+An example of such a workflow file can be seen [here](https://github.com/kubernetes/kubeadm/blob/master/kinder/ci/workflows/presubmit-upgrade-master.yaml).
 
 ### Testgrid configuration
 
@@ -103,7 +103,7 @@ Additional actions to be performed:
 #### Updating test jobs in kubernetes/test-infra
 
 This document will cover information on how to perform updates on these files:
-- [kubeadm-kind.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kind.yaml)
+- [kubeadm-kinder.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml)
 
 Holds test jobs where the kubeadm version matches the Kubernetes control-plane and the kubelet versions.
 
