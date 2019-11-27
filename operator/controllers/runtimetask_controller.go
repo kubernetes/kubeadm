@@ -200,15 +200,15 @@ func (r *RuntimeTaskReconciler) reconcileRecovery(executionMode operatorv1.Opera
 		log.WithValues("command", task.Status.CurrentCommand).Info("Skipping command after failure")
 		r.recorder.Event(task, corev1.EventTypeNormal, "TaskErrorSkip", fmt.Sprintf("Skipping command %d after failure", task.Status.CurrentCommand))
 
-		// Move to the next command
-		task.Status.NextCurrentCommand(task.Spec.Commands)
-		if executionMode == operatorv1.OperationExecutionModeControlled {
-			task.Status.Paused = true
-		}
-
 		// if all the commands are done, set the Task completion time
-		if int(task.Status.CurrentCommand) > len(task.Spec.Commands) {
+		if int(task.Status.CurrentCommand) >= len(task.Spec.Commands) {
 			task.Status.SetCompletionTime()
+		} else {
+			// Move to the next command
+			task.Status.NextCurrentCommand(task.Spec.Commands)
+			if executionMode == operatorv1.OperationExecutionModeControlled {
+				task.Status.Paused = true
+			}
 		}
 	default:
 		//TODO: error (if possible do validation before getting here)
@@ -309,33 +309,36 @@ func (r *RuntimeTaskReconciler) reconcileDelete(task *operatorv1.RuntimeTask) er
 }
 
 func (r *RuntimeTaskReconciler) reconcilePhase(task *operatorv1.RuntimeTask) {
-	// Set the phase to "pending" if nil.
-	if task.Status.Phase == "" {
-		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhasePending)
-	}
-
-	// Set the phase to "running" if start date is set.
-	if task.Status.StartTime != nil {
-		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhaseRunning)
-	}
-
-	// Set the phase to "paused" if paused is set.
-	if task.Status.Paused {
-		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhasePaused)
-	}
-
-	// Set the phase to "succeeded" if completion date is set.
-	if task.Status.CompletionTime != nil {
-		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhaseSucceeded)
+	// Set the phase to "deleting" if the deletion timestamp is set.
+	if !task.DeletionTimestamp.IsZero() {
+		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhaseDeleted)
+		return
 	}
 
 	// Set the phase to "failed" if any of Status.ErrorReason or Status.ErrorMessage is not-nil.
 	if task.Status.ErrorReason != nil || task.Status.ErrorMessage != nil {
 		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhaseFailed)
+		return
 	}
 
-	// Set the phase to "deleting" if the deletion timestamp is set.
-	if !task.DeletionTimestamp.IsZero() {
-		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhaseDeleted)
+	// Set the phase to "succeeded" if completion date is set.
+	if task.Status.CompletionTime != nil {
+		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhaseSucceeded)
+		return
 	}
+
+	// Set the phase to "paused" if paused is set.
+	if task.Status.Paused {
+		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhasePaused)
+		return
+	}
+
+	// Set the phase to "running" if start date is set.
+	if task.Status.StartTime != nil {
+		task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhaseRunning)
+		return
+	}
+
+	// Set the phase to "pending" if nil.
+	task.Status.SetTypedPhase(operatorv1.RuntimeTaskPhasePending)
 }
