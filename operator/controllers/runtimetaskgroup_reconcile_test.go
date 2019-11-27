@@ -171,48 +171,48 @@ func TestReconcileTaskGroups(t *testing.T) {
 
 	// All
 	expected := []string{"taskgroup-a", "taskgroup-b", "taskgroup-c", "taskgroup-d", "taskgroup-e", "taskgroup-f"}
-	if got := taskNames(got.all); !reflect.DeepEqual(got, expected) {
+	if got := taskGroupNames(got.all); !reflect.DeepEqual(got, expected) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 
 	// pending
 	expected = []string{"taskgroup-e"}
-	if got := taskNames(got.pending); !reflect.DeepEqual(got, expected) {
+	if got := taskGroupNames(got.pending); !reflect.DeepEqual(got, expected) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 
 	// running
 	expected = []string{"taskgroup-d"}
-	if got := taskNames(got.running); !reflect.DeepEqual(got, expected) {
+	if got := taskGroupNames(got.running); !reflect.DeepEqual(got, expected) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 
 	// completed
 	expected = []string{"taskgroup-c"}
-	if got := taskNames(got.completed); !reflect.DeepEqual(got, expected) {
+	if got := taskGroupNames(got.completed); !reflect.DeepEqual(got, expected) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 
 	// failed
 	expected = []string{"taskgroup-b"}
-	if got := taskNames(got.failed); !reflect.DeepEqual(got, expected) {
+	if got := taskGroupNames(got.failed); !reflect.DeepEqual(got, expected) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 
 	// tobeCreated
 	expected = []string{"taskgroup-a"}
-	if got := taskNames(got.tobeCreated); !reflect.DeepEqual(got, expected) {
+	if got := taskGroupNames(got.tobeCreated); !reflect.DeepEqual(got, expected) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 
 	// invalid
 	expected = []string{"taskgroup-f"}
-	if got := taskNames(got.invalid); !reflect.DeepEqual(got, expected) {
+	if got := taskGroupNames(got.invalid); !reflect.DeepEqual(got, expected) {
 		t.Errorf("expected %v, got %v", expected, got)
 	}
 }
 
-func taskNames(got []*taskGroupReconcileItem) []string {
+func taskGroupNames(got []*taskGroupReconcileItem) []string {
 	var actual []string
 	for _, a := range got {
 		actual = append(actual, a.name)
