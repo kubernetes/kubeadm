@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -64,24 +65,29 @@ func main() {
 	var enableLeaderElection bool
 
 	// common flags
-	flag.StringVar(&mode, "mode", string(modeManager), "One of [manger, agent].")
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&mode, "mode", string(modeManager), "One of [manger, agent]")
+	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to")
 
 	// manager flags
-	flag.StringVar(&pod, "manager-pod", "", "The pod the manager is running in.")
-	flag.StringVar(&namespace, "manager-namespace", "", "The namespace the manager is running in.")
-	flag.StringVar(&image, "agent-image", "", "The image that should be used for agent the DaemonSet. If empty, the manager image will be used.")
-	flag.BoolVar(&metricsRBAC, "agent-metrics-rbac", true, "Expose the /metrics endpoint for agent the DaemonSet with RBAC authn/z.")
+	flag.StringVar(&pod, "manager-pod", "", "The pod the manager is running in")
+	flag.StringVar(&namespace, "manager-namespace", "", "The namespace the manager is running in")                                               //TODO: implement in all the controllers
+	flag.StringVar(&image, "agent-image", "", "The image that should be used for agent the DaemonSet. If empty, the manager image will be used") //TODO: remove; always use manager image
+	flag.BoolVar(&metricsRBAC, "agent-metrics-rbac", true, "Use RBAC authn/z for the /metrics endpoint of agents")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
-		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager")
 
 	// agent flags
-	flag.StringVar(&nodeName, "agent-node-name", "", "The node that the agent manager should control.")
-	flag.StringVar(&operation, "agent-operation", "", "The operation that the agent manager should control. If empty, the agent will control headless Task only.")
+	flag.StringVar(&nodeName, "agent-node-name", "", "The node that the agent manager should control")
+	flag.StringVar(&operation, "agent-operation", "", "The operation that the agent manager should control. If empty, the agent will control headless Task only")
 
 	flag.Parse()
 
 	ctrl.SetLogger(klogr.New())
+
+	if managerMode(mode) != modeManager && managerMode(mode) != modeAgent {
+		setupLog.Error(errors.New("invalid value"), "unable to create controllers with an invalid --mode value")
+		os.Exit(1)
+	}
 
 	if managerMode(mode) == modeAgent {
 		enableLeaderElection = false
@@ -122,6 +128,15 @@ func main() {
 	}
 
 	if managerMode(mode) == modeAgent {
+		if nodeName == "" {
+			setupLog.Error(err, "unable to create controller without the --agent-node-name value set", "controller", "RuntimeTask")
+			os.Exit(1)
+		}
+		if nodeName == "" {
+			setupLog.Error(err, "unable to create controller without the --agent-operation value set", "controller", "RuntimeTask")
+			os.Exit(1)
+		}
+
 		if err = (&controllers.RuntimeTaskReconciler{
 			Client:    mgr.GetClient(),
 			NodeName:  nodeName,

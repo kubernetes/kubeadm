@@ -150,3 +150,7 @@ func (t *taskReconcileList) deriveViews() {
 		}
 	}
 }
+
+func (t *taskReconcileList) activeTasks() int {
+	return len(t.pending) + len(t.running)
+}

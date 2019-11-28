@@ -141,3 +141,7 @@ func (a *taskGroupReconcileList) deriveViews() {
 		}
 	}
 }
+
+func (a *taskGroupReconcileList) activeTaskGroups() int {
+	return len(a.pending) + len(a.running)
+}

@@ -24,7 +24,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/tools/record"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,7 +54,7 @@ type OperationReconciler struct {
 func (r *OperationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1.Operation{}).
-		Owns(&operatorv1.RuntimeTaskGroup{}).
+		Owns(&operatorv1.RuntimeTaskGroup{}). // force reconcile operation every time one of the owned TaskGroups change
 		Complete(r)
 
 	//TODO: watch DS for operation Daemonsets
@@ -106,9 +105,6 @@ func (r *OperationReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rerr e
 
 	// Reconcile the Operation
 	if err := r.reconcileOperation(operation, log); err != nil {
-		if requeueErr, ok := errors.Cause(err).(capierrors.HasRequeueAfterError); ok {
-			return ctrl.Result{Requeue: true, RequeueAfter: requeueErr.GetRequeueAfter()}, nil
-		}
 		return ctrl.Result{}, err
 	}
 
@@ -183,7 +179,14 @@ func (r *OperationReconciler) reconcileOperation(operation *operatorv1.Operation
 		}
 	}
 	// Handle non-deleted Operation
-	err = r.reconcileNormal(operation, log)
+
+	// gets controlled taskGroups items (desired vs actual)
+	taskGroups, err := r.reconcileTaskGroups(operation, log)
+	if err != nil {
+		return err
+	}
+
+	err = r.reconcileNormal(operation, taskGroups, log)
 	if err != nil {
 		return
 	}
@@ -214,23 +217,18 @@ func (r *OperationReconciler) reconcileLabels(operation *operatorv1.Operation) {
 	}
 }
 
-func (r *OperationReconciler) reconcileNormal(operation *operatorv1.Operation, log logr.Logger) error {
-	// If the Operation doesn't have finalizer, add it.
-	//if !util.Contains(operation.Finalizers, operatorv1.OperationFinalizer) {
-	//	operation.Finalizers = append(operation.Finalizers, operatorv1.OperationFinalizer)
-	//}
-
+func (r *OperationReconciler) reconcileTaskGroups(operation *operatorv1.Operation, log logr.Logger) (*taskGroupReconcileList, error) {
 	// gets all the desired TaskGroup objects for the current operation
 	// Nb. this is the domain knowledge encoded into operation implementations
 	desired, err := operations.TaskGroupList(operation)
 	if err != nil {
-		return errors.Wrap(err, "failed to get desired TaskGroup list")
+		return nil, errors.Wrap(err, "failed to get desired TaskGroup list")
 	}
 
 	// gets the current TaskGroup objects related to this Operation
 	actual, err := listTaskGroupsByLabels(r.Client, operation.Labels)
 	if err != nil {
-		return errors.Wrap(err, "failed to list TaskGroup")
+		return nil, errors.Wrap(err, "failed to list TaskGroup")
 	}
 
 	r.Log.Info("reconciling", "desired-TaskGroups", len(desired.Items), "TaskGroups", len(actual.Items))
@@ -245,64 +243,71 @@ func (r *OperationReconciler) reconcileNormal(operation *operatorv1.Operation, l
 	operation.Status.FailedGroups = int32(len(taskGroups.failed))
 	operation.Status.InvalidGroups = int32(len(taskGroups.invalid))
 
+	return taskGroups, nil
+}
+
+func (r *OperationReconciler) reconcileNormal(operation *operatorv1.Operation, taskGroups *taskGroupReconcileList, log logr.Logger) error {
+	// If the Operation doesn't have finalizer, add it.
+	//if !util.Contains(operation.Finalizers, operatorv1.OperationFinalizer) {
+	//	operation.Finalizers = append(operation.Finalizers, operatorv1.OperationFinalizer)
+	//}
+
 	// if there are TaskGroup not yet completed (pending or running), cleanup error messages (required e.g. after recovery)
 	// NB. It is necessary to give priority to running vs errors so the operation controller keeps alive/restarts
 	// the DaemonsSet for processing tasks
-	activeTaskGroups := len(taskGroups.pending) + len(taskGroups.running)
-	if activeTaskGroups > 0 {
+	if taskGroups.activeTaskGroups() > 0 {
 		operation.Status.ResetError()
-	}
-
-	// if there are invalid combinations (e.g. a TaskGroup without a desired TaskGroup)
-	// stop creating new TaskGroup and eventually set the error
-	if len(taskGroups.invalid) > 0 {
-		if activeTaskGroups == 0 {
+	} else {
+		// if there are invalid combinations (e.g. a TaskGroup without a desired TaskGroup)
+		// set the error and stop creating new TaskGroups
+		if len(taskGroups.invalid) > 0 {
 			// TODO: improve error message
 			operation.Status.SetError(
 				operatorerrors.NewOperationReconciliationError("something invalid"),
 			)
+			return nil
 		}
-		// stop creating new TaskGroup
-		return nil
-	}
 
-	// if there are failed TaskGroup
-	// stop creating new TaskGroup and eventually set the error
-	if len(taskGroups.failed) > 0 {
-		if activeTaskGroups == 0 {
+		// if there are failed TaskGroup
+		// set the error and stop creating new TaskGroups
+		if len(taskGroups.failed) > 0 {
 			// TODO: improve error message
 			operation.Status.SetError(
 				operatorerrors.NewOperationReplicaError("something failed"),
 			)
+			return nil
 		}
-		return nil
 	}
 
 	// TODO: manage adopt tasks/tasks to be orphaned
-
-	// at this point we are sure that there are no invalid current/desired TaskGroup combinations or failed TaskGroup
-
-	// if the completed TaskGroup have reached the number of expected TaskGroup, the Operation is completed
-	if len(taskGroups.completed) == len(taskGroups.all) {
-		// NB. we are setting this condition explicitly in order to avoid that the Operation accidentally
-		// restarts to create TaskGroup
-		operation.Status.Paused = false
-		operation.Status.SetCompletionTime()
-	}
-
-	// otherwise, proceed creating TaskGroup
 
 	// if nil, set the Operation start time
 	if operation.Status.StartTime == nil {
 		operation.Status.SetStartTime()
 
 		//TODO: add a signature so we can detect if someone/something changes the operations while it is processed
+		return nil
 	}
+
+	// if the completed TaskGroup have reached the number of expected TaskGroup, the Operation is completed
+	// NB. we are doing this before checking pause because if everything is completed, does not make sense to pause
+	if len(taskGroups.completed) == len(taskGroups.all) {
+		// NB. we are setting this condition explicitly in order to avoid that the Operation accidentally
+		// restarts to create TaskGroup
+		operation.Status.SetCompletionTime()
+	}
+
+	// if the TaskGroup is paused, return
+	if operation.Status.Paused {
+		return nil
+	}
+
+	// otherwise, proceed creating TaskGroup
 
 	// if there are still TaskGroup to be created
 	if len(taskGroups.tobeCreated) > 0 {
 		// if there no TaskGroup not yet completed (pending or running)
-		if activeTaskGroups == 0 {
+		if taskGroups.activeTaskGroups() == 0 {
 			// create the next TaskGroup in the ordered sequence
 			nextTaskGroup := taskGroups.tobeCreated[0].planned
 			log.WithValues("task-group", nextTaskGroup.Name).Info("creating task")
@@ -326,33 +331,36 @@ func (r *OperationReconciler) reconcileDelete(operation *operatorv1.Operation) e
 }
 
 func (r *OperationReconciler) reconcilePhase(operation *operatorv1.Operation) {
-	// Set the phase to "pending" if nil.
-	if operation.Status.Phase == "" {
-		operation.Status.SetTypedPhase(operatorv1.OperationPhasePending)
-	}
-
-	// Set the phase to "running" if start date is set.
-	if operation.Status.StartTime != nil {
-		operation.Status.SetTypedPhase(operatorv1.OperationPhaseRunning)
-	}
-
-	// Set the phase to "paused" if paused set.
-	if operation.Status.Paused {
-		operation.Status.SetTypedPhase(operatorv1.OperationPhasePaused)
-	}
-
-	// Set the phase to "succeeded" if completion date is set.
-	if operation.Status.CompletionTime != nil {
-		operation.Status.SetTypedPhase(operatorv1.OperationPhaseSucceeded)
+	// Set the phase to "deleting" if the deletion timestamp is set.
+	if !operation.DeletionTimestamp.IsZero() {
+		operation.Status.SetTypedPhase(operatorv1.OperationPhaseDeleted)
+		return
 	}
 
 	// Set the phase to "failed" if any of Status.ErrorReason or Status.ErrorMessage is not-nil.
 	if operation.Status.ErrorReason != nil || operation.Status.ErrorMessage != nil {
 		operation.Status.SetTypedPhase(operatorv1.OperationPhaseFailed)
+		return
 	}
 
-	// Set the phase to "deleting" if the deletion timestamp is set.
-	if !operation.DeletionTimestamp.IsZero() {
-		operation.Status.SetTypedPhase(operatorv1.OperationPhaseDeleted)
+	// Set the phase to "succeeded" if completion date is set.
+	if operation.Status.CompletionTime != nil {
+		operation.Status.SetTypedPhase(operatorv1.OperationPhaseSucceeded)
+		return
 	}
+
+	// Set the phase to "paused" if paused set.
+	if operation.Status.Paused {
+		operation.Status.SetTypedPhase(operatorv1.OperationPhasePaused)
+		return
+	}
+
+	// Set the phase to "running" if start date is set.
+	if operation.Status.StartTime != nil {
+		operation.Status.SetTypedPhase(operatorv1.OperationPhaseRunning)
+		return
+	}
+
+	// Set the phase to "pending" if nil.
+	operation.Status.SetTypedPhase(operatorv1.OperationPhasePending)
 }
