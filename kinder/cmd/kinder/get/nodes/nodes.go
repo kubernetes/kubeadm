@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package clusters
+package nodes
 
 import (
 	"fmt"
@@ -22,29 +22,42 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
-// NewCommand returns a new cobra.Command for getting the list of clusters
+type flagpole struct {
+	Name string
+}
+
+// NewCommand returns a new cobra.Command for getting the list of nodes in a cluster
 func NewCommand() *cobra.Command {
+	flags := &flagpole{}
+
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "clusters",
-		Short: "Lists existing kind clusters by their name",
-		Long:  "Lists existing kind clusters by their name",
+		Use:   "nodes",
+		Short: "Lists existing nodes in kind clusters by their name",
+		Long:  "Lists existing nodes in kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd, args)
+			return runE(flags, cmd, args)
 		},
 	}
+
+	cmd.Flags().StringVar(
+		&flags.Name,
+		"name", constants.DefaultClusterName, "cluster name",
+	)
 	return cmd
 }
 
-func runE(cmd *cobra.Command, args []string) error {
-	clusters, err := status.ListClusters()
+func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	cluster, err := status.FromDocker(flags.Name)
 	if err != nil {
 		return err
 	}
-	for _, cluster := range clusters {
-		fmt.Println(cluster)
+
+	for _, node := range cluster.AllNodes() {
+		fmt.Println(node.Name())
 	}
 	return nil
 }
