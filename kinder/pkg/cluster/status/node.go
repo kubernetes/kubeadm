@@ -18,6 +18,8 @@ package status
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -247,15 +249,9 @@ func (n *Node) WriteClusterSettings(settings *ClusterSettings) error {
 		return errors.Wrapf(err, "failed to write %s", clusterSettingsPath)
 	}
 
-	err = n.Command(
-		"cp", "/dev/stdin", clusterSettingsPath,
-	).Stdin(
-		strings.NewReader(string(s)),
-	).Silent().Run()
-	if err != nil {
-		return errors.Wrapf(err, "failed to write %s", clusterSettingsPath)
+	if err := n.WriteFile(clusterSettingsPath, s); err != nil {
+		return err
 	}
-
 	return nil
 }
 
@@ -295,15 +291,9 @@ func (n *Node) WriteNodeSettings(settings *NodeSettings) error {
 		return errors.Wrapf(err, "failed to write %s", nodeSettingsPath)
 	}
 
-	err = n.Command(
-		"cp", "/dev/stdin", nodeSettingsPath,
-	).Stdin(
-		strings.NewReader(string(s)),
-	).Silent().Run()
-	if err != nil {
-		return errors.Wrapf(err, "failed to write %s", nodeSettingsPath)
+	if err := n.WriteFile(nodeSettingsPath, s); err != nil {
+		return err
 	}
-
 	return nil
 }
 
@@ -415,6 +405,29 @@ func (n *Node) CopyTo(source, dest string) error {
 		n.name+":"+dest, // to the node, at dest
 	)
 	return cmd.Run()
+}
+
+// WriteFile writes a temporary file with the given contents and copies the file to the node container
+func (n *Node) WriteFile(containerPath string, contents []byte) error {
+	// Write the contents as a temporary file
+	tmpfile, err := ioutil.TempFile("kinder", fmt.Sprintf("%s-*", n.name))
+	if err != nil {
+		errors.Wrap(err, "could not create temporary file")
+	}
+	tmpPath := tmpfile.Name()
+	defer os.Remove(tmpPath)
+	if _, err := tmpfile.Write(contents); err != nil {
+		return errors.Wrapf(err, "failed to write temporary file %s", tmpPath)
+	}
+	if err := tmpfile.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close temporary file %s", tmpPath)
+	}
+
+	// Copy the temporary file to the container
+	if err := n.CopyTo(tmpPath, containerPath); err != nil {
+		return errors.Wrapf(err, "failed to write %s", containerPath)
+	}
+	return nil
 }
 
 // KubeVersion returns the Kubernetes version installed on the node

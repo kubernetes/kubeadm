@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 // CopyCertificates actions automate the manual copy of
@@ -73,12 +72,8 @@ func copyCertificatesToNode(c *status.Cluster, n *status.Node) error {
 			return errors.Wrapf(err, "failed to read certificate %s from %s", fileName, c.BootstrapControlPlane().Name())
 		}
 		// copies from tmp area to joining node
-		if err := n.Command(
-			"cp", "/dev/stdin", containerPath,
-		).Stdin(
-			strings.NewReader(strings.Join(lines, "\n")),
-		).Silent().Run(); err != nil {
-			return errors.Wrapf(err, "failed to write %s", constants.KubeadmConfigPath)
+		if err := n.WriteFile(containerPath, []byte(strings.Join(lines, "\n"))); err != nil {
+			return err
 		}
 	}
 
