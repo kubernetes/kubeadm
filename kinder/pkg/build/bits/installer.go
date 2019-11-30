@@ -22,7 +22,7 @@ package bits
 import (
 	"path/filepath"
 
-	kindexec "sigs.k8s.io/kind/pkg/exec"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 )
 
 // Installer interface defines the behaviour of a type in charge of installing a specific set of bits (files/artifacts)
@@ -73,25 +73,24 @@ func (c *BuildContext) BindToContainer(containerID string) {
 
 // RunInContainer executes a command on the container used for altering the image
 func (c *BuildContext) RunInContainer(command string, args ...string) error {
-	cmd := kindexec.Command(
+	cmd := exec.NewHostCmd(
 		"docker",
 		append(
 			[]string{"exec", c.containerID, command},
 			args...,
 		)...,
 	)
-	kindexec.InheritOutput(cmd)
-	return cmd.Run()
+	return cmd.RunWithEcho()
 }
 
 // CombinedOutputLinesInContainer executes a command on the container used for altering the image and returns CombinedOutputLines
 func (c *BuildContext) CombinedOutputLinesInContainer(command string, args ...string) ([]string, error) {
-	cmd := kindexec.Command(
+	cmd := exec.NewHostCmd(
 		"docker",
 		append(
 			[]string{"exec", c.containerID, command},
 			args...,
 		)...,
 	)
-	return kindexec.CombinedOutputLines(cmd)
+	return cmd.RunAndCapture()
 }

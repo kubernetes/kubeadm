@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 )
 
 // Cluster represents an existing kind(er) clusters
@@ -66,7 +66,7 @@ const (
 
 // ListClusters is part of the providers.Provider interface
 func ListClusters() ([]string, error) {
-	cmd := kindexec.Command("docker",
+	cmd := exec.NewHostCmd("docker",
 		"ps",
 		"-q",         // quiet output for parsing
 		"-a",         // show stopped nodes
@@ -76,7 +76,7 @@ func ListClusters() ([]string, error) {
 		// format to include the cluster name
 		"--format", fmt.Sprintf(`{{.Label "%s"}}`, constants.ClusterLabelKey),
 	)
-	lines, err := kindexec.CombinedOutputLines(cmd)
+	lines, err := cmd.RunAndCapture()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list clusters")
 	}
@@ -158,7 +158,7 @@ func (c *Cluster) KubeConfigPath() string {
 
 // ListNodes is part of the providers.Provider interface
 func (c *Cluster) listNodes() ([]string, error) {
-	cmd := kindexec.Command("docker",
+	cmd := exec.NewHostCmd("docker",
 		"ps",
 		"-q",         // quiet output for parsing
 		"-a",         // show stopped nodes
@@ -168,7 +168,7 @@ func (c *Cluster) listNodes() ([]string, error) {
 		// format to include the cluster name
 		"--format", `{{.Names}}`,
 	)
-	nodes, err := kindexec.CombinedOutputLines(cmd)
+	nodes, err := cmd.RunAndCapture()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list nodes for cluster %s", c.name)
 	}

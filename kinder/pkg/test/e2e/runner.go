@@ -27,8 +27,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
-	kindexec "sigs.k8s.io/kind/pkg/exec"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 )
 
 // Option is an Runner configuration option supplied to NewRunner
@@ -128,10 +127,8 @@ func (r *Runner) Run() error {
 
 	// executes the command.
 	// TODO: switch to an executor that supports timeout/cancellation
-	cmd := kindexec.Command(ginkgoBinary, args...)
-	kindexec.InheritOutput(cmd)
-	err = cmd.Run()
-	if err != nil {
+	cmd := exec.NewHostCmd(ginkgoBinary, args...)
+	if err = cmd.RunWithEcho(); err != nil {
 		return errors.Wrap(err, "error running test")
 	}
 

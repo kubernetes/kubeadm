@@ -20,8 +20,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
+	"k8s.io/kubeadm/kinder/pkg/exec"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // NB. code implemented in this package ideally should be in the CRI package, but ATM it is
@@ -59,7 +59,7 @@ func InspectCRIinImage(image string) (ContainerRuntime, error) {
 		return "", errors.Wrap(err, "error creating a temporary container for CRI detection")
 	}
 	defer func() {
-		kindexec.Command("docker", "rm", "-f", id).Run()
+		exec.NewHostCmd("docker", "rm", "-f", id).Run()
 	}()
 
 	return InspectCRIinContainer(id)
@@ -69,12 +69,7 @@ func InspectCRIinImage(image string) (ContainerRuntime, error) {
 // NB. this method use raw kinddocker/kindexec commands because it is used also during "alter" and "create"
 // (before an actual Cluster status exist)
 func InspectCRIinContainer(id string) (ContainerRuntime, error) {
-
-	cmder := kinddocker.ContainerCmder(id)
-
-	cmd := cmder.Command("/bin/sh", "-c",
-		`which docker || true`)
-	lines, err := kindexec.CombinedOutputLines(cmd)
+	lines, err := exec.NewNodeCmd(id, "/bin/sh", "-c", `which docker || true`).Silent().RunAndCapture()
 
 	if err != nil {
 		return ContainerRuntime(""), errors.Wrap(err, "error detecting CRI")

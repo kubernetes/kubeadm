@@ -23,9 +23,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 	"k8s.io/kubeadm/kinder/third_party/kind/loadbalancer"
-	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // CommonArgs computes docker arguments that apply to all containers
@@ -110,8 +111,8 @@ func getProxyEnvs() (map[string]string, error) {
 
 func getSubnets(networkName string) ([]string, error) {
 	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
-	cmd := exec.Command("docker", "network", "inspect", "-f", format, networkName)
-	lines, err := exec.CombinedOutputLines(cmd)
+	cmd := exec.NewHostCmd("docker", "network", "inspect", "-f", format, networkName)
+	lines, err := cmd.RunAndCapture()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}
@@ -120,8 +121,8 @@ func getSubnets(networkName string) ([]string, error) {
 
 // usernsRemap checks if userns-remap is enabled in dockerd
 func usernsRemap() bool {
-	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")
-	lines, err := exec.CombinedOutputLines(cmd)
+	cmd := exec.NewHostCmd("docker", "info", "--format", "'{{json .SecurityOptions}}'")
+	lines, err := cmd.RunAndCapture()
 	if err != nil {
 		return false
 	}

@@ -18,14 +18,14 @@ package cri
 
 import (
 	"github.com/pkg/errors"
-	"k8s.io/kubeadm/kinder/pkg/constants"
-	"k8s.io/kubeadm/kinder/pkg/cri/util"
-	"k8s.io/kubeadm/kinder/third_party/kind/loadbalancer"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri/containerd"
 	"k8s.io/kubeadm/kinder/pkg/cri/docker"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
+	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	"k8s.io/kubeadm/kinder/pkg/exec"
+	"k8s.io/kubeadm/kinder/third_party/kind/loadbalancer"
 )
 
 // CreateHelper provides CRI specific methods for node create
@@ -68,7 +68,7 @@ func (h *CreateHelper) CreateExternalEtcd(cluster, name, image string) error {
 	args = util.ContainerArgsForExternalEtcd(cluster, args)
 
 	// creates the container
-	return kindexec.Command("docker", args...).Run()
+	return exec.NewHostCmd("docker", args...).Run()
 }
 
 // CreateExternalLoadBalancer creates a container hosting an external load balancer
@@ -88,5 +88,5 @@ func (h *CreateHelper) CreateExternalLoadBalancer(cluster, name string) error {
 	args = append(args, loadbalancer.Image)
 
 	// creates the container
-	return kindexec.Command("docker", args...).Run()
+	return exec.NewHostCmd("docker", args...).Run()
 }

@@ -23,19 +23,19 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
-	"k8s.io/kubeadm/kinder/pkg/cluster/cmd"
-	"k8s.io/kubeadm/kinder/pkg/cluster/cmd/colors"
 	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/exec"
+	"k8s.io/kubeadm/kinder/pkg/exec/colors"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
 	ksigsyaml "sigs.k8s.io/yaml"
 )
 
 // commandMutator define a function that can mutate commands on a node.
 // It is used to inject behaviours that should apply to all the command
 // executed on a node, like e.g. DryRun
-type commandMutator = func(*cmd.ProxyCmd) *cmd.ProxyCmd
+type commandMutator = func(cmd *exec.NodeCmd) *exec.NodeCmd
 
 // Node defines a K8s node running in a kinde(er) docker container or a container hosting
 // one external dependency of the cluster, like etcd or the load balancer.
@@ -135,9 +135,9 @@ func (n *Node) provisioningOrder() int {
 }
 
 // Command returns a ProxyCmd that allows to run commands on the node
-func (n *Node) Command(command string, args ...string) *cmd.ProxyCmd {
+func (n *Node) Command(command string, args ...string) *exec.NodeCmd {
 	// creates new ProxyCmd to run a command on a kind(er) node
-	cmd := cmd.NewProxyCmd(n.Name(), command, args...)
+	cmd := exec.NewNodeCmd(n.Name(), command, args...)
 
 	// applies command mutators
 	for _, m := range n.commandMutators {
@@ -161,7 +161,7 @@ func (n *Node) DryRun() {
 	}
 
 	n.commandMutators = append(n.commandMutators,
-		func(c *cmd.ProxyCmd) *cmd.ProxyCmd {
+		func(c *exec.NodeCmd) *exec.NodeCmd {
 			return c.DryRun()
 		},
 	)
@@ -187,7 +187,7 @@ func (n *Node) MustKubeadmVersion() *K8sVersion.Version {
 
 // KubeadmVersion returns the kubeadm version installed on the node
 func (n *Node) KubeadmVersion() (*K8sVersion.Version, error) {
-	lines, err := cmd.NewProxyCmd(n.Name(), "kubeadm", "version", "-o=short").Silent().RunAndCapture()
+	lines, err := n.Command("kubeadm", "version", "-o=short").Silent().RunAndCapture()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get kubeadm version")
 	}
@@ -214,8 +214,7 @@ func (n *Node) EtcdImage() (string, error) {
 		return "", err
 	}
 
-	lines, err := cmd.NewProxyCmd(
-		n.Name(),
+	lines, err := n.Command(
 		"/bin/sh", "-c",
 		fmt.Sprintf("kubeadm config images list --kubernetes-version=%s 2> /dev/null | grep etcd", kubeVersion),
 	).Silent().RunAndCapture()
@@ -399,7 +398,7 @@ func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 // CopyFrom copies the source file on the node to dest on the host.
 // Please note that this have limitations around symlinks.
 func (n *Node) CopyFrom(source, dest string) error {
-	cmd := kindexec.Command(
+	cmd := exec.NewHostCmd(
 		"docker", "cp",
 		n.name+":"+source, // from the node, at source
 		dest,              // to the host, at dest
@@ -409,7 +408,7 @@ func (n *Node) CopyFrom(source, dest string) error {
 
 // CopyTo copies the source file on the host to dest on the node
 func (n *Node) CopyTo(source, dest string) error {
-	cmd := kindexec.Command(
+	cmd := exec.NewHostCmd(
 		"docker", "cp",
 		source,          // from the host, at source
 		n.name+":"+dest, // to the node, at dest
