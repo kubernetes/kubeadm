@@ -2,17 +2,17 @@
 
 This document outlines some goals, non-goals, and future aspirations for kinder.
 
-kinder is an example of [kind](https://github.com/kubernetes-sigs/kind) used as a library.
+kinder is heavily inspired by [kind](https://github.com/kubernetes-sigs/kind), kinder shares the same core ideas of kind, but in agreement with the kind team,
+was developed as a separated tool with the goal to explore new kubeadm-related use cases, share issues and solutions, and
+ultimately contribute back new features.
 
-All the kind commands will be available in kinder, side by side with additional commands designed
-for helping kubeadm contributors.
-
-High level goals for kinder v0.1 include:
+High level goals for kinder include:
 
 - [x] Support docker and containerd as a container runtime inside nodes
 
 - [ ] Provide a local test environment for kubeadm development
    - [x] Allow creation of nodes "ready for installing Kubernetes"
+      - [ ] Support mount volumes
    - [x] Provide pre built developer-workflows for kubeadm init, join, reset
       - [x] init and init with phases
       - [x] join and join with phases
@@ -26,18 +26,25 @@ High level goals for kinder v0.1 include:
    - [x] Allow test of kubeadm cluster variations
       - [x] external etcd
       - [x] kube-dns
+   - [x] Allow test of kubeadm features
+      - [x] discovery types
+      - [x] kustomize
+      - [ ] certificate renewal
+      - [ ] machine readable output
    - [x] Provide "topology aware" wrappers for `docker exec` and `docker cp`
    - [ ] Provide a way to add nodes to an existing cluster
       - [ ] Add worker node
       - [ ] Add control plane node (and reconfigure load balancer)
    - [x] Provide smoke test action
    - [ ] Support for testing concurrency on joining nodes
+   - [ ] Support testing the kubeadm-operator
+   - [ ] Explore synergies with CAPD
 
-- [x] Be a temporary, kubeadm-project CI glue on top of kind
+- [x] Be the kubeadm CI glue
    - [x] Provide get Kubernetes artifacts command(s)
    - [x] Allow build of node-image variants using Kubernetes artifacts from different sources
    - [x] Provide E2E run command(s)
-   - [x] Provide test command that automates complex test scenarios composed by many steps/stages
+   - [x] Provide test command that automates complex test scenarios composed by many steps/stages (Workflows)
 
 **Non**-Goals include:
 
@@ -46,8 +53,8 @@ High level goals for kinder v0.1 include:
 
 Longer Term goals include:
 
+- Improve the kubeadm CI signal
 - Simplify kubeadm development/local testing
 - Help new contributors on kubeadm development
 - Contribute to improving and testing "kind as a library"
 - Contribute back idea/code for new features in kind
-- Provide a home for use cases that are difficult to support in the main kind CLI

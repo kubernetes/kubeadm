@@ -2,7 +2,9 @@
 
 [kind](https://github.com/kubernetes-sigs/kind) is awesome!
 
-kinder is an example of [kind](https://github.com/kubernetes-sigs/kind) used as a library.
+kinder shares the same core ideas of kind, but in agreement with the kind team, was developed
+as a separated tool with the goal to explore new kubeadm-related use cases, share issues and solutions, and
+ultimately contribute back new features.
 
 ## Target use cases
 
