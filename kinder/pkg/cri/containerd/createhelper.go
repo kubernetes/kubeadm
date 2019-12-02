@@ -22,13 +22,13 @@ import (
 )
 
 // CreateNode creates a container that internally hosts the containerd cri runtime
-func CreateNode(cluster, name, image, role string) error {
+func CreateNode(cluster, name, image, role string, volumes []string) error {
 	args, err := util.CommonArgs(cluster, name, role)
 	if err != nil {
 		return err
 	}
 
-	args, err = util.RunArgsForNode(role, args)
+	args, err = util.RunArgsForNode(role, volumes, args)
 	if err != nil {
 		return err
 	}

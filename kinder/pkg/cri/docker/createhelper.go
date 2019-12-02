@@ -29,13 +29,13 @@ import (
 )
 
 // CreateNode creates a container that internally hosts the docker cri runtime
-func CreateNode(cluster, name, image, role string) error {
+func CreateNode(cluster, name, image, role string, volumes []string) error {
 	args, err := util.CommonArgs(cluster, name, role)
 	if err != nil {
 		return err
 	}
 
-	args, err = util.RunArgsForNode(role, args)
+	args, err = util.RunArgsForNode(role, volumes, args)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,6 @@ func fixMachineID(name string) error {
 
 func runArgsForDocker(args []string) []string {
 	args = append(args,
-		// define a minimal etcd (insecure, single node, not exposed to the host machine)
 		"--entrypoint=/usr/local/bin/entrypoint",
 	)
 

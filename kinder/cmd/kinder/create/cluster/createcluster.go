@@ -25,23 +25,19 @@ import (
 )
 
 const (
-	configFlagName               = "config"
-	controlPlaneNodesFlagName    = "control-plane-nodes"
-	workerNodesFLagName          = "worker-nodes"
-	kubeDNSFLagName              = "kube-dns"
-	externalEtcdFlagName         = "external-etcd"
-	externalLoadBalancerFlagName = "external-load-balancer"
+	controlPlaneNodesFlagName = "control-plane-nodes"
+	workerNodesFlagName       = "worker-nodes"
 )
 
 type flagpole struct {
 	Name                 string
-	Config               string
 	ImageName            string
 	Workers              int
 	ControlPlanes        int
 	Retain               bool
 	ExternalEtcd         bool
 	ExternalLoadBalancer bool
+	Volumes              []string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -68,7 +64,7 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().IntVar(
 		&flags.Workers,
-		workerNodesFLagName, 0,
+		workerNodesFlagName, 0,
 		"number of worker nodes in the cluster",
 	)
 	cmd.Flags().StringVar(
@@ -83,13 +79,18 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().BoolVar(
 		&flags.ExternalEtcd,
-		externalEtcdFlagName, false,
+		"external-etcd", false,
 		"create an external etcd container and setup kubeadm for using it",
 	)
 	cmd.Flags().BoolVar(
 		&flags.ExternalLoadBalancer,
-		externalLoadBalancerFlagName, false,
+		"external-load-balancer", false,
 		"add an external load balancer to the cluster (implicit if number of control-plane nodes>1)",
+	)
+	cmd.Flags().StringSliceVar(
+		&flags.Volumes,
+		"volume", nil,
+		"mount a volume on node containers",
 	)
 
 	return cmd
@@ -99,7 +100,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	var err error
 
 	if flags.ControlPlanes < 0 || flags.Workers < 0 {
-		return errors.Errorf("flags --%s and --%s should not be a negative number", controlPlaneNodesFlagName, workerNodesFLagName)
+		return errors.Errorf("flags --%s and --%s should not be a negative number", controlPlaneNodesFlagName, workerNodesFlagName)
 	}
 
 	// get a kinder cluster manager
@@ -111,6 +112,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		manager.ExternalLoadBalancer(flags.ExternalLoadBalancer),
 		manager.ExternalEtcd(flags.ExternalEtcd),
 		manager.Retain(flags.Retain),
+		manager.Volumes(flags.Volumes),
 	); err != nil {
 		return errors.Wrap(err, "failed to create cluster")
 	}

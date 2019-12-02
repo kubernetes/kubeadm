@@ -39,6 +39,7 @@ type CreateOptions struct {
 	externalLoadBalancer bool
 	externalEtcd         bool
 	retain               bool
+	volumes              []string
 }
 
 // CreateOption is a configuration option supplied to Create
@@ -81,10 +82,17 @@ func ExternalLoadBalancer(externalLoadBalancer bool) CreateOption {
 	}
 }
 
-// Retain option instructs create cluster to preserve node in case of errors for debuggin pouposes
+// Retain option instructs create cluster to preserve node in case of errors for debugging purposes
 func Retain(retain bool) CreateOption {
 	return func(c *CreateOptions) {
 		c.retain = retain
+	}
+}
+
+// Volumes option instructs create cluster to add volumes to the node containers
+func Volumes(volumes []string) CreateOption {
+	return func(c *CreateOptions) {
+		c.volumes = volumes
 	}
 }
 
@@ -180,7 +188,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 			case constants.ExternalLoadBalancerNodeRoleValue:
 				return createHelper.CreateExternalLoadBalancer(clusterName, desiredNode.Name)
 			case constants.ControlPlaneNodeRoleValue, constants.WorkerNodeRoleValue:
-				return createHelper.CreateNode(clusterName, desiredNode.Name, flags.image, desiredNode.Role)
+				return createHelper.CreateNode(clusterName, desiredNode.Name, flags.image, desiredNode.Role, flags.volumes)
 			default:
 				return nil
 			}
