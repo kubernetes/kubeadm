@@ -98,7 +98,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) error {
 	initArgs := []string{
 		"init",
-		"--ignore-preflight-errors=all",
+		constants.KubeadmIgnorePreflightErrorsFlag,
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
 	}
@@ -132,7 +132,7 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string,
 func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
-		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind; TODO: change from all > exact list of checks
+		constants.KubeadmIgnorePreflightErrorsFlag,
 	).RunWithEcho(); err != nil {
 		return err
 	}
