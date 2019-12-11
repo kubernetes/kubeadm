@@ -134,7 +134,7 @@ func usernsRemap() bool {
 }
 
 // RunArgsForNode computes docker run arguments that apply to containers that should host K8s nodes
-func RunArgsForNode(role string, args []string) ([]string, error) {
+func RunArgsForNode(role string, volumes []string, args []string) ([]string, error) {
 	args = append(args,
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
@@ -155,6 +155,10 @@ func RunArgsForNode(role string, args []string) ([]string, error) {
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
 	)
+
+	for _, v := range volumes {
+		args = append(args, "--volume", v)
+	}
 
 	if role == constants.ControlPlaneNodeRoleValue {
 		// API server port mapping

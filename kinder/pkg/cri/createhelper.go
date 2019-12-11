@@ -41,12 +41,12 @@ func NewCreateHelper(cri status.ContainerRuntime) (*CreateHelper, error) {
 }
 
 // CreateNode creates a container that internally hosts the selected cri runtime
-func (h *CreateHelper) CreateNode(cluster, name, image, role string) error {
+func (h *CreateHelper) CreateNode(cluster, name, image, role string, volumes []string) error {
 	switch h.cri {
 	case status.ContainerdRuntime:
-		return containerd.CreateNode(cluster, name, image, role)
+		return containerd.CreateNode(cluster, name, image, role, volumes)
 	case status.DockerRuntime:
-		return docker.CreateNode(cluster, name, image, role)
+		return docker.CreateNode(cluster, name, image, role, volumes)
 	}
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
