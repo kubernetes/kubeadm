@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package clusters
+package kubeconfigpath
 
 import (
 	"fmt"
@@ -22,29 +22,31 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
+	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
-// NewCommand returns a new cobra.Command for getting the list of clusters
-func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "clusters",
-		Short: "Lists existing kind clusters by their name",
-		Long:  "Lists existing kind clusters by their name",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd, args)
-		},
-	}
-	return cmd
+type flagpole struct {
+	Name string
 }
 
-func runE(cmd *cobra.Command, args []string) error {
-	clusters, err := status.ListClusters()
-	if err != nil {
-		return err
+// NewCommand returns a new cobra.Command for getting the list of nodes in a cluster
+func NewCommand() *cobra.Command {
+	flags := &flagpole{}
+
+	cmd := &cobra.Command{
+		Args:  cobra.NoArgs,
+		Use:   "kubeconfig-path",
+		Short: "Prints the default kubeconfig path for the kind cluster by --name",
+		Long:  "Prints the default kubeconfig path for the kind cluster by --name",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Println(status.KubeConfigPath(flags.Name))
+			return nil
+		},
 	}
-	for _, cluster := range clusters {
-		fmt.Println(cluster)
-	}
-	return nil
+
+	cmd.Flags().StringVar(
+		&flags.Name,
+		"name", constants.DefaultClusterName, "cluster name",
+	)
+	return cmd
 }

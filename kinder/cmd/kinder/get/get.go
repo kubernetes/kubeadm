@@ -21,8 +21,8 @@ import (
 
 	"k8s.io/kubeadm/kinder/cmd/kinder/get/artifacts"
 	"k8s.io/kubeadm/kinder/cmd/kinder/get/clusters"
-	kindgetkubeconfig "sigs.k8s.io/kind/cmd/kind/get/kubeconfigpath"
-	kindgetnodes "sigs.k8s.io/kind/cmd/kind/get/nodes"
+	"k8s.io/kubeadm/kinder/cmd/kinder/get/kubeconfigpath"
+	"k8s.io/kubeadm/kinder/cmd/kinder/get/nodes"
 )
 
 // NewCommand returns a new cobra.Command for get
@@ -37,8 +37,8 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(clusters.NewCommand())
 
 	// add kind top level subcommands re-used without changes
-	cmd.AddCommand(kindgetnodes.NewCommand())
-	cmd.AddCommand(kindgetkubeconfig.NewCommand())
+	cmd.AddCommand(nodes.NewCommand())
+	cmd.AddCommand(kubeconfigpath.NewCommand())
 
 	// add kinder only commands
 	cmd.AddCommand(artifacts.NewCommand())
