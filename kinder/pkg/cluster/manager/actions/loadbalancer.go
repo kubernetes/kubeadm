@@ -18,7 +18,6 @@ package actions
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -73,10 +72,7 @@ func LoadBalancer(c *status.Cluster, nodes ...*status.Node) error {
 	// create loadbalancer config on the node
 	log.Debugf("Writing loadbalancer config on %s...", lb.Name())
 
-	if err = lb.Command("cp", "/dev/stdin", constants.LoadBalancerConfigPath).
-		Stdin(strings.NewReader(loadbalancerConfig)).
-		Silent().
-		Run(); err != nil {
+	if err := lb.WriteFile(constants.LoadBalancerConfigPath, []byte(loadbalancerConfig)); err != nil {
 		return errors.Wrap(err, "failed to copy loadbalancer config to node")
 	}
 

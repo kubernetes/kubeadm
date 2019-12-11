@@ -17,7 +17,6 @@ limitations under the License.
 package actions
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -171,12 +170,7 @@ func writeKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigDa
 	log.Debugf("generated config:\n%s", kubeadmConfig)
 
 	// copy the config to the node
-	err = n.Command("cp", "/dev/stdin", constants.KubeadmConfigPath).
-		Stdin(strings.NewReader(kubeadmConfig)).
-		Silent().
-		Run()
-
-	if err != nil {
+	if err := n.WriteFile(constants.KubeadmConfigPath, []byte(kubeadmConfig)); err != nil {
 		return errors.Wrapf(err, "failed to write the kubeadm config to node %s", n.Name())
 	}
 
@@ -367,24 +361,16 @@ func createDiscoveryFile(c *status.Cluster, n *status.Node, discoveryMode Discov
 	case FileDiscoveryWithExternalClientCerts:
 		// Save the client certificate key embedded in admin.conf into an external file and update authinfo accordingly
 		keyFile := "/kinder/discovery-client-key.pem"
-		if err := n.Command(
-			"cp", "/dev/stdin", keyFile,
-		).Stdin(
-			bytes.NewReader(authInfo.ClientKeyData),
-		).Silent().Run(); err != nil {
-			return errors.Wrapf(err, "failed to write %s", keyFile)
+		if err := n.WriteFile(keyFile, authInfo.ClientKeyData); err != nil {
+			return err
 		}
 		authInfo.ClientKeyData = []byte{}
 		authInfo.ClientKey = keyFile
 
 		// Save the client certificate embedded in admin.conf into an external file and update authinfo accordingly
 		certFile := "/kinder/discovery-client-cert.pem"
-		if err := n.Command(
-			"cp", "/dev/stdin", certFile,
-		).Stdin(
-			bytes.NewReader(authInfo.ClientCertificateData),
-		).Silent().Run(); err != nil {
-			return errors.Wrapf(err, "failed to write %s", certFile)
+		if err := n.WriteFile(certFile, authInfo.ClientCertificateData); err != nil {
+			return err
 		}
 		authInfo.ClientCertificateData = []byte{}
 		authInfo.ClientCertificate = certFile
@@ -395,13 +381,8 @@ func createDiscoveryFile(c *status.Cluster, n *status.Node, discoveryMode Discov
 	if err != nil {
 		return errors.Wrapf(err, "failed to encode %s", constants.DiscoveryFile)
 	}
-
-	if err := n.Command(
-		"cp", "/dev/stdin", constants.DiscoveryFile,
-	).Stdin(
-		bytes.NewReader(configBytes),
-	).Silent().Run(); err != nil {
-		return errors.Wrapf(err, "failed to write %s", constants.DiscoveryFile)
+	if err := n.WriteFile(constants.DiscoveryFile, configBytes); err != nil {
+		return err
 	}
 
 	log.Debugf("generated discovery file:\n%s", string(configBytes))

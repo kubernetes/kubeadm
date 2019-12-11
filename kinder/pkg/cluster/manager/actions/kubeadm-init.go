@@ -392,17 +392,9 @@ func copyPatchesToNode(n *status.Node, dir string) error {
 		hostPath := filepath.Join(dir, file.Name())
 		nodePath := filepath.Join(constants.KustomizeDir, file.Name())
 
-		content, err := ioutil.ReadFile(hostPath)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read %s", hostPath)
-		}
-
-		if err := n.Command(
-			"cp", "/dev/stdin", nodePath,
-		).Stdin(
-			bytes.NewReader(content),
-		).Silent().Run(); err != nil {
-			return errors.Wrapf(err, "failed to write %s", nodePath)
+		if err := n.CopyTo(hostPath, nodePath); err != nil {
+			errors.Wrapf(err, "failed to copy from host path %q to node path %q for node %q",
+				hostPath, nodePath, n.Name())
 		}
 	}
 
