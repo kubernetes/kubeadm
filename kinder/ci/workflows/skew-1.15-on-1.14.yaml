@@ -9,4 +9,4 @@ vars:
   kubernetesVersion: "{{ resolve `ci/latest-1.14` }}"
   controlPlaneNodes: 3
 tasks:
-- import: skew-x-on-y-tasks-automatic-copy-certs.yaml
+- import: skew-x-on-y-tasks.yaml

@@ -9,4 +9,4 @@ vars:
   upgradeVersion: "{{ resolve `ci/latest-1.15` }}"
   controlPlaneNodes: 3
 tasks:
-- import: upgrade-tasks-automatic-copy-certs.yaml
+- import: upgrade-tasks.yaml

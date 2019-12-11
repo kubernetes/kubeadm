@@ -9,18 +9,11 @@ vars:
   upgradeVersion: v1.13.5
   controlPlaneNodes: 1
   workerNodes: 2
-  externalEtcd: false
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-upgrade
   kubeadmVerbosity: 6
 tasks:
-# Important! this workflow differs from upgrade-tasks-automatic-copy-certs.yaml
-# - e2e-kubeadm is not run (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
-# - it does not use the automatic copy certs feature, available in kubeadm since v1.14 only
-# TODO: once 1.13 is no longer tested:
-# - delete this file
-# - rename upgrade-tasks-automatic-copy-certs.yaml to upgrade-tasks.yaml
 - name: pull-base-image
   description: |
     pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
@@ -54,7 +47,6 @@ tasks:
     - --image={{ .vars.image }}
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
-    - --external-etcd={{ .vars.externalEtcd }}
     - --loglevel=debug
   timeout: 5m
 - name: init
@@ -66,6 +58,7 @@ tasks:
     - do
     - kubeadm-init
     - --name={{ .vars.clusterName }}
+    - --automatic-copy-certs
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
@@ -77,6 +70,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
+    - --automatic-copy-certs
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
@@ -101,6 +95,16 @@ tasks:
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
+- name: e2e-kubeadm-after
+  description: |
+    Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"
+  cmd: kinder
+  args:
+    - test
+    - e2e-kubeadm
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
 - name: cluster-info-after
   description: |
     Runs cluster-info on the cluster after upgrade
