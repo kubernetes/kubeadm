@@ -21,11 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/kubeadm/kinder/pkg/cluster/cmd"
-	"k8s.io/kubeadm/kinder/pkg/cri/util"
 
+	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // CreateNode creates a container that internally hosts the docker cri runtime
@@ -50,7 +49,7 @@ func CreateNode(cluster, name, image, role string, volumes []string) error {
 	args = containerArgsForDocker(args)
 
 	// creates the container
-	if err := kindexec.Command("docker", args...).Run(); err != nil {
+	if err := exec.NewHostCmd("docker", args...).Run(); err != nil {
 		return err
 	}
 
@@ -85,10 +84,10 @@ func CreateNode(cluster, name, image, role string, volumes []string) error {
 }
 
 func fixMachineID(name string) error {
-	if err := cmd.NewProxyCmd(name, "rm", "-f", "/etc/machine-id").Silent().Run(); err != nil {
+	if err := exec.NewNodeCmd(name, "rm", "-f", "/etc/machine-id").Silent().Run(); err != nil {
 		return errors.Wrap(err, "machine-id-setup error")
 	}
-	if err := cmd.NewProxyCmd(name, "systemd-machine-id-setup").Silent().Run(); err != nil {
+	if err := exec.NewNodeCmd(name, "systemd-machine-id-setup").Silent().Run(); err != nil {
 		return errors.Wrap(err, "machine-id-setup error")
 	}
 	return nil
@@ -117,11 +116,11 @@ func fixMounts(name string) error {
 	if kinddocker.UsernsRemap() {
 		// The binary /bin/mount should be owned by root:root in order to execute
 		// the following mount commands
-		if err := cmd.NewProxyCmd(name, "chown", "root:root", "/bin/mount").Silent().Run(); err != nil {
+		if err := exec.NewNodeCmd(name, "chown", "root:root", "/bin/mount").Silent().Run(); err != nil {
 			return err
 		}
 		// The binary /bin/mount should have the setuid bit
-		if err := cmd.NewProxyCmd(name, "chmod", "-s", "/bin/mount").Silent().Run(); err != nil {
+		if err := exec.NewNodeCmd(name, "chmod", "-s", "/bin/mount").Silent().Run(); err != nil {
 			return err
 		}
 	}
@@ -130,17 +129,17 @@ func fixMounts(name string) error {
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	// however, we need other things from `docker run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
-	if err := cmd.NewProxyCmd(name, "mount", "-o", "remount,ro", "/sys").Silent().Run(); err != nil {
+	if err := exec.NewNodeCmd(name, "mount", "-o", "remount,ro", "/sys").Silent().Run(); err != nil {
 		return err
 	}
 	// kubernetes needs shared mount propagation
-	if err := cmd.NewProxyCmd(name, "mount", "--make-shared", "/").Silent().Run(); err != nil {
+	if err := exec.NewNodeCmd(name, "mount", "--make-shared", "/").Silent().Run(); err != nil {
 		return err
 	}
-	if err := cmd.NewProxyCmd(name, "mount", "--make-shared", "/run").Silent().Run(); err != nil {
+	if err := exec.NewNodeCmd(name, "mount", "--make-shared", "/run").Silent().Run(); err != nil {
 		return err
 	}
-	if err := cmd.NewProxyCmd(name, "mount", "--make-shared", "/var/lib/docker").Silent().Run(); err != nil {
+	if err := exec.NewNodeCmd(name, "mount", "--make-shared", "/var/lib/docker").Silent().Run(); err != nil {
 		return err
 	}
 	return nil
@@ -156,7 +155,7 @@ func signalStart(name string) error {
 // it returns true on success, and false on a timeout
 func waitForDocker(name string, until time.Time) bool {
 	return tryUntil(until, func() bool {
-		out, err := cmd.NewProxyCmd(name, "systemctl", "is-active", "docker").Silent().RunAndCapture()
+		out, err := exec.NewNodeCmd(name, "systemctl", "is-active", "docker").Silent().RunAndCapture()
 		if err != nil {
 			return false
 		}
@@ -178,7 +177,7 @@ func tryUntil(until time.Time, try func() bool) bool {
 // loadImages loads image tarballs stored on the node into docker on the node
 func loadImages(name string) {
 	// load images cached on the node into docker
-	if err := cmd.NewProxyCmd(name,
+	if err := exec.NewNodeCmd(name,
 		"/bin/bash", "-c",
 		// use xargs to load images in parallel
 		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,

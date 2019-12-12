@@ -29,9 +29,9 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 	"k8s.io/kubeadm/kinder/pkg/extract"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
 	kindfs "sigs.k8s.io/kind/pkg/fs"
 )
 
@@ -266,7 +266,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
-			kindexec.Command("docker", "rm", "-f", "-v", containerID).Run()
+			exec.NewHostCmd("docker", "rm", "-f", "-v", containerID).Run()
 		}()
 	}
 	if err != nil {

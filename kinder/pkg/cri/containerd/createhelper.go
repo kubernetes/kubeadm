@@ -18,7 +18,7 @@ package containerd
 
 import (
 	"k8s.io/kubeadm/kinder/pkg/cri/util"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 )
 
 // CreateNode creates a container that internally hosts the containerd cri runtime
@@ -37,5 +37,5 @@ func CreateNode(cluster, name, image, role string, volumes []string) error {
 	args = append(args, image)
 
 	// creates the container
-	return kindexec.Command("docker", args...).Run()
+	return exec.NewHostCmd("docker", args...).Run()
 }

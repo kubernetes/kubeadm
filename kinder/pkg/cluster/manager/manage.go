@@ -21,10 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	kexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // ClusterManager manages kind(er) clusters
@@ -103,9 +103,8 @@ func (c *ClusterManager) ExecCommand(nodeSelector string, args []string) error {
 		cmdArgs := append([]string{"exec",
 			node.Name(),
 		}, args...)
-		cmd := kexec.Command("docker", cmdArgs...)
-		kexec.InheritOutput(cmd)
-		err := cmd.Run()
+
+		err := exec.NewHostCmd("docker", cmdArgs...).RunWithEcho()
 		if err != nil {
 			return errors.Wrapf(err, "failed to execute command on node %s", node.Name())
 		}

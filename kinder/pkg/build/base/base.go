@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/kind/pkg/exec"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/util"
 )
@@ -119,13 +119,12 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 	entrypointSrc := filepath.Join(dir, "entrypoint", "main.go")
 	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
 
-	cmd := exec.Command(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
+	cmd := exec.NewHostCmd(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
 	cmd.SetEnv(append(os.Environ(), "GOOS=linux", "GOARCH="+c.arch)...)
 
 	// actually build
 	log.Info("Building entrypoint binary ...")
-	exec.InheritOutput(cmd)
-	if err := cmd.Run(); err != nil {
+	if err := cmd.RunWithEcho(); err != nil {
 		log.Errorf("Entrypoint build Failed! %v", err)
 		return err
 	}
@@ -135,11 +134,10 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	cmd := exec.Command("docker", "build", "-t", c.image, dir)
+	cmd := exec.NewHostCmd("docker", "build", "-t", c.image, dir)
 	log.Info("Starting Docker build ...")
-	exec.InheritOutput(cmd)
-	err := cmd.Run()
-	if err != nil {
+
+	if err := cmd.RunWithEcho(); err != nil {
 		log.Errorf("Docker build Failed! %v", err)
 		return err
 	}

@@ -14,18 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Package cmd provide the ProxyCmd utility that can be used for running commands on a kind(er) node.
-
-Each ProxyCmd is bound to the node where the inner command should be executed, and by default
-the command is printed to stdout before execution; to enable colorized print of the command text, that can help in debugging,
-please set the KINDER_COLORS environment variable to ON.
-
-By default, when the command is run it does not print any output generated during execution.
-
-See Silent, Stdin, RunWithEcho, RunAndCapture, Skip and DryRun for possible variations to the default behavior.
-*/
-package cmd
+package exec
 
 import (
 	"bufio"
@@ -38,11 +27,16 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/kubeadm/kinder/pkg/cluster/cmd/colors"
+	"k8s.io/kubeadm/kinder/pkg/exec/colors"
 )
 
-// ProxyCmd allows to run a command on a kind(er) node
-type ProxyCmd struct {
+// NodeCmd allows to run a command on a kind(er) node
+//  by default the command is printed to stdout before execution; to enable colorized print of the
+//  command text, that can help in debugging, please set the KINDER_COLORS environment variable to ON.
+//
+// By default, when the command is run it does not print any output generated during execution.
+// See Silent, Stdin, RunWithEcho, RunAndCapture, Skip and DryRun for possible variations to the default behavior.
+type NodeCmd struct {
 	node    string
 	command string
 	args    []string
@@ -53,9 +47,9 @@ type ProxyCmd struct {
 	stderr  io.Writer
 }
 
-// NewProxyCmd returns a new ProxyCmd to run a command on a kind(er) node
-func NewProxyCmd(node, command string, args ...string) *ProxyCmd {
-	return &ProxyCmd{
+// NewNodeCmd returns a new ProxyCmd to run a command on a kind(er) node
+func NewNodeCmd(node, command string, args ...string) *NodeCmd {
+	return &NodeCmd{
 		node:    node,
 		command: command,
 		args:    args,
@@ -65,19 +59,19 @@ func NewProxyCmd(node, command string, args ...string) *ProxyCmd {
 }
 
 // Run execute the inner command on a kind(er) node
-func (c *ProxyCmd) Run() error {
+func (c *NodeCmd) Run() error {
 	return c.runInnnerCommand()
 }
 
 // RunWithEcho execute the inner command on a kind(er) node and echoes the command output to screen
-func (c *ProxyCmd) RunWithEcho() error {
+func (c *NodeCmd) RunWithEcho() error {
 	c.stdout = os.Stderr
 	c.stderr = os.Stdout
 	return c.runInnnerCommand()
 }
 
 // RunAndCapture executes the inner command on a kind(er) node and return the output captured during execution
-func (c *ProxyCmd) RunAndCapture() (lines []string, err error) {
+func (c *NodeCmd) RunAndCapture() (lines []string, err error) {
 	var buff bytes.Buffer
 	c.stdout = &buff
 	c.stderr = &buff
@@ -92,24 +86,24 @@ func (c *ProxyCmd) RunAndCapture() (lines []string, err error) {
 }
 
 // Stdin sets an io.Reader to be used for streaming data in input to the inner command
-func (c *ProxyCmd) Stdin(in io.Reader) *ProxyCmd {
+func (c *NodeCmd) Stdin(in io.Reader) *NodeCmd {
 	c.stdin = in
 	return c
 }
 
 // Silent instructs the proxy command to not the command text to stdout before execution
-func (c *ProxyCmd) Silent() *ProxyCmd {
+func (c *NodeCmd) Silent() *NodeCmd {
 	c.silent = true
 	return c
 }
 
 // DryRun instruct the proxy command to print the inner command text instead of running it.
-func (c *ProxyCmd) DryRun() *ProxyCmd {
+func (c *NodeCmd) DryRun() *NodeCmd {
 	c.dryRun = true
 	return c
 }
 
-func (c *ProxyCmd) runInnnerCommand() error {
+func (c *NodeCmd) runInnnerCommand() error {
 	// define the proxy command used to pass the command to the node container
 	command := "docker"
 
