@@ -73,6 +73,10 @@ const (
 	// TODO: send a PR to define this value in a kind constant (currently it is not)
 	KubeadmConfigPath = "/kind/kubeadm.conf"
 
+	// KubeadmIgnorePreflightErrorsFlag holds the default list of preflight errors to skip
+	// on "kubeadm init" and "kubeadm join"
+	KubeadmIgnorePreflightErrorsFlag = "--ignore-preflight-errors=Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables"
+
 	// APIServerPort is the expected default APIServerPort on the control plane node(s)
 	// https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/#api-server-ports-and-ips
 	APIServerPort = kindinternalkubeadm.APIServerPort

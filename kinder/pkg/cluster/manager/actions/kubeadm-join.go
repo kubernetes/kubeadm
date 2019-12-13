@@ -111,8 +111,7 @@ func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomize
 		"join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
-		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
-		//TODO: change from all > exact list of checks
+		constants.KubeadmIgnorePreflightErrorsFlag,
 	}
 	if automaticCopyCerts {
 		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
@@ -141,8 +140,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 		"join", "phase", "preflight",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
-		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
-		//TODO: change from all > exact list of checks
+		constants.KubeadmIgnorePreflightErrorsFlag,
 	}
 	if automaticCopyCerts {
 		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
@@ -262,8 +260,7 @@ func kubeadmJoinWorker(w *status.Node, vLevel int) (err error) {
 		"kubeadm", "join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
-		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
-		//TODO: change from all > exact list of checks
+		constants.KubeadmIgnorePreflightErrorsFlag,
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -277,8 +274,7 @@ func kubeadmJoinWorkerWithPhases(w *status.Node, vLevel int) (err error) {
 		"kubeadm", "join", "phase", "preflight",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
-		"--ignore-preflight-errors=all", // this is required because some check does not pass in kind;
-		//TODO: change from all > exact list of checks
+		constants.KubeadmIgnorePreflightErrorsFlag,
 	).RunWithEcho(); err != nil {
 		return err
 	}
