@@ -393,7 +393,7 @@ func (n *Node) CopyFrom(source, dest string) error {
 		n.name+":"+source, // from the node, at source
 		dest,              // to the host, at dest
 	)
-	return cmd.Run()
+	return cmd.RunWithEcho()
 }
 
 // CopyTo copies the source file on the host to dest on the node
@@ -403,7 +403,7 @@ func (n *Node) CopyTo(source, dest string) error {
 		source,          // from the host, at source
 		n.name+":"+dest, // to the node, at dest
 	)
-	return cmd.Run()
+	return cmd.RunWithEcho()
 }
 
 // WriteFile writes a temporary file with the given contents and copies the file to the node container
