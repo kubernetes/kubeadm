@@ -25,7 +25,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,8 +55,8 @@ func (r *RuntimeTaskGroupReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	err := ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1.RuntimeTaskGroup{}).
-		Owns(&operatorv1.RuntimeTask{}).
-		Watches(
+		Owns(&operatorv1.RuntimeTask{}). // force reconcile TaskGroup every time one of the owned TaskGroups change
+		Watches(                         // force reconcile TaskGroup every time the parent operation changes
 			&source.Kind{Type: &operatorv1.Operation{}},
 			&handler.EnqueueRequestsFromMapFunc{ToRequests: mapFunc},
 		).
@@ -109,23 +108,15 @@ func (r *RuntimeTaskGroupReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result,
 
 	// Reconcile the TaskGroup
 	if err := r.reconcileTaskGroup(operation, taskgroup, log); err != nil {
-		if requeueErr, ok := errors.Cause(err).(capierrors.HasRequeueAfterError); ok {
-			return ctrl.Result{Requeue: true, RequeueAfter: requeueErr.GetRequeueAfter()}, nil
-		}
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 }
 
 func (r *RuntimeTaskGroupReconciler) reconcileTaskGroup(operation *operatorv1.Operation, taskgroup *operatorv1.RuntimeTaskGroup, log logr.Logger) (err error) {
-	// gets relevant settings from top level objects (or use defaults)
-	executionMode := operatorv1.OperationExecutionModeAuto
-	operationPaused := false
-
-	if operation != nil {
-		executionMode = operation.Spec.GetTypedOperationExecutionMode()
-		operationPaused = operation.Status.Paused
-	}
+	// gets relevant settings from top level objects
+	executionMode := operation.Spec.GetTypedOperationExecutionMode()
+	operationPaused := operation.Status.Paused
 
 	// Reconcile paused override from top level objects
 	r.reconcilePauseOverride(operationPaused, taskgroup)
@@ -134,19 +125,26 @@ func (r *RuntimeTaskGroupReconciler) reconcileTaskGroup(operation *operatorv1.Op
 	if !taskgroup.DeletionTimestamp.IsZero() {
 		err = r.reconcileDelete(taskgroup)
 		if err != nil {
-			return
+			return err
 		}
 	}
 	// Handle non-deleted TaskGroup
-	err = r.reconcileNormal(executionMode, taskgroup, log)
+
+	// gets controlled tasks items (desired vs actual)
+	tasks, err := r.reconcileTasks(executionMode, taskgroup, log)
 	if err != nil {
-		return
+		return err
+	}
+
+	err = r.reconcileNormal(executionMode, taskgroup, tasks, log)
+	if err != nil {
+		return err
 	}
 
 	// Always reconcile Phase at the end
 	r.reconcilePhase(taskgroup)
 
-	return
+	return nil
 }
 
 func (r *RuntimeTaskGroupReconciler) reconcilePauseOverride(operationPaused bool, taskgroup *operatorv1.RuntimeTaskGroup) {
@@ -158,17 +156,12 @@ func (r *RuntimeTaskGroupReconciler) reconcilePauseOverride(operationPaused bool
 	taskgroup.Status.Paused = taskgrouppaused
 }
 
-func (r *RuntimeTaskGroupReconciler) reconcileNormal(executionMode operatorv1.OperationExecutionMode, taskgroup *operatorv1.RuntimeTaskGroup, log logr.Logger) error {
-	// If the TaskGroup doesn't have finalizer, add it.
-	//if !util.Contains(taskgroup.Finalizers, operatorv1alpha1.TaskGroupFinalizer) {
-	//	taskgroup.Finalizers = append(taskgroup.Finalizers, operatorv1alpha1.TaskGroupFinalizer)
-	//}
-
+func (r *RuntimeTaskGroupReconciler) reconcileTasks(executionMode operatorv1.OperationExecutionMode, taskgroup *operatorv1.RuntimeTaskGroup, log logr.Logger) (*taskReconcileList, error) {
 	// gets all the Node object matching the taskgroup.Spec.NodeSelector
 	// those are the Node where the task taskgroup.Spec.Template should be replicated (desired tasks)
 	nodes, err := listNodesBySelector(r.Client, &taskgroup.Spec.NodeSelector)
 	if err != nil {
-		return errors.Wrap(err, "failed to list nodes")
+		return nil, errors.Wrap(err, "failed to list nodes")
 	}
 
 	desired := filterNodes(nodes, taskgroup.Spec.GetTypedTaskGroupNodeFilter())
@@ -177,7 +170,7 @@ func (r *RuntimeTaskGroupReconciler) reconcileNormal(executionMode operatorv1.Op
 	// those are the current Task objects controlled by this deployment
 	current, err := listTasksBySelector(r.Client, &taskgroup.Spec.Selector)
 	if err != nil {
-		return errors.Wrap(err, "failed to list tasks")
+		return nil, errors.Wrap(err, "failed to list tasks")
 	}
 
 	log.Info("reconciling", "Nodes", len(desired), "Tasks", len(current.Items))
@@ -192,47 +185,58 @@ func (r *RuntimeTaskGroupReconciler) reconcileNormal(executionMode operatorv1.Op
 	taskgroup.Status.FailedNodes = int32(len(tasks.failed))
 	taskgroup.Status.InvalidNodes = int32(len(tasks.invalid))
 
+	return tasks, nil
+}
+
+func (r *RuntimeTaskGroupReconciler) reconcileNormal(executionMode operatorv1.OperationExecutionMode, taskgroup *operatorv1.RuntimeTaskGroup, tasks *taskReconcileList, log logr.Logger) error {
+	// If the TaskGroup doesn't have finalizer, add it.
+	//if !util.Contains(taskgroup.Finalizers, operatorv1alpha1.TaskGroupFinalizer) {
+	//	taskgroup.Finalizers = append(taskgroup.Finalizers, operatorv1alpha1.TaskGroupFinalizer)
+	//}
+
 	// If there are Tasks not yet completed (pending or running), cleanup error messages (required e.g. after recovery)
 	// NB. It is necessary to give priority to running vs errors so the operation controller keeps alive/restarts
 	// the DaemonsSet for processing tasks
-	activeTask := len(tasks.pending) + len(tasks.running)
-	if activeTask > 0 {
+	if tasks.activeTasks() > 0 {
 		taskgroup.Status.ResetError()
-	}
-
-	// if there are invalid combinations (e.g. a Node with more than one Task, or a Task without a Node),
-	// stop creating new Tasks and eventually set the error
-	if len(tasks.invalid) > 0 {
-		if activeTask == 0 {
+	} else {
+		// if there are invalid combinations (e.g. a Node with more than one Task, or a Task without a Node),
+		// set the error and stop creating new Tasks
+		if len(tasks.invalid) > 0 {
 			taskgroup.Status.SetError(
 				operatorerrors.NewRuntimeTaskGroupReconciliationError("something invalid"),
 			)
+			return nil
 		}
-		return nil
-	}
 
-	// if there are failed tasks
-	// stop creating new Tasks and eventually set the error
-	if len(tasks.failed) > 0 {
-		if activeTask == 0 {
+		// if there are failed tasks
+		// set the error and stop creating new Tasks
+		if len(tasks.failed) > 0 {
 			taskgroup.Status.SetError(
 				operatorerrors.NewRuntimeTaskGroupReplicaError("something failed"),
 			)
+			return nil
 		}
-		return nil
 	}
 
 	// TODO: manage adopt tasks/tasks to be orphaned
 
-	// At this point we are sure that there are no invalid Node/Task combinations or failed task
+	// if nil, set the TaskGroup start time
+	if taskgroup.Status.StartTime == nil {
+		taskgroup.Status.SetStartTime()
+
+		//TODO: add a signature so we can detect if someone/something changes the taskgroup while it is processed
+
+		return nil
+	}
 
 	// if the completed Task have reached the number of expected Task, the TaskGroup is completed
 	// NB. we are doing this before checking pause because if everything is completed, does not make sense to pause
 	if len(tasks.completed) == len(tasks.all) {
-		// NB. we are setting this condition explicitly in order to avoid that the deployment accidentally
+		// NB. we are setting this condition explicitly in order to avoid that the taskGroup accidentally
 		// restarts to create tasks
-		taskgroup.Status.Paused = false
 		taskgroup.Status.SetCompletionTime()
+		return nil
 	}
 
 	// if the TaskGroup is paused, return
@@ -242,19 +246,12 @@ func (r *RuntimeTaskGroupReconciler) reconcileNormal(executionMode operatorv1.Op
 
 	// otherwise, proceed creating tasks
 
-	// if nil, set the TaskGroup start time
-	if taskgroup.Status.StartTime == nil {
-		taskgroup.Status.SetStartTime()
-
-		//TODO: add a signature so we can detect if someone/something changes the taskgroup while it is processed
-	}
-
 	// if there are still Tasks to be created
 	if len(tasks.tobeCreated) > 0 {
 		//TODO: manage different deployment strategy e.g. parallel
 
 		// if there no existing Tasks not yet completed (pending or running)
-		if activeTask == 0 {
+		if tasks.activeTasks() == 0 {
 			// create a Task for the next node in the ordered sequence
 			nextNode := tasks.tobeCreated[0].node.Name
 			log.WithValues("node-name", nextNode).Info("creating task")
@@ -281,11 +278,12 @@ func (r *RuntimeTaskGroupReconciler) createTasksReplica(executionMode operatorv1
 
 	task := &operatorv1.RuntimeTask{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       gv.WithKind("Task").Kind,
+			Kind:       "RuntimeTask",
 			APIVersion: gv.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            fmt.Sprintf("%s-%s", taskgroup.Name, nodeName), //TODO: GeneratedName?
+			Namespace:       taskgroup.Namespace,
 			Labels:          taskgroup.Spec.Template.Labels,
 			Annotations:     taskgroup.Spec.Template.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(taskgroup, taskgroup.GroupVersionKind())},
@@ -312,33 +310,36 @@ func (r *RuntimeTaskGroupReconciler) reconcileDelete(taskgroup *operatorv1.Runti
 }
 
 func (r *RuntimeTaskGroupReconciler) reconcilePhase(taskgroup *operatorv1.RuntimeTaskGroup) {
-	// Set the phase to "pending" if nil.
-	if taskgroup.Status.Phase == "" {
-		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhasePending)
-	}
-
-	// Set the phase to "running" if start date is set.
-	if taskgroup.Status.StartTime != nil {
-		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseRunning)
-	}
-
-	// Set the phase to "paused" if paused set.
-	if taskgroup.Status.Paused {
-		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhasePaused)
-	}
-
-	// Set the phase to "succeeded" if completion date is set.
-	if taskgroup.Status.CompletionTime != nil {
-		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseSucceeded)
+	// Set the phase to "deleting" if the deletion timestamp is set.
+	if !taskgroup.DeletionTimestamp.IsZero() {
+		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseDeleted)
+		return
 	}
 
 	// Set the phase to "failed" if any of Status.ErrorReason or Status.ErrorMessage is not nil.
 	if taskgroup.Status.ErrorReason != nil || taskgroup.Status.ErrorMessage != nil {
 		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseFailed)
+		return
 	}
 
-	// Set the phase to "deleting" if the deletion timestamp is set.
-	if !taskgroup.DeletionTimestamp.IsZero() {
-		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseDeleted)
+	// Set the phase to "succeeded" if completion date is set.
+	if taskgroup.Status.CompletionTime != nil {
+		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseSucceeded)
+		return
 	}
+
+	// Set the phase to "paused" if paused set.
+	if taskgroup.Status.Paused {
+		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhasePaused)
+		return
+	}
+
+	// Set the phase to "running" if start date is set.
+	if taskgroup.Status.StartTime != nil {
+		taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhaseRunning)
+		return
+	}
+
+	// Set the phase to "pending".
+	taskgroup.Status.SetTypedPhase(operatorv1.RuntimeTaskGroupPhasePending)
 }

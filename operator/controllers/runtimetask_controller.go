@@ -22,11 +22,9 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,7 +57,7 @@ func (r *RuntimeTaskReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	err := ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1.RuntimeTask{}).
-		Watches(
+		Watches( // force reconcile Task every time the parent TaskGroup changes
 			&source.Kind{Type: &operatorv1.RuntimeTaskGroup{}},
 			&handler.EnqueueRequestsFromMapFunc{ToRequests: mapFunc},
 		).
@@ -93,28 +91,20 @@ func (r *RuntimeTaskReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rerr
 		return ctrl.Result{}, nil
 	}
 
-	// Fetch the parent TaskGroup instance, if any
+	// Fetch the parent TaskGroup instance
 	taskgroup, err := getOwnerTaskGroup(ctx, r.Client, task.ObjectMeta)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Fetch the parent Operation instance, if any
-	var operation *operatorv1.Operation
-	if taskgroup != nil {
-		operation, err = getOwnerOperation(ctx, r.Client, taskgroup.ObjectMeta)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
+	// Fetch the parent Operation instance
+	operation, err := getOwnerOperation(ctx, r.Client, taskgroup.ObjectMeta)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	// If the controller is set to manage Task for a specific operation, ignore everything else
-	if r.Operation != "" && r.Operation != operation.Name {
-		return ctrl.Result{}, nil
-	}
-
-	// If the controller is set to manage headless Task, ignore everything else
-	if r.Operation == "" && operation != nil {
+	if r.Operation != operation.Name {
 		return ctrl.Result{}, nil
 	}
 
@@ -135,23 +125,16 @@ func (r *RuntimeTaskReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, rerr
 
 	// Reconcile the Task
 	if err := r.reconcileTask(operation, taskgroup, task, log); err != nil {
-		if requeueErr, ok := errors.Cause(err).(capierrors.HasRequeueAfterError); ok {
-			return ctrl.Result{Requeue: true, RequeueAfter: requeueErr.GetRequeueAfter()}, nil
-		}
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 }
 
 func (r *RuntimeTaskReconciler) reconcileTask(operation *operatorv1.Operation, taskgroup *operatorv1.RuntimeTaskGroup, task *operatorv1.RuntimeTask, log logr.Logger) (err error) {
-	// gets relevant settings from top level objects (or use defaults)
-	executionMode := operatorv1.OperationExecutionModeAuto
-	operationPaused := false
+	// gets relevant settings from top level objects
+	executionMode := operation.Spec.GetTypedOperationExecutionMode()
+	operationPaused := operation.Status.Paused
 
-	if operation != nil {
-		executionMode = operation.Spec.GetTypedOperationExecutionMode()
-		operationPaused = operation.Status.Paused
-	}
 	// Reconcile recovery from errors
 	recovered := r.reconcileRecovery(executionMode, task, log)
 
@@ -210,6 +193,7 @@ func (r *RuntimeTaskReconciler) reconcileRecovery(executionMode operatorv1.Opera
 				task.Status.Paused = true
 			}
 		}
+
 	default:
 		//TODO: error (if possible do validation before getting here)
 	}

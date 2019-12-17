@@ -20,8 +20,14 @@ import (
 	"reflect"
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
 	"k8s.io/kubeadm/operator/errors"
@@ -485,7 +491,7 @@ func TestRuntimeTaskReconciler_reconcileRecovery(t *testing.T) {
 					Status: operatorv1.RuntimeTaskStatus{
 						ErrorReason:    runtimeTaskStatusErrorPtr(errors.RuntimeTaskExecutionError),
 						ErrorMessage:   stringPtr("error"),
-						CurrentCommand: 2,
+						CurrentCommand: 1,
 					},
 				},
 			},
@@ -502,7 +508,7 @@ func TestRuntimeTaskReconciler_reconcileRecovery(t *testing.T) {
 						CompletionTime: timePtr(metav1.Time{}), //using zero as a marker for "whatever time it completes"
 						ErrorReason:    nil,                    // error removed
 						ErrorMessage:   nil,
-						CurrentCommand: 2, // next command
+						CurrentCommand: 1, // next command
 					},
 				},
 				events: 1,
@@ -525,7 +531,7 @@ func TestRuntimeTaskReconciler_reconcileRecovery(t *testing.T) {
 				t.Errorf("reconcileRecovery() = %v, want %v", got, tt.want.ret)
 			}
 
-			fixupTimes(tt.want.task, tt.args.task)
+			fixupWantTask(tt.want.task, tt.args.task)
 
 			if !reflect.DeepEqual(tt.args.task, tt.want.task) {
 				t.Errorf("reconcileRecovery() = %v, want %v", tt.args.task, tt.want.task)
@@ -785,7 +791,7 @@ func TestRuntimeTaskReconciler_reconcileNormal(t *testing.T) {
 				t.Errorf("reconcileNormal() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			fixupTimes(tt.want.task, tt.args.task)
+			fixupWantTask(tt.want.task, tt.args.task)
 
 			if !reflect.DeepEqual(tt.args.task, tt.want.task) {
 				t.Errorf("reconcileRecovery() = %v, want %v", tt.args.task, tt.want.task)
@@ -798,7 +804,305 @@ func TestRuntimeTaskReconciler_reconcileNormal(t *testing.T) {
 	}
 }
 
-func fixupTimes(want *operatorv1.RuntimeTask, got *operatorv1.RuntimeTask) {
+func TestRuntimeTaskReconciler_Reconcile(t *testing.T) {
+	type fields struct {
+		NodeName  string
+		Operation string
+		Objs      []runtime.Object
+	}
+	type args struct {
+		req ctrl.Request
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    ctrl.Result
+		wantErr bool
+	}{
+		{
+			name:   "Reconcile does nothing if task does not exist",
+			fields: fields{},
+			args: args{
+				req: ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "foo"}},
+			},
+			want:    ctrl.Result{},
+			wantErr: false,
+		},
+		{
+			name: "Reconcile does nothing if task doesn't target the node the controller is supervising",
+			fields: fields{
+				NodeName: "foo-node",
+				Objs: []runtime.Object{
+					&operatorv1.RuntimeTask{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTask",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "bar-task",
+						},
+						Spec: operatorv1.RuntimeTaskSpec{
+							NodeName: "bar-node",
+						},
+					},
+				},
+			},
+			args: args{
+				req: ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "bar-task"}},
+			},
+			want:    ctrl.Result{},
+			wantErr: false,
+		},
+		{
+			name: "Reconcile does nothing if the task is already completed",
+			fields: fields{
+				NodeName: "foo-node",
+				Objs: []runtime.Object{
+					&operatorv1.RuntimeTask{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTask",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-task",
+						},
+						Spec: operatorv1.RuntimeTaskSpec{
+							NodeName: "foo-node",
+						},
+						Status: operatorv1.RuntimeTaskStatus{
+							CompletionTime: timePtr(metav1.Now()),
+						},
+					},
+				},
+			},
+			args: args{
+				req: ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "foo-task"}},
+			},
+			want:    ctrl.Result{},
+			wantErr: false,
+		},
+		{
+			name: "Reconcile fails if failing to retrieve parent taskgroup",
+			fields: fields{
+				NodeName: "foo-node",
+				Objs: []runtime.Object{
+					&operatorv1.RuntimeTask{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTask",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-task",
+						},
+						Spec: operatorv1.RuntimeTaskSpec{
+							NodeName: "foo-node",
+						},
+					},
+				},
+			},
+			args: args{
+				req: ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "foo-task"}},
+			},
+			want:    ctrl.Result{},
+			wantErr: true,
+		},
+		{
+			name: "Reconcile fails if failing to retrieve parent operation",
+			fields: fields{
+				NodeName: "foo-node",
+				Objs: []runtime.Object{
+					&operatorv1.RuntimeTaskGroup{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTaskGroup",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-taskgroup",
+						},
+					},
+					&operatorv1.RuntimeTask{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTask",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-task",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: operatorv1.GroupVersion.String(),
+									Kind:       "RuntimeTaskGroup",
+									Name:       "foo-taskgroup",
+								},
+							},
+						},
+						Spec: operatorv1.RuntimeTaskSpec{
+							NodeName: "foo-node",
+						},
+					},
+				},
+			},
+			args: args{
+				req: ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "foo-task"}},
+			},
+			want:    ctrl.Result{},
+			wantErr: true,
+		},
+		{
+			name: "Reconcile does nothing if task doesn't belong to the operation the controller is supervising",
+			fields: fields{
+				NodeName:  "foo-node",
+				Operation: "foo-operation",
+				Objs: []runtime.Object{
+					&operatorv1.Operation{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Operation",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "bar-operation",
+						},
+					},
+					&operatorv1.RuntimeTaskGroup{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTaskGroup",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-taskgroup",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: operatorv1.GroupVersion.String(),
+									Kind:       "Operation",
+									Name:       "bar-operation",
+								},
+							},
+						},
+					},
+					&operatorv1.RuntimeTask{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTask",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-task",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: operatorv1.GroupVersion.String(),
+									Kind:       "RuntimeTaskGroup",
+									Name:       "foo-taskgroup",
+								},
+							},
+						},
+						Spec: operatorv1.RuntimeTaskSpec{
+							NodeName: "foo-node",
+						},
+					},
+				},
+			},
+			args: args{
+				req: ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "foo-task"}},
+			},
+			want:    ctrl.Result{},
+			wantErr: false,
+		},
+		{
+			name: "Reconcile pass",
+			fields: fields{
+				NodeName:  "foo-node",
+				Operation: "foo-operation",
+				Objs: []runtime.Object{
+					&operatorv1.Operation{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Operation",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-operation",
+						},
+					},
+					&operatorv1.RuntimeTaskGroup{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTaskGroup",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-taskgroup",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: operatorv1.GroupVersion.String(),
+									Kind:       "Operation",
+									Name:       "foo-operation",
+								},
+							},
+						},
+					},
+					&operatorv1.RuntimeTask{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "RuntimeTask",
+							APIVersion: operatorv1.GroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "default",
+							Name:      "foo-task",
+							OwnerReferences: []metav1.OwnerReference{
+								{
+									APIVersion: operatorv1.GroupVersion.String(),
+									Kind:       "RuntimeTaskGroup",
+									Name:       "foo-taskgroup",
+								},
+							},
+						},
+						Spec: operatorv1.RuntimeTaskSpec{
+							NodeName: "foo-node",
+						},
+					},
+				},
+			},
+			args: args{
+				req: ctrl.Request{NamespacedName: types.NamespacedName{Namespace: "default", Name: "foo-task"}},
+			},
+			want:    ctrl.Result{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &RuntimeTaskReconciler{
+				Client:    fake.NewFakeClientWithScheme(setupScheme(), tt.fields.Objs...),
+				NodeName:  tt.fields.NodeName,
+				Operation: tt.fields.Operation,
+				recorder:  record.NewFakeRecorder(1),
+				Log:       log.Log,
+			}
+			got, err := r.Reconcile(tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Reconcile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Reconcile() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func fixupWantTask(want *operatorv1.RuntimeTask, got *operatorv1.RuntimeTask) {
+	// In case want.StartTime is a marker, replace it with the current CompletionTime
+	if want.CreationTimestamp.IsZero() {
+		want.CreationTimestamp = got.CreationTimestamp
+	}
+
 	// In case want.ErrorMessage is a marker, replace it with the current error
 	if want.Status.ErrorMessage != nil && *want.Status.ErrorMessage == "error" && got.Status.ErrorMessage != nil {
 		want.Status.ErrorMessage = got.Status.ErrorMessage
@@ -817,4 +1121,18 @@ func fixupTimes(want *operatorv1.RuntimeTask, got *operatorv1.RuntimeTask) {
 
 func runtimeTaskStatusErrorPtr(s errors.RuntimeTaskStatusError) *errors.RuntimeTaskStatusError {
 	return &s
+}
+
+func setupScheme() *runtime.Scheme {
+	scheme := runtime.NewScheme()
+	if err := operatorv1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+	if err := corev1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+	if err := appsv1.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+	return scheme
 }

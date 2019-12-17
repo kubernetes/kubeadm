@@ -199,7 +199,7 @@ func createDaemonSet(c client.Client, operation *operatorv1.Operation, namespace
 
 	extraLabels, err := operations.DaemonSetNodeSelectorLabels(operation)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get operation specific labels DaemonSet %s/%s", daemonSet.Namespace, daemonSet.Name)
+		return errors.Wrapf(err, "failed to get NodeSelector for the operation DaemonSet %s/%s", daemonSet.Namespace, daemonSet.Name)
 	}
 	if len(extraLabels) > 0 {
 		daemonSet.Spec.Template.Spec.NodeSelector = extraLabels
@@ -233,6 +233,9 @@ func createDaemonSet(c client.Client, operation *operatorv1.Operation, namespace
 
 	} else {
 		// Expose /metrics on default (insecure) port
+		if daemonSet.Annotations == nil {
+			daemonSet.Annotations = map[string]string{}
+		}
 		daemonSet.Annotations["prometheus.io/scrape"] = "true"
 		daemonSet.Spec.Template.Spec.Containers[0].Ports = []corev1.ContainerPort{
 			{
@@ -314,7 +317,6 @@ func operationToTaskGroupRequests(c client.Client, o handler.MapObject) []ctrl.R
 }
 
 func getOwnerOperation(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*operatorv1.Operation, error) {
-	//TODO: check for controller ref instead of Operation/Kind
 	for _, ref := range obj.OwnerReferences {
 		if ref.Kind == "Operation" && ref.APIVersion == operatorv1.GroupVersion.String() {
 			operation := &operatorv1.Operation{}
@@ -322,14 +324,13 @@ func getOwnerOperation(ctx context.Context, c client.Client, obj metav1.ObjectMe
 				Namespace: obj.Namespace,
 				Name:      ref.Name,
 			}
-			err := c.Get(ctx, key, operation)
-			if err != nil {
+			if err := c.Get(ctx, key, operation); err != nil {
 				return nil, errors.Wrapf(err, "error reading controller ref for %s/%s", obj.Namespace, obj.Name)
 			}
 			return operation, nil
 		}
 	}
-	return nil, nil
+	return nil, errors.Errorf("missing controller ref for %s/%s", obj.Namespace, obj.Name)
 }
 
 type matchingSelector struct {
@@ -418,20 +419,18 @@ func taskGroupToTaskRequests(c client.Client, o handler.MapObject) []ctrl.Reques
 }
 
 func getOwnerTaskGroup(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*operatorv1.RuntimeTaskGroup, error) {
-	//TODO: check for controller ref instead of Operation/Kind
 	for _, ref := range obj.OwnerReferences {
-		if ref.Kind == "TaskGroup" && ref.APIVersion == operatorv1.GroupVersion.String() {
+		if ref.Kind == "RuntimeTaskGroup" && ref.APIVersion == operatorv1.GroupVersion.String() {
 			taskgroup := &operatorv1.RuntimeTaskGroup{}
 			key := client.ObjectKey{
 				Namespace: obj.Namespace,
 				Name:      ref.Name,
 			}
-			err := c.Get(ctx, key, taskgroup)
-			if err != nil {
+			if err := c.Get(ctx, key, taskgroup); err != nil {
 				return nil, errors.Wrapf(err, "error reading controller ref for %s/%s", obj.Namespace, obj.Name)
 			}
 			return taskgroup, nil
 		}
 	}
-	return nil, nil
+	return nil, errors.Errorf("missing controller ref for %s/%s", obj.Namespace, obj.Name)
 }
