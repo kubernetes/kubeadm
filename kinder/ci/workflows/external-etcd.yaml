@@ -7,6 +7,7 @@ vars:
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-external-etcd
+  kubeadmVerbosity: 6
 tasks:
 - name: pull-base-image
   description: |
@@ -53,6 +54,7 @@ tasks:
     - --automatic-copy-certs
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
 - name: join
   description: |
@@ -64,6 +66,7 @@ tasks:
     - --automatic-copy-certs
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
 - name: e2e-kubeadm
   description: |
@@ -112,6 +115,7 @@ tasks:
     - kubeadm-reset
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   force: true
 - name: delete
   description: |

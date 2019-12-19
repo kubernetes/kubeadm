@@ -13,6 +13,7 @@ vars:
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-xony
+  kubeadmVerbosity: 6
 tasks:
 # Important! this workflow differs from skew-x-on-y-tasks-automatic-copy-certs.yaml
 # - e2e-kubeadm is not run (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
@@ -63,6 +64,8 @@ tasks:
     - do
     - kubeadm-init
     - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
 - name: join
   description: |
@@ -73,6 +76,7 @@ tasks:
     - kubeadm-join
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
 - name: cluster-info
   description: |
@@ -120,6 +124,7 @@ tasks:
     - kubeadm-reset
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   force: true
 - name: delete
   description: |
