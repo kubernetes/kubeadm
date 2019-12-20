@@ -10,6 +10,7 @@ vars:
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-kustomize
+  kubeadmVerbosity: 6
 tasks:
   - name: pull-base-image
     description: |
@@ -138,6 +139,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - -k=/tmp/kubeadm-patches
       - --loglevel=debug
+      - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
     timeout: 5m
   - name: join
     description: |
@@ -149,6 +151,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - -k=/tmp/kubeadm-patches
       - --loglevel=debug
+      - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
     timeout: 5m
   - name: run verify-kustomize.sh on controlplane nodes before upgrades
     cmd: kinder
@@ -169,6 +172,7 @@ tasks:
       - -k=/tmp/kubeadm-patches
       - --name={{ .vars.clusterName }}
       - --loglevel=debug
+      - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   - name: run verify-kustomize.sh on controlplane nodes after upgrades
     cmd: kinder
     args:
@@ -202,6 +206,7 @@ tasks:
       - kubeadm-reset
       - --name={{ .vars.clusterName }}
       - --loglevel=debug
+      - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
     force: true
   - name: delete
     description: |
