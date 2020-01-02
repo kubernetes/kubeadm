@@ -69,7 +69,7 @@ func reconcileTaskGroups(desired *operatorv1.RuntimeTaskGroupList, current *oper
 		matchMap[desiredTaskGroup.Name] = newTaskGroupReconcileItem(&desiredTaskGroup, nil)
 	}
 
-	// Match the the current child objects (TaskGroup) with desired objects (desired TaskGroup).
+	// Match the current child objects (TaskGroup) with desired objects (desired TaskGroup).
 	for _, taskGroup := range current.Items {
 		currentTaskGroup := taskGroup // copies the TaskGroup to a local variable in order to avoid it to get overridden at the next iteration
 		// in case a current objects has a corresponding desired object, match them
