@@ -72,7 +72,7 @@ func reconcileTasks(nodes []corev1.Node, tasks *operatorv1.RuntimeTaskList) *tas
 		matchMap[x.Name] = newTaskGroupChildProxy(&x)
 	}
 
-	// Match the the current Task with desired Task (1 for each node in scope).
+	// Match the current Task with desired Task (1 for each node in scope).
 	for _, t := range tasks.Items {
 		// in case a current task has a corresponding desired task, match them
 		// NB. if there are more that one match, we track this, but this is an inconsistency
