@@ -231,46 +231,57 @@ func (n *Node) EtcdImage() (string, error) {
 	return n.etcdImage, nil
 }
 
-const clusterSettingsPath = "/kinder/cluster-settings.yaml"
+//const clusterSettingsPath = "/kinder/cluster-settings.yaml"
 
 // WriteClusterSettings stores in the node a set of cluster-wide settings that will be re-used
 // by kinder during the cluster lifecycle (after create)
 func (n *Node) WriteClusterSettings(settings *ClusterSettings) error {
-	s, err := ksigsyaml.Marshal(*settings)
-	if err != nil {
-		return errors.Wrapf(err, "failed to encode %s", clusterSettingsPath)
-	}
+	/*
+		Temporarily disabled because we are observing flakes related to this operation
 
-	err = n.Command(
-		"mkdir", "-p", filepath.Dir(clusterSettingsPath),
-	).Silent().Run()
-	if err != nil {
-		return errors.Wrapf(err, "failed to write %s", clusterSettingsPath)
-	}
+			s, err := ksigsyaml.Marshal(*settings)
+			if err != nil {
+				return errors.Wrapf(err, "failed to encode %s", clusterSettingsPath)
+			}
 
-	if err := n.WriteFile(clusterSettingsPath, s); err != nil {
-		return err
-	}
+			err = n.Command(
+				"mkdir", "-p", filepath.Dir(clusterSettingsPath),
+			).Silent().Run()
+			if err != nil {
+				return errors.Wrapf(err, "failed to write %s", clusterSettingsPath)
+			}
+
+			if err := n.WriteFile(clusterSettingsPath, s); err != nil {
+				return err
+			}
+	*/
 	return nil
 }
 
 // ReadClusterSettings reads from the node a set of cluster-wide settings that
 // are going to be re-used by kinder during the cluster lifecycle (after create)
 func (n *Node) ReadClusterSettings() (*ClusterSettings, error) {
-	lines, err := n.Command(
-		"cat", clusterSettingsPath,
-	).Silent().RunAndCapture()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read %s", clusterSettingsPath)
-	}
+	/*
+		Temporarily disabled because we are observing flakes related to this operation
 
-	var settings ClusterSettings
-	err = ksigsyaml.Unmarshal([]byte(strings.Join(lines, "\n")), &settings)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode %s", clusterSettingsPath)
-	}
+			lines, err := n.Command(
+				"cat", clusterSettingsPath,
+			).Silent().RunAndCapture()
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to read %s", clusterSettingsPath)
+			}
 
-	return &settings, nil
+			var settings ClusterSettings
+			err = ksigsyaml.Unmarshal([]byte(strings.Join(lines, "\n")), &settings)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to decode %s", clusterSettingsPath)
+			}
+
+			return &settings, nil
+	*/
+	return &ClusterSettings{
+		IPFamily: IPv4Family,
+	}, nil
 }
 
 const nodeSettingsPath = "/kinder/node-settings.yaml"
