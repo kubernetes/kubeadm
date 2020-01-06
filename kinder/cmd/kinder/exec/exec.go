@@ -62,7 +62,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// get a kinder cluster manager
 	o, err := manager.NewClusterManager(flags.Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create create a kinder cluster manager for %s", flags.Name)
+		return errors.Wrapf(err, "failed to create a kinder cluster manager for %s", flags.Name)
 	}
 
 	// execute the command on selected target nodes

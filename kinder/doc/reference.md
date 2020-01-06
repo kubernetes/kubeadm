@@ -120,7 +120,7 @@ Following node selectors are available
 As alternative to node selector, the node name (the container name without the cluster name prefix) can be used to target actions to a specific node.
 
 ```bash
-# run kubeadm join on the first worker node node only
+# run kubeadm join on the first worker node only
 kinder exec worker1 -- kubeadm join 172.17.0.2:6443 --token abcdef.0123456789abcdef ...
 ```
 
