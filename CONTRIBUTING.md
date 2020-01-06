@@ -76,6 +76,7 @@ For more general information about unit tests in Go please have a look at:
 * https://golang.org/pkg/testing/
 * https://blog.alexellis.io/golang-writing-unit-tests/
 
-### Onboarding videos
+### Instructional videos
 
 * [kubeadm onboarding 2019-11-04](https://www.youtube.com/watch?v=N0OJW0nlEpQ)
+* [developing kubeadm 101 - 2020-01-05](https://www.youtube.com/watch?v=QtTfRm_jzzM)
