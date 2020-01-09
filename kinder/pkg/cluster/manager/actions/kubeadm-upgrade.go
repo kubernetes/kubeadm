@@ -41,8 +41,9 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, kusto
 	}
 
 	preloadUpgradeImages(c, upgradeVersion)
+	nodeList := c.K8sNodes().EligibleForActions()
 
-	for _, n := range c.K8sNodes().EligibleForActions() {
+	for _, n := range nodeList {
 
 		// fail fast if required to use kustomize and kubeadm less than v1.16
 		if kustomizeDir != "" && n.MustKubeadmVersion().LessThan(constants.V1_16) {
@@ -68,7 +69,9 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, kusto
 		if err != nil {
 			return err
 		}
+	}
 
+	for _, n := range nodeList {
 		if err := upgradeKubeletKubectl(c, n, upgradeVersion, wait); err != nil {
 			return err
 		}
@@ -222,6 +225,7 @@ func upgradeKubeletKubectl(c *status.Cluster, n *status.Node, upgradeVersion *K8
 		return err
 	}
 
+	// restart the kubelet
 	if err := n.Command(
 		"systemctl", "restart", "kubelet",
 	).Silent().Run(); err != nil {
