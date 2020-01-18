@@ -15,12 +15,6 @@ vars:
   clusterName: kinder-xony
   kubeadmVerbosity: 6
 tasks:
-# Important! this workflow differs from skew-x-on-y-tasks-automatic-copy-certs.yaml
-# - e2e-kubeadm is not run (nb. e2e-kubeadm was heavily refactored in v1.15 cycle)
-# - it does not use the automatic copy certs feature, available in kubeadm since v1.14 only
-# TODO: once 1.13 is no longer tested:
-# - delete this file
-# - rename skew-x-on-y-tasks-automatic-copy-certs.yaml to skew-x-on-y-tasks.yaml
 - name: pull-base-image
   description: |
     pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
@@ -64,8 +58,9 @@ tasks:
     - do
     - kubeadm-init
     - --name={{ .vars.clusterName }}
-    - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --automatic-copy-certs
+    - --loglevel=debug
   timeout: 5m
 - name: join
   description: |
@@ -75,6 +70,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
+    - --automatic-copy-certs
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
@@ -85,6 +81,16 @@ tasks:
   args:
     - do
     - cluster-info
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+- name: e2e-kubeadm
+  description: |
+    Runs kubeadm e2e test
+  cmd: kinder
+  args:
+    - test
+    - e2e-kubeadm
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
 - name: e2e
