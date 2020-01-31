@@ -75,7 +75,7 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(kinddelete.NewCommand())
 	cmd.AddCommand(kindexport.NewCommand())
 
-	// add kind commands commands customized in kind
+	// add kind commands customized in kind
 	cmd.AddCommand(build.NewCommand())
 	cmd.AddCommand(create.NewCommand())
 	cmd.AddCommand(version.NewCommand())

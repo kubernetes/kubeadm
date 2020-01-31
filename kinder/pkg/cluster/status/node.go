@@ -115,7 +115,7 @@ func (n *Node) IsExternalLoadBalancer() bool {
 }
 
 // ProvisioningOrder returns the provisioning order for nodes, that
-// should be defined according to the assigned Role; is is used to get consistent
+// should be defined according to the assigned Role; is used to get consistent
 // and repeatable ordering in the list of nodes
 func (n *Node) provisioningOrder() int {
 	switch n.Role() {
