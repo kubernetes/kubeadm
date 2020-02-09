@@ -49,7 +49,7 @@ That said, nothing here is set in stone. See this as inspiration :)
 - Start writing docs and e2e tests for the new features.
 - The kubeadm upgrade document needs a manual update each cycle:
 https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
-- Go trough the kubeadm related documents in the `kuberentes/website` and this repository and plan what has to be updated.
+- Go through the kubeadm related documents in the `kuberentes/website` and this repository and plan what has to be updated.
 - Watch for new features in core Kubernetes that may affect kubeadm. Discuss what action has to be taken
 by the kubeadm maintainers.
 - Make sure that existing e2e test jobs are green at all times:
@@ -66,7 +66,7 @@ by the kubeadm maintainers.
   - Demonstrate new features at the Kubernetes Community Meeting.
 - Make sure all critical bugfixes are prioritized and merged into the release.
 - **IMPORTANT** Manual actions before a release:
-  - Make sure that the default and minium Kubernetes versions are up-to-date:
+  - Make sure that the default and minimum Kubernetes versions are up-to-date:
   https://github.com/kubernetes/kubernetes/blob/release-1.17/cmd/kubeadm/app/constants/constants.go#L412-L418
   - Make sure that the etcd versions in the same file are up-to-date:
   https://github.com/kubernetes/kubernetes/blob/release-1.17/cmd/kubeadm/app/constants/constants.go#L421-L427
