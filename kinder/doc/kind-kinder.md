@@ -52,11 +52,11 @@ _Actions on a running cluster:_
         - automatic configuration for external etcd/external lb, if present
         - shortcut for using kube-dns instead of CoreDNS
         - shortcut for setting certificateKey field (for testing the automatic copy certs feature of kubeadm)
-        - shortcut for testing different kubeadm join discovery mechanins
+        - shortcut for testing different kubeadm join discovery mechanics
     - `kubeadm init` can be executed as a unique workflow or using phases
     - `kubeadm join` can be executed as a unique workflow or using phases
     - the init action installs Calico as a CNI plugin instead of kindnet
-    - the init/join actions can use  theautomatic copy certs feature of kubeadm (or mimic the manual copy process)
+    - the init/join actions can use  the automatic copy certs feature of kubeadm (or mimic the manual copy process)
 - kinder support additional actions
     - upgrade
     - reset
