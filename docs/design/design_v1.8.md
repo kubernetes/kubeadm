@@ -18,7 +18,7 @@ The cluster that `kubeadm init` and `kubeadm join` set up should be:
      - enforcing RBAC
      - using the Node Authorizer
      - using secure communication between the control plane components
-     - using secure communication between the API Server and the kubelets
+     - using secure communication between the API Server and the kubelet
      - making it possible to lock-down the kubelet API
      - locking down access to the API system components like the kube-proxy and kube-dns
      - locking down what a Bootstrap Token can access
@@ -52,7 +52,7 @@ This means we aim to standardize:
  - Names of certificates files:
    - `ca.crt`, `ca.key` (CA certificate)
    - `apiserver.crt`, `apiserver.key` (API Server certificate)
-   - `apiserver-kubelet-client.crt`, `apiserver-kubelet-client.key` (client certificate for the apiservers to connect to the kubelets securely)
+   - `apiserver-kubelet-client.crt`, `apiserver-kubelet-client.key` (client certificate for the apiservers to connect to the kubelet securely)
    - `sa.pub`, `sa.key` (a private key for signing ServiceAccount )
    - `front-proxy-ca.crt`, `front-proxy-ca.key` (CA for the front proxy)
    - `front-proxy-client.crt`, `front-proxy-client.key` (client cert for the front proxy client)
@@ -116,7 +116,7 @@ There should be:
      - the node-name
      - the IPv4 address of the default route
      - optional extra altnames that can be specified by the user
- - a client certificate for the apiservers to connect to the kubelets securely (`apiserver-kubelet-client.crt`) using `ca.crt` as the CA with its private key (`apiserver-kubelet-client.key`). The certificate should:
+ - a client certificate for the apiservers to connect to the kubelet securely (`apiserver-kubelet-client.crt`) using `ca.crt` as the CA with its private key (`apiserver-kubelet-client.key`). The certificate should:
    - be a client certificate (`x509.ExtKeyUsageClientAuth`)
    - be in the `system:masters` organization
  - a private key for signing ServiceAccount Tokens (`sa.key`) along with its public key (`sa.pub`)

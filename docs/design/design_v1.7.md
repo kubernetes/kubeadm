@@ -18,7 +18,7 @@ The cluster that `kubeadm init` and `kubeadm join` set up should be:
      - enforcing RBAC
      - using the Node Authorizer
      - using secure communication between the control plane components
-     - using secure communication between the API Server and the kubelets
+     - using secure communication between the API Server and the kubelet
      - making it possible to lock-down the kubelet API
      - locking down access to the API system components like the kube-proxy and kube-dns
      - locking down what a Bootstrap Token can access
@@ -68,7 +68,7 @@ There should be:
        - **TODO:** I guess this might be a requested feature in opinionated setups, but might be a no-no in more advanced setups. Consensus here?
      - the IPv4 address of the default route
      - optional extra altnames that can be specified by the user
- - a client certificate for the apiservers to connect to the kubelets securely (`apiserver-kubelet-client.crt`) using `ca.crt` as the CA with its private key (`apiserver-kubelet-client.key`). The certificate should:
+ - a client certificate for the apiservers to connect to the kubelet securely (`apiserver-kubelet-client.crt`) using `ca.crt` as the CA with its private key (`apiserver-kubelet-client.key`). The certificate should:
    - be a client certificate (`x509.ExtKeyUsageClientAuth`)
    - be in the `system:masters` organization
  - a private key for signing ServiceAccount Tokens (`sa.key`) along with its public key (`sa.pub`)
