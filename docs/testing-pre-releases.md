@@ -192,7 +192,7 @@ Run `cluster/get-kube-binaries.sh` to download the tarball with server binaries.
 > Inside release notes, usually there is a direct link for getting server binaries directly
 
 > `cluster/get-kube-binaries.sh` retrieves server binaries from `gs://kubernetes-release/release/{release}`
-  GCS bucket; you can use `gsutil` to get server binariess directly.
+  GCS bucket; you can use `gsutil` to get server binaries directly.
 
 Both Kubeadm binaries and docker images are available in `/server/bin` folder of  `kubernetes-server-linux-amd64.tar.gz`
 
