@@ -36,7 +36,7 @@ trap exitHandler EXIT
 
 # pull the source code and build the binary
 cd "${TMP_DIR}"
-URL="http://github.com/dominikh/go-tools"
+URL="https://github.com/dominikh/go-tools"
 echo "Cloning ${URL} in ${TMP_DIR}..."
 git clone --quiet --depth=1 "${URL}" .
 echo "Building staticcheck..."
