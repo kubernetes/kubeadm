@@ -324,6 +324,7 @@ func (c *Context) createAlterContainer(bc *bits.BuildContext) (id string, err er
 	id = "kind-build-" + uuid.New().String()
 	args := []string{
 		"-d", // make the client exit while the container continues to run
+		"--restart always", // Always restart the container if it stops
 		"-v", fmt.Sprintf("%s:%s", bc.HostBasePath(), bc.ContainerBasePath()),
 		// the container should hang forever so we can exec in it
 		"--entrypoint=sleep",
