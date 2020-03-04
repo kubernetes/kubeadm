@@ -62,8 +62,8 @@ The table below summarize the current state:
 
 |                         | .deb or .rpm                                                 | kubeadm binary                                               | control plane                                                |
 | ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| **GA release**          | from .deb or .rpm repository                                 | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `gcr.io/google-containers` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)           |
-| **alpha/beta release*** | not available. use CI/CD version "near" tag                  | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `gcr.io/google-containers` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)        |
+| **GA release**          | from .deb or .rpm repository                                 | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)           |
+| **alpha/beta release*** | not available. use CI/CD version "near" tag                  | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)        |
 | **CI/CD release***      | from `gs://kubernetes-release-dev/bazel/` GCS bucket (only debs, built every merge) | from `gs://kubernetes-release-dev/ci-cross/` GCS bucket (built every merge) | from `gcr.io/kubernetes-ci-images` container registry (built every few hours, not by PR) |
 
 [*] for alpha/beta and CI/CD currently it is not possible to have exact version number consistency for all the
@@ -162,7 +162,7 @@ For CI/CD valid version numbers are:
   See <https://console.cloud.google.com/storage/browser/kubernetes-release-dev/ci-cross/> for the full list of labels.
 
 If you want to retrieve manually pre-compiled/pre-built GA, alpha/beta versions of control plane images, such
-images are deployed into `gcr.io/google-containers` GCR registry, while CI/CD versions are deployed into
+images are deployed into `k8s.gcr.io` GCR registry, while CI/CD versions are deployed into
 `gcr.io/kubernetes-ci-images` GCR registry.
 
 To explore versions available in Google Container Registry use
@@ -174,7 +174,7 @@ gcloud container images list-tags gcr.io/{gcr-repository-name}/{image-name}
 Valid image names are `kube-apiserver-amd64`, `pause-amd64`, `etcd-amd64`, `k8s-dns-kube-dns-amd64` etc. e.g.
 
 ```bash
-gcloud container images list-tags gcr.io/google-containers/kube-apiserver-amd64 --sort-by=~tags --filter=tags:v1.10.2 --limit=50
+gcloud container images list-tags k8s.gcr.io/kube-apiserver-amd64 --sort-by=~tags --filter=tags:v1.10.2 --limit=50
 ```
 
 As alternative, you can browse <https://console.cloud.google.com/gcr/images/{gcr-repository-name}/GLOBAL/{image-name}>
