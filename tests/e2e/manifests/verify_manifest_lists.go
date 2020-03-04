@@ -65,7 +65,7 @@ const (
 	// first release that is known to have full support.
 	firstKnownVersion = "v1.12.0-rc.1"
 
-	gcrBucket = "https://gcr.io/v2/google-containers"
+	gcrBucket = "https://k8s.gcr.io/v2"
 
 	typeManifestList = "application/vnd.docker.distribution.manifest.list.v2+json"
 	typeManifest     = "application/vnd.docker.distribution.manifest.v2+json"
