@@ -24,16 +24,18 @@ import (
 
 // DaemonSetNodeSelectorLabels labels for limiting the nodes where the operation agent will be deployed
 func DaemonSetNodeSelectorLabels(operation *operatorv1.Operation) (map[string]string, error) {
-	if operation.Spec.RenewCertificates != nil {
-		return setupRenewCertificates(), nil
-	}
+	if operation != nil {
+		if operation.Spec.RenewCertificates != nil {
+			return setupRenewCertificates(), nil
+		}
 
-	if operation.Spec.Upgrade != nil {
-		return setupUpgrade(), nil
-	}
+		if operation.Spec.Upgrade != nil {
+			return setupUpgrade(), nil
+		}
 
-	if operation.Spec.CustomOperation != nil {
-		return setupCustom(), nil
+		if operation.Spec.CustomOperation != nil {
+			return setupCustom(), nil
+		}
 	}
 
 	return nil, errors.New("Invalid Operation.Spec.OperatorDescriptor. There are no operation implementation matching this spec")
@@ -41,17 +43,18 @@ func DaemonSetNodeSelectorLabels(operation *operatorv1.Operation) (map[string]st
 
 // TaskGroupList return the list of TaskGroup to be performed by an operation
 func TaskGroupList(operation *operatorv1.Operation) (*operatorv1.RuntimeTaskGroupList, error) {
-	if operation.Spec.RenewCertificates != nil {
-		return planRenewCertificates(operation, operation.Spec.RenewCertificates), nil
-	}
+	if operation != nil {
+		if operation.Spec.RenewCertificates != nil {
+			return planRenewCertificates(operation, operation.Spec.RenewCertificates), nil
+		}
 
-	if operation.Spec.Upgrade != nil {
-		return planUpgrade(operation, operation.Spec.Upgrade), nil
-	}
+		if operation.Spec.Upgrade != nil {
+			return planUpgrade(operation, operation.Spec.Upgrade), nil
+		}
 
-	if operation.Spec.CustomOperation != nil {
-		return planCustom(operation, operation.Spec.CustomOperation), nil
+		if operation.Spec.CustomOperation != nil {
+			return planCustom(operation, operation.Spec.CustomOperation), nil
+		}
 	}
-
 	return nil, errors.New("Invalid Operation.Spec.OperatorDescriptor. There are no operation implementation matching this spec")
 }
