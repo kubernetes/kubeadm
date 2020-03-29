@@ -112,9 +112,6 @@ var (
 	// V1_13 minor version
 	V1_13 = K8sVersion.MustParseSemantic("v1.13.0-0")
 
-	// V1_14 minor version
-	V1_14 = K8sVersion.MustParseSemantic("v1.14.0-0")
-
 	// V1.15 minor version
 	V1_15 = K8sVersion.MustParseSemantic("v1.15.0-0")
 
