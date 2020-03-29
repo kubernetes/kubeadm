@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindversion "sigs.k8s.io/kind/cmd/kind/version"
 )
 
 // NewCommand returns a new cobra.Command for version
@@ -33,7 +32,7 @@ func NewCommand() *cobra.Command {
 		Short: "prints the kind CLI version",
 		Long:  "prints the kind CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("kinder version: %s\nkind   version: %s\n", constants.KinderVersion, kindversion.Version)
+			fmt.Printf("kinder version: %s\n", constants.KinderVersion)
 			return nil
 		},
 	}
