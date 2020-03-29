@@ -26,9 +26,9 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
-	kindexec "sigs.k8s.io/kind/pkg/exec"
 )
 
 // CreateOptions holds all the options used at create time
@@ -125,7 +125,7 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 				log.Error(err)
 			} else {
 				for _, n := range c.AllNodes() {
-					if err := kindexec.Command(
+					if err := exec.NewHostCmd(
 						"docker",
 						"rm",
 						"-f", // force the container to be deleted now
