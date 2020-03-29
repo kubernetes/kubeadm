@@ -24,10 +24,8 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
 	"k8s.io/kubeadm/kinder/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/util"
 )
 
 // DefaultImage is the default name:tag of the built base image
@@ -39,9 +37,6 @@ type BuildContext struct {
 	// option fields
 	sourceDir string
 	image     string
-	// non option fields
-	goCmd string // TODO: should be an option possibly
-	arch  string // TODO: should be an option
 }
 
 // Option is BuildContext configuration option supplied to NewBuildContext
@@ -66,8 +61,6 @@ func WithImage(image string) Option {
 func NewBuildContext(options ...Option) *BuildContext {
 	ctx := &BuildContext{
 		image: DefaultImage,
-		goCmd: "go",
-		arch:  util.GetArch(),
 	}
 	for _, option := range options {
 		option(ctx)
@@ -119,8 +112,8 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 	entrypointSrc := filepath.Join(dir, "entrypoint", "main.go")
 	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
 
-	cmd := exec.NewHostCmd(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
-	cmd.SetEnv(append(os.Environ(), "GOOS=linux", "GOARCH="+c.arch)...)
+	cmd := exec.NewHostCmd("go", "build", "-o", entrypointDest, entrypointSrc)
+	cmd.SetEnv(append(os.Environ(), "GOOS=linux", "GOARCH=amd64")...)
 
 	// actually build
 	log.Info("Building entrypoint binary ...")
