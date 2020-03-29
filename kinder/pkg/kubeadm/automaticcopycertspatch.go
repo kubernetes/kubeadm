@@ -45,8 +45,6 @@ func GetAutomaticCopyCertsPatches(kubeadmVersion *K8sVersion.Version) ([]string,
 			fmt.Sprintf(automaticCopyCertsJoinv1beta2, constants.CertificateKey),
 		}, nil
 	case "v1beta1":
-		fallthrough
-	case "v1alpha3":
 		// no-op: certificate key was not supported in those release of the kubeadm config API;
 		// the --certificate-key flag should be used instead
 		return []string{}, nil

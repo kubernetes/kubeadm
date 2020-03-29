@@ -43,8 +43,6 @@ func GetDockerPatch(kubeadmVersion *K8sVersion.Version, ControlPlane bool) ([]st
 		basePatch = dockerPatchv1beta2
 	case "v1beta1":
 		basePatch = dockerPatchv1beta1
-	case "v1alpha3":
-		basePatch = dockerPatchv1alpha3
 	default:
 		return nil, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -65,13 +63,6 @@ nodeRegistration:
   criSocket: /var/run/dockershim.sock`
 
 const dockerPatchv1beta1 = `apiVersion: kubeadm.k8s.io/v1beta1
-kind: %s
-metadata:
-  name: config
-nodeRegistration:
-  criSocket: /var/run/dockershim.sock`
-
-const dockerPatchv1alpha3 = `apiVersion: kubeadm.k8s.io/v1alpha3
 kind: %s
 metadata:
   name: config
