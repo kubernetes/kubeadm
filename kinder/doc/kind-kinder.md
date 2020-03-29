@@ -28,6 +28,7 @@ _Building images:_
      - Replace the kubectl, kubelet, kubeadm binary to be used for `kubeadm init` (from release, CI/CD or locally
        build artifacts)
      - Add a Kubernetes version to be used for `kubeadm upgrade` (from release, CI/CD or locally build artifacts)
+- kinder can build images only on top of linux/amd64 base images (currently ubuntu:18.04)
 
 _Creating the cluster:_
 - kinder support both containerd and as container runtime inside the images
