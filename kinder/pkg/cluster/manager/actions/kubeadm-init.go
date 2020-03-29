@@ -40,11 +40,6 @@ import (
 func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
-	// fail fast if required to use automatic copy certs and kubeadm less than v1.14
-	if automaticCopyCerts && cp1.MustKubeadmVersion().LessThan(constants.V1_14) {
-		return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
-	}
-
 	// fail fast if required to use kustomize and kubeadm less than v1.16
 	if kustomizeDir != "" && cp1.MustKubeadmVersion().LessThan(constants.V1_16) {
 		return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")

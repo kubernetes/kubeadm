@@ -43,11 +43,6 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
-		// automatic copy certs is supported starting from v1.14
-		if automaticCopyCerts && !cp2.MustKubeadmVersion().AtLeast(constants.V1_14) {
-			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
-		}
-
 		// fail fast if required to use kustomize and kubeadm less than v1.16
 		if kustomizeDir != "" && cp2.MustKubeadmVersion().LessThan(constants.V1_16) {
 			return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")
@@ -219,10 +214,6 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 
 func joinWorkers(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
 	for _, w := range c.Workers().EligibleForActions() {
-		if usePhases && !w.MustKubeadmVersion().AtLeast(constants.V1_14) {
-			return errors.New("--automatic-copy-certs can't be used with kubeadm older than v1.14")
-		}
-
 		// checks pre-loaded images available on the node (this will report missing images, if any)
 		kubeVersion, err := w.KubeVersion()
 		if err != nil {
