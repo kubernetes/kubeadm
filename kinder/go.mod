@@ -16,5 +16,6 @@ require (
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/utils v0.0.0-20190712204705-3dccf664f023 // indirect
 	sigs.k8s.io/kind v0.4.0
+	sigs.k8s.io/kustomize v2.0.3+incompatible
 	sigs.k8s.io/yaml v1.1.0
 )

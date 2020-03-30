@@ -20,20 +20,19 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
+	log "github.com/sirupsen/logrus"
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindkustomize "sigs.k8s.io/kind/pkg/kustomize"
 )
 
 // GetRemoveTokenPatch returns the kubeadm config patch that will instruct kubeadm
 // to not uses token discovery.
-func GetRemoveTokenPatch(kubeadmVersion *K8sVersion.Version) (kindkustomize.PatchJSON6902, error) {
+func GetRemoveTokenPatch(kubeadmVersion *K8sVersion.Version) (PatchJSON6902, error) {
 	// gets the config version corresponding to a kubeadm version
 	kubeadmConfigVersion, err := getKubeadmConfigVersion(kubeadmVersion)
 	if err != nil {
-		return kindkustomize.PatchJSON6902{}, err
+		return PatchJSON6902{}, err
 	}
 
 	// select the patches for the kubeadm config version
@@ -49,10 +48,10 @@ func GetRemoveTokenPatch(kubeadmVersion *K8sVersion.Version) (kindkustomize.Patc
 	case "v1alpha3":
 		patch = removeTokenPatchv1alpha3
 	default:
-		return kindkustomize.PatchJSON6902{}, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
+		return PatchJSON6902{}, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
 
-	return kindkustomize.PatchJSON6902{
+	return PatchJSON6902{
 		Group:   "kubeadm.k8s.io",
 		Version: kubeadmConfigVersion,
 		Kind:    kind,
