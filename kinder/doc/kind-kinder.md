@@ -41,6 +41,7 @@ _Creating the cluster:_
   config init, join (eventually, only the last two operations can be skipped)
 - kinder allows adding an external etcd to the cluster
 - kinder allows adding an external loadbalancer to the cluster even if less than two control-plane nodes
+- kinder still uses kustomize for bulding the kubeadm config file, while kind dropped this dependency for a lighther solution
 
 _Actions on a running cluster:_
 - kinder support running actions on a running cluster (after `kinder create`)
@@ -97,8 +98,5 @@ back new features.
 - "sigs.k8s.io/kind/pkg/fs" (*) for
     - `TempDir`
     - `Copy`
-- "sigs.k8s.io/kind/pkg/kustomize" for
-    - `PatchJSON6902` struct
-    - `Build`
 
 (*) to be evaluated if removing dependency in future kinder versions
