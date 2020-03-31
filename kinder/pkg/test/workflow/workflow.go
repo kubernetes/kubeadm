@@ -27,6 +27,7 @@ will be skipped with the only exception of tasks specifically marked to be execu
 package workflow
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -37,7 +38,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 // Workflow represents a list of tasks to be executed during test workflow and related context
@@ -99,10 +100,45 @@ type Task struct {
 	Force bool
 
 	// Timeout for the current task, 5m by default
-	Timeout time.Duration
+	Timeout Duration
 
 	// IgnoreError sets a task to be recorded as successful even if it is actually failed
 	IgnoreError bool `yaml:"ignoreError"`
+}
+
+// Duration is a wrapper around time.Duration to satisfy the encoding/json Marshaler
+// and Unmarshaler interfaces. This extends sigs.k8s.io/yaml to support JSON handling
+// of time.Duration.
+type Duration struct {
+	time.Duration
+}
+
+// MarshalJSON marshals a Duration object to JSON data
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}
+
+// UnmarshalJSON unmarshals JSON data to a Duration object
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	// Only float64 and string are supported
+	switch value := v.(type) {
+	case float64:
+		d.Duration = time.Duration(value)
+		return nil
+	case string:
+		var err error
+		d.Duration, err = time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid duration")
+	}
 }
 
 // NewWorkflow creates a new workflow as defined in a workflow file
@@ -152,8 +188,8 @@ func NewWorkflow(file string) (*Workflow, error) {
 
 		// if a timeout is not defined, assign a default one
 		// nb. we are assigning a fairly long timeout to avoid flakes in testgrid
-		if t.Timeout == 0 {
-			t.Timeout = time.Duration(5 * time.Minute)
+		if t.Timeout.Duration == 0 {
+			t.Timeout.Duration = time.Duration(5 * time.Minute)
 		}
 
 		// check if the task defines a cmd
@@ -190,7 +226,7 @@ func (w *Workflow) expandImports(file string) error {
 		if t.Force {
 			return errors.Errorf("invalid workflow file %s: task #%d - force setting can't be combined with import directive", file, i+1)
 		}
-		if t.Timeout != 0 {
+		if t.Timeout.Duration != 0 {
 			return errors.Errorf("invalid workflow file %s: task #%d - timeout setting can't be combined with import directive", file, i+1)
 		}
 		if t.IgnoreError {
