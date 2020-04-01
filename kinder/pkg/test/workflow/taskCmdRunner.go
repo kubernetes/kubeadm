@@ -116,7 +116,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		writer.WriteString(fmt.Sprintf("%s\n", t.Description))
 	}
 	writer.WriteString(fmt.Sprintf("command : %s\n", t.CmdText))
-	writer.WriteString(fmt.Sprintf("timeout : %s\n", t.Timeout))
+	writer.WriteString(fmt.Sprintf("timeout : %s\n", t.Timeout.Duration))
 	writer.WriteString(fmt.Sprintf("force   : %v\n", t.Force))
 	writer.WriteString(fmt.Sprintf("%s\n\n", strings.Repeat("-", 80)))
 
@@ -173,7 +173,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 			withDuration(time.Since(start)),
 		)
 
-	case <-time.After(t.Timeout):
+	case <-time.After(t.Timeout.Duration):
 		// keeps track of this failure type to block execution of following TestCmd
 		c.timedOut = true
 
@@ -182,7 +182,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 
 		// record test case timeout and exits with error
 		return c.registerTestCase(t.Name,
-			withFailure(fmt.Sprintf("timeout. task did not completed in less than %s as expected", t.Timeout)),
+			withFailure(fmt.Sprintf("timeout. task did not completed in less than %s as expected", t.Timeout.Duration)),
 			withDuration(time.Since(start)),
 		)
 	}
