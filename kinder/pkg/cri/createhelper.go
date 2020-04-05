@@ -25,7 +25,6 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/cri/docker"
 	"k8s.io/kubeadm/kinder/pkg/cri/util"
 	"k8s.io/kubeadm/kinder/pkg/exec"
-	"k8s.io/kubeadm/kinder/third_party/kind/loadbalancer"
 )
 
 // CreateHelper provides CRI specific methods for node create
@@ -85,7 +84,7 @@ func (h *CreateHelper) CreateExternalLoadBalancer(cluster, name string) error {
 	}
 
 	// Specify the image to run
-	args = append(args, loadbalancer.Image)
+	args = append(args, constants.LoadBalancerImage)
 
 	// creates the container
 	return exec.NewHostCmd("docker", args...).Run()

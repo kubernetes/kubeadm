@@ -20,9 +20,8 @@ Package loadbalancer contains external loadbalancer related constants and config
 Having a direct control on loadbalancer config is a specific necessity for kinder, because
 in kinder all the actions for setting up a working cluster can happen
 at different time while in kind everything - from create to a working K8s cluster -
-happens within an atomic operation.
+happens within an atomic operation, create.
 
-Nevertheless, kinder internally relies on loadbalancer config implemented in kind (temporary
-from a fork of kind an internal package)e, but this will be hopefully addressed).
+The current implementation is a fork from "sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer".
 */
 package loadbalancer

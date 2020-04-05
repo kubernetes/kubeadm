@@ -19,7 +19,6 @@ package constants
 import (
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 	kindinternalkubeadm "k8s.io/kubeadm/kinder/third_party/kind/kubeadm"
-	kindinternalloadbalancer "k8s.io/kubeadm/kinder/third_party/kind/loadbalancer"
 	kindconstants "sigs.k8s.io/kind/pkg/cluster/constants"
 )
 
@@ -85,13 +84,13 @@ const (
 	Token = kindinternalkubeadm.Token
 
 	// ControlPlanePort defines the port where the control plane is listening on the load balancer node
-	ControlPlanePort = kindinternalloadbalancer.ControlPlanePort
+	ControlPlanePort = 6443
 
 	// LoadBalancerImage defines the loadbalancer image:tag
-	LoadBalancerImage = kindinternalloadbalancer.Image
+	LoadBalancerImage = "kindest/haproxy:2.0.0-alpine"
 
 	// ConfigPath defines the path to the config file in the load balancer node
-	LoadBalancerConfigPath = kindinternalloadbalancer.ConfigPath
+	LoadBalancerConfigPath = "/usr/local/etc/haproxy/haproxy.cfg"
 )
 
 // constants used by the ClusterManager / inside actions
