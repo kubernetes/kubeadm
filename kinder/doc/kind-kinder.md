@@ -93,8 +93,6 @@ back new features.
     - `Run`
     - `UsernsRemap`
     - `Kill`
-- "sigs.k8s.io/kind/pkg/concurrent" for
-    - `UntilError`
 - "sigs.k8s.io/kind/pkg/fs" (*) for
     - `TempDir`
     - `Copy`

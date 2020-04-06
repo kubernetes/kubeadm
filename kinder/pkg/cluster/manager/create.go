@@ -27,7 +27,6 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri"
 	"k8s.io/kubeadm/kinder/pkg/exec"
-	kindconcurrent "sigs.k8s.io/kind/pkg/concurrent"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 )
 
@@ -196,7 +195,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 	}
 
 	log.Info("Creating nodes...")
-	if err := kindconcurrent.UntilError(fns); err != nil {
+	if err := untilError(fns); err != nil {
 		return err
 	}
 
@@ -295,4 +294,24 @@ func ensureNodeImage(image string) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = kinddocker.PullIfNotPresent(image, 4)
+}
+
+// UntilError runs all funcs in separate goroutines, returning the
+// first non-nil error returned from funcs, or nil if all funcs return nil
+// Nb. this func was originally imported from "sigs.k8s.io/kind/pkg/concurrent"; it is still available
+// in the kind codebase, but it has been slightly refactored.
+func untilError(funcs []func() error) error {
+	errCh := make(chan error, len(funcs))
+	for _, f := range funcs {
+		f := f // capture f
+		go func() {
+			errCh <- f()
+		}()
+	}
+	for i := 0; i < len(funcs); i++ {
+		if err := <-errCh; err != nil {
+			return err
+		}
+	}
+	return nil
 }
