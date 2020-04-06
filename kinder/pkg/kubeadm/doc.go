@@ -22,14 +22,13 @@ Having direct control on kubeadm config is a specific necessity for kinder, beca
 create nodes supports different CRI while kind supports only containerd;
 additionally, in kinder all the actions for setting up a working cluster can happen
 at different time while in kind everything - from create to a working K8s cluster -
-happens within an atomic operation.
+happens within an atomic operation, create.
 
 Another difference from kind, is that kinder support skew from kubeadm version and
 K8s version, and as a consequence it was necessary to ensure that the code in
 this package is dependent on the kubeadm version installed on nodes.
 
-Nevertheless, kinder internally relies on kubeadm config template implemented in kind
-(temporary from a fork of kind an internal package); all the kinder specific settings
-are applied as kustomize patches.
+Nevertheless, the core config used by kinder is a fork from "sigs.k8s.io/kind/pkg/cluster/internal/kubeadm";
+all the kinder specific settings are applied as kustomize patches.
 */
 package kubeadm
