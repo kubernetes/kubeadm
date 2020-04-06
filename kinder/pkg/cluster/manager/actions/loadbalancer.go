@@ -60,7 +60,7 @@ func LoadBalancer(c *status.Cluster, nodes ...*status.Node) error {
 	}
 
 	// create loadbalancer config data
-	loadbalancerConfig, err := loadbalancer.Config(loadbalancer.ConfigData{
+	loadbalancerConfig, err := loadbalancer.Config(&loadbalancer.ConfigData{
 		ControlPlanePort: constants.ControlPlanePort,
 		BackendServers:   backendServers,
 		IPv6:             ipv6,

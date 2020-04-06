@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/exec"
-	"k8s.io/kubeadm/kinder/third_party/kind/loadbalancer"
 )
 
 // CommonArgs computes docker arguments that apply to all containers
@@ -167,7 +166,7 @@ func RunArgsForNode(role string, volumes []string, args []string) ([]string, err
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get host port for the API server address")
 		}
-		args = append(args, fmt.Sprintf("--publish=%d:%d/TCP", hostPort, loadbalancer.ControlPlanePort))
+		args = append(args, fmt.Sprintf("--publish=%d:%d/TCP", hostPort, constants.ControlPlanePort))
 	}
 
 	return args, nil
@@ -191,7 +190,7 @@ func RunArgsForExternalLoadBalancer(args []string) ([]string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get host port for the load balancer endpoint")
 	}
-	args = append(args, fmt.Sprintf("--publish=%d:%d/TCP", hostPort, loadbalancer.ControlPlanePort))
+	args = append(args, fmt.Sprintf("--publish=%d:%d/TCP", hostPort, constants.ControlPlanePort))
 
 	return args, nil
 }
