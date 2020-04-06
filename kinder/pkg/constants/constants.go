@@ -18,7 +18,6 @@ package constants
 
 import (
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
-	kindinternalkubeadm "k8s.io/kubeadm/kinder/third_party/kind/kubeadm"
 	kindconstants "sigs.k8s.io/kind/pkg/cluster/constants"
 )
 
@@ -78,10 +77,10 @@ const (
 
 	// APIServerPort is the expected default APIServerPort on the control plane node(s)
 	// https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/#api-server-ports-and-ips
-	APIServerPort = kindinternalkubeadm.APIServerPort
+	APIServerPort = 6443
 
 	// Token defines a dummy, well known token for automating TLS bootstrap process
-	Token = kindinternalkubeadm.Token
+	Token = "abcdef.0123456789abcdef"
 
 	// ControlPlanePort defines the port where the control plane is listening on the load balancer node
 	ControlPlanePort = 6443
