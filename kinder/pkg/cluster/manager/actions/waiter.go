@@ -54,6 +54,18 @@ func waitForPodsRunning(c *status.Cluster, n *status.Node, wait time.Duration, l
 	return nil
 }
 
+// waitForNodePort waits for a nodePort to become ready
+func waitForNodePort(c *status.Cluster, n *status.Node, wait time.Duration, nodePort string) error {
+	n.Infof("waiting for NodePort %q to become ready (timeout %s)", nodePort, wait)
+	if pass := waitFor(c, n, wait,
+		nodePortIsReady(n, nodePort),
+	); !pass {
+		return errors.New("timeout: NodePort not ready")
+	}
+	fmt.Println()
+	return nil
+}
+
 // waitNewWorkerNodeReady waits for a new control plane node reaching the target state after join
 func waitNewWorkerNodeReady(c *status.Cluster, n *status.Node, wait time.Duration) error {
 	n.Infof("waiting for Node to become Ready (timeout %s)", wait)
@@ -228,7 +240,7 @@ func podsAreRunning(n *status.Node, label string, replicas int) func(c *status.C
 			"get",
 			"pods",
 			"--kubeconfig=/etc/kubernetes/admin.conf",
-			"-l", fmt.Sprintf("run=%s", label), "-o", "jsonpath='{.items[*].status.phase}'",
+			"-l", fmt.Sprintf("app=%s", label), "-o", "jsonpath='{.items[*].status.phase}'",
 		)
 
 		statuses := strings.Split(strings.Trim(output, "'"), " ")
@@ -248,6 +260,32 @@ func podsAreRunning(n *status.Node, label string, replicas int) func(c *status.C
 
 		if running {
 			fmt.Printf("%d pods running!", replicas)
+			return true
+		}
+
+		return false
+	}
+}
+
+// nodePortIsReady implements a function that tests if a nodePort is ready
+func nodePortIsReady(n *status.Node, port string) func(c *status.Cluster, n *status.Node) bool {
+	return func(c *status.Cluster, n *status.Node) bool {
+
+		//TODO: test IPV6
+		ip, _, err := n.IP()
+		if err != nil {
+			return false
+		}
+		lines, err := n.Command(
+			"curl", "-Is", fmt.Sprintf("http://%s:%s", ip, port),
+		).Silent().RunAndCapture()
+
+		if err != nil || len(lines) < 1 {
+			return false
+		}
+
+		if strings.Trim(lines[0], "\n\r") == "HTTP/1.1 200 OK" {
+			fmt.Printf("node port %s on node %s is ready...", port, n.Name())
 			return true
 		}
 
