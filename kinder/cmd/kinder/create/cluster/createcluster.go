@@ -56,7 +56,8 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(
 		&flags.Name,
 		"name", constants.DefaultClusterName,
-		"cluster name")
+		"cluster name",
+	)
 	cmd.Flags().IntVar(
 		&flags.ControlPlanes,
 		controlPlaneNodesFlagName, 1,
@@ -69,7 +70,7 @@ func NewCommand() *cobra.Command {
 	)
 	cmd.Flags().StringVar(
 		&flags.ImageName,
-		"image", constants.DefaultNodeImage,
+		"image", "",
 		"node docker image to use for booting the cluster",
 	)
 	cmd.Flags().BoolVar(
@@ -92,6 +93,8 @@ func NewCommand() *cobra.Command {
 		"volume", nil,
 		"mount a volume on node containers",
 	)
+
+	cmd.MarkFlagRequired("image")
 
 	return cmd
 }
