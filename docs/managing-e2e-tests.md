@@ -222,4 +222,3 @@ by SIG Release or SIG Testing.
 - Example PRs can be found at the following links:
   - https://github.com/kubernetes/kubeadm/pull/1744
   - https://github.com/kubernetes/test-infra/pull/14037
-- A pair-programming [video session](https://www.youtube.com/watch?v=aTGbdPU0fE8) between Lucas Käldström and Hippie Hacker covering the update process for the Kubernetes 1.11 release (outdated).
