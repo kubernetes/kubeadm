@@ -95,3 +95,11 @@ Kubernetes 1.16 is the minimal supported version that is tested for kustomize.
 | -------------------------------------- | ------            |
 | master<br />(ci/latest)                | v1.17.0-alpha...  |
 | master<br />(ci/latest-1.16)           | v1.16.2-alpha...  |
+
+### Tests without addon ConfigMaps
+
+Kubeadm join and upgrade tests that ensure that kubeadm tolerates missing addon "kube-proxy" and "coredns" ConfigMaps.
+
+| from                            | e.g.              | to                       | e.g.             |
+| ------------------------------- | ----------------- | -------------------------| ---------------- |
+| current<br />(ci/latest-1.18)   | v1.18.1-alpha...  | master<br />(ci/latest)  | v1.19.0-alpha... |
