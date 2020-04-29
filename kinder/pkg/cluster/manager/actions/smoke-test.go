@@ -41,7 +41,7 @@ func SmokeTest(c *status.Cluster, wait time.Duration) error {
 	if err := cp1.Command(
 		"kubectl",
 		"--kubeconfig=/etc/kubernetes/admin.conf",
-		"run", "nginx", "--image=nginx:1.15.9-alpine", "--image-pull-policy=IfNotPresent",
+		"create", "deployment", "nginx", "--image=nginx:1.15.9-alpine",
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func SmokeTest(c *status.Cluster, wait time.Duration) error {
 	}
 
 	// Test service type NodePort
-	cp1.Infof("service type NodePort")
+	cp1.Infof("test NodePort service")
 
 	if err := cp1.Command(
 		"kubectl",
@@ -66,9 +66,11 @@ func SmokeTest(c *status.Cluster, wait time.Duration) error {
 		return err
 	}
 
-	err = checkNodePort(c, nodePort)
-	if err != nil {
-		return err
+	for _, n := range c.K8sNodes() {
+		err = waitForNodePort(c, n, 30*time.Second, nodePort)
+		if err != nil {
+			return err
+		}
 	}
 
 	podName, err := getPodName(cp1, "nginx")
@@ -141,44 +143,11 @@ func getNodePort(n *status.Node, svc string) (string, error) {
 	return strings.Trim(lines[0], "'"), nil
 }
 
-func checkNodePort(c *status.Cluster, port string) error {
-	for _, n := range c.K8sNodes() {
-		fmt.Printf("checking node port %s on node %s...", port, n.Name())
-
-		//TODO: test IPV6
-		ip, _, err := n.IP()
-		if err != nil {
-			return err
-		}
-
-		lines, err := n.Command(
-			"curl", "-Is", fmt.Sprintf("http://%s:%s", ip, port),
-		).Silent().RunAndCapture()
-
-		if err != nil {
-			return errors.Wrapf(err, "error checking node port")
-		}
-
-		if len(lines) < 1 {
-			return errors.Wrapf(err, "error checking node port. invalid answer")
-		}
-
-		if strings.Trim(lines[0], "\n\r") == "HTTP/1.1 200 OK" {
-			fmt.Printf("pass!\n")
-			continue
-		}
-
-		return errors.Errorf("node port %s on node %s doesn't works", port, n.Name())
-	}
-
-	return nil
-}
-
 func getPodName(n *status.Node, label string) (string, error) {
 	lines, err := n.Command(
 		"kubectl",
 		"--kubeconfig=/etc/kubernetes/admin.conf",
-		"get", "pods", "-l", fmt.Sprintf("run=%s", label), "-o", "jsonpath='{.items[0].metadata.name}'",
+		"get", "pods", "-l", fmt.Sprintf("app=%s", label), "-o", "jsonpath='{.items[0].metadata.name}'",
 	).Silent().RunAndCapture()
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get pod name")
