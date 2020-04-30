@@ -4,9 +4,7 @@
 
 Kubeadm has a set of CI tests, that you can access at:
 
-<https://testgrid.k8s.io/sig-cluster-lifecycle-all>
-
-TODO: create a sig-cluster-lifecycle-kubeadm dashboard
+https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm
 
 ## Version in scope
 
