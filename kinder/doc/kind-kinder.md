@@ -11,42 +11,41 @@ ultimately contribute back new features.
 At high level you should use [kind](https://github.com/kubernetes-sigs/kind) whenever you want
 a working Kubernetes cluster and _just_ work on it (for DEV, test, CI/CD).
 
-Instead, you should use kinder when you want to get more control on the process of creating a
-new Kubernetes cluster from "bare" machines running into a container to a working Kubernetes.
+As for kinder, you should use it when you want to have more control over the process of creating a
+new Kubernetes cluster from "bare machines" running as containers.
 
 ## Differences
 
-Kinder provider an UX designed for helping kubeadm contributors and for kubeadm E2E tests;
-Only few of the [kind](https://github.com/kubernetes-sigs/kind) commands will be available in kinder,
-because they are useful for the use cases targeted by kinder.
+Kinder provides a UX designed for helping kubeadm contributors and for kubeadm E2E tests.
+Only a subset of the [kind](https://github.com/kubernetes-sigs/kind) commands which are useful for the targeted use
+cases is available in kinder.
 
 _Building images:_
-- kinder support both containerd and docker as container runtime inside the images
-- kinder provides support for altering a base/node images and:
-     - Add a Kubernetes version to be used for `kubeadm init` (from release, CI/CD or locally build artifacts)
-     - Pre-load  TAR image files into the base/node image
-     - Replace the kubectl, kubelet, kubeadm binary to be used for `kubeadm init` (from release, CI/CD or locally
+- kinder supports both `containerd` and `docker` as container runtime inside the images
+- kinder provides support for altering base/node images by:
+     - Adding a Kubernetes version to be used for `kubeadm init` or `kubeadm upgrade` (from release, CI/CD or locally build artifacts)
+     - Pre-loading tar image files into the base/node image
+     - Replacing the kubectl, kubelet or kubeadm binary to be used for `kubeadm init` (from release, CI/CD or locally
        build artifacts)
-     - Add a Kubernetes version to be used for `kubeadm upgrade` (from release, CI/CD or locally build artifacts)
 - kinder can build images only on top of linux/amd64 base images (currently ubuntu:18.04)
 
 _Creating the cluster:_
-- kinder support both containerd and as container runtime inside the images
+- kinder support both `containerd` and `docker` as container runtime inside the images
 - kinder allows to break down the `create` operation into several atomic actions:
-    - Create machines running into a container
-    - Generate kubeadm config
-    - Generate load balancer config
+    - Creating machines running as containers
+    - Generating kubeadm config
+    - Generating load balancer config
 
-  NB. kind manages a unique `kind create` operation, that includes create nodes, generate kubeadm/load balancer
+  NB. kind itself also has a `kind create` operation that includes creating nodes, generating kubeadm/load balancer
   config init, join (eventually, only the last two operations can be skipped)
 - kinder allows adding an external etcd to the cluster
-- kinder allows adding an external loadbalancer to the cluster even if less than two control-plane nodes
+- kinder allows adding an external load balancer to the cluster even if there are less than two control-plane nodes
 - kinder still uses kustomize for bulding the kubeadm config file, while kind dropped this dependency for a lighther solution
 
 _Actions on a running cluster:_
-- kinder support running actions on a running cluster (after `kinder create`)
-- kinder support running actions selectively on nodes
-- kinder support dry running actions
+- kinder supports running actions on a running cluster (after `kinder create`)
+- kinder supports running actions selectively on nodes
+- kinder supports running actions in a dry-run mode
 - kinder actions provide output for everything happening on the nodes (for debugging purposes)
 - kinder actions supports the following variations of corresponding kind actions
     - generate kubeadm config and generate load balancer config can be invoked also after `kinder create`
@@ -58,7 +57,7 @@ _Actions on a running cluster:_
     - `kubeadm init` can be executed as a unique workflow or using phases
     - `kubeadm join` can be executed as a unique workflow or using phases
     - the init action installs Calico as a CNI plugin instead of kindnet
-    - the init/join actions can use  the automatic copy certs feature of kubeadm (or mimic the manual copy process)
+    - the init/join actions can use the automatic copy certs feature of kubeadm (or mimic the manual copy process)
 - kinder support additional actions
     - upgrade
     - reset
@@ -66,10 +65,10 @@ _Actions on a running cluster:_
     - smoke test
 
 _Utils:_
-- kinder provides a utility for downloading release or CI/CD artifacts
-- kinder provides a utility for running E2E tests or E2E-kubeadm tests on a running cluster
+- kinder provides a utility for downloading release or CI/CD artifacts (kinder get)
+- kinder provides a utility for running E2E tests or E2E-kubeadm tests on a running cluster (kinder test)
 - kinder provides a utility for automating complex workflows (used for implementing E2E test workflows)
-- kinder support topology aware wrapper on cp / exec
+- kinder supports topology aware wrapper on cp / exec
 
 ## Credits
 
@@ -78,7 +77,7 @@ kinder is an example of [kind](https://github.com/kubernetes-sigs/kind) used as 
 This is a curated list of what kinder is using from kind; please note that kinder is using
 kind packages that are not intended for public usage, but this was agreed with the
 [kind](https://github.com/kubernetes-sigs/kind) team as part of the process of exploring
-new use cases, share lesson learned, issues and solutions, and ultimately contribute
+new use cases, share lessons learned, issues and solutions, and ultimately contribute
 back new features.
 
 - "sigs.k8s.io/kind/cmd/*" for
