@@ -126,7 +126,7 @@ func fixMounts(name string) error {
 	}
 
 	// systemd-in-a-container should have read only /sys
-	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+	// https://systemd.io/CONTAINER_INTERFACE/
 	// however, we need other things from `docker run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
 	if err := exec.NewNodeCmd(name, "mount", "-o", "remount,ro", "/sys").Silent().Run(); err != nil {

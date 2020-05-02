@@ -17,7 +17,7 @@
 # To this we add systemd and other tools needed to run Kubeadm
 #
 # For systemd + docker configuration used below, see the following references:
-# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+# https://systemd.io/CONTAINER_INTERFACE/
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
 # https://developers.redhat.com/blog/2016/09/13/running-systemd-in-a-non-privileged-container/
 
@@ -76,7 +76,7 @@ RUN curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release; echo "$ID
     && clean-install "docker-ce=${DOCKER_VERSION}"
 
 # tell systemd that it is in docker (it will check for the container env)
-# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+# https://systemd.io/CONTAINER_INTERFACE/
 ENV container docker
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
