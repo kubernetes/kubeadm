@@ -56,18 +56,18 @@ If your patch depends on new packages, add that package with [`godep`](https://g
 
 ### Running unit tests
 
-First navigate to the folder where you have cloned kubernetes (e.g. `~/go/src/k8s.io/kubernetes`).
+First navigate to the directory where you have cloned kubernetes (e.g. `~/go/src/k8s.io/kubernetes`).
 
-To run `kubeadm` unit tests for the `cmd/kubeadm/app/cmd` package call:
-```
-./hack/make-rules/test-kubeadm-cmd.sh
-```
-
-You can also run unit tests for specific `kubeadm` packages using:
+You can run unit tests for specific `kubeadm` packages using:
 ```
 make test WHAT=<package> GOFLAGS="-v"
 ```
-Where `<package>` can be `./cmd/kubeadm/app/cmd`, `./cmd/kubeadm/app/utils`, `./cmd/kubeadm/app/features`, etc.
+Where `<package>` can be `./cmd/kubeadm/app/cmd`, `./cmd/kubeadm/app/util`, `./cmd/kubeadm/app/features`, etc.
+
+To run kubeadm command line integration tests call:
+```
+make test-cmd WHAT=kubeadm
+```
 
 For more information about running tests in Kubernetes have a look at:
 * https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/testing.md
