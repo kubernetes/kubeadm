@@ -73,7 +73,7 @@ tasks:
     - --automatic-copy-certs
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-  timeout: 5m
+  timeout: 10m
 - name: cluster-info-before
   description: |
     Runs cluster-info on the cluster before upgrade
@@ -94,7 +94,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-  timeout: 5m
+  timeout: 10m
 - name: e2e-kubeadm-after
   description: |
     Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"
@@ -105,6 +105,7 @@ tasks:
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+  timeout: 10m
 - name: cluster-info-after
   description: |
     Runs cluster-info on the cluster after upgrade

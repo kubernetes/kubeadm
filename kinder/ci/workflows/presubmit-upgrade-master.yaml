@@ -71,7 +71,7 @@ tasks:
     - --automatic-copy-certs
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-  timeout: 5m
+  timeout: 10m
 - name: upgrade
   description: |
     upgrades the cluster to Kubernetes "upgradeVersion"
@@ -83,6 +83,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 10m
 - name: cluster-info
   description: |
     Runs cluster-info

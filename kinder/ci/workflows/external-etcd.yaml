@@ -67,7 +67,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-  timeout: 5m
+  timeout: 10m
 - name: e2e-kubeadm
   description: |
     Runs kubeadm e2e tests
@@ -78,6 +78,7 @@ tasks:
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+  timeout: 10m
 - name: e2e
   description: |
     Runs Kubernetes e2e test (conformance)

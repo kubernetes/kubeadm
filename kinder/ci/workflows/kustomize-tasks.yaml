@@ -173,6 +173,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    timeout: 10m
   - name: run verify-kustomize.sh on controlplane nodes after upgrades
     cmd: kinder
     args:

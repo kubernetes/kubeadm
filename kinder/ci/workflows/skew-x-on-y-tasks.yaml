@@ -73,7 +73,7 @@ tasks:
     - --automatic-copy-certs
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-  timeout: 5m
+  timeout: 10m
 - name: cluster-info
   description: |
     Runs cluster-info
@@ -93,6 +93,7 @@ tasks:
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+  timeout: 10m
 - name: e2e
   description: |
     Runs Kubernetes e2e test (conformance)
