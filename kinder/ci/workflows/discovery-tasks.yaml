@@ -118,6 +118,7 @@ tasks:
     - --test-flags=--report-dir={{ .env.ARTIFACTS }}
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
+  timeout: 10m
 - name: get-logs
   description: |
     Collects all the test logs
