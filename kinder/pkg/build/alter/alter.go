@@ -256,13 +256,29 @@ func fixRepository(repository string) string {
 }
 
 func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildContext) error {
-	// create alter container
+	// get the container runtime from the base image
+	runtime, err := status.InspectCRIinImage(c.baseImage)
+	if err != nil {
+		return errors.Wrap(err, "error detecting CRI!")
+	}
+	log.Infof("Detected %s as container runtime", runtime)
+
+	alterHelper, err := cri.NewAlterHelper(runtime)
+	if err != nil {
+		return err
+	}
+
+	// get the args for the alter container depending on the underlying CR
+	runArgs, containerArgs := alterHelper.GetAlterContainerArgs()
+
+	// create final alter container
 	// NOTE: we are using docker run + docker commit so we can install
 	// debians without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
 	// This also allows the KubeBit implementations to perform programmatic
 	// install in the image
-	containerID, err := c.createAlterContainer(bc)
+	log.Debug("Starting alter container ...")
+	containerID, err := c.createAlterContainer(bc, runArgs, containerArgs)
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
@@ -289,25 +305,20 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 	}
 
-	runtime, err := status.InspectCRIinContainer(containerID)
-	if err != nil {
-		return errors.Wrap(err, "Error detecting CRI!")
-	}
-	log.Infof("Detected %s as container runtime", runtime)
-
-	alterHelper, err := cri.NewAlterHelper(runtime)
-	if err != nil {
-		return err
+	log.Info("Pre pull extra images ...")
+	if err := alterHelper.PrePullAdditionalImages(bc, "/kind", "/kinder/upgrade"); err != nil {
+		return errors.Wrapf(err, "image build Failed! Failed to pre-pull additional images into %s", runtime)
 	}
 
 	log.Info("Pre loading images ...")
+	// TODO: preload upgrade images for containerd too?
 	if err := alterHelper.PreLoadInitImages(bc); err != nil {
-		return errors.Wrapf(err, "Image build Failed! Failed to load images into %s", runtime)
+		return errors.Wrapf(err, "image build Failed! Failed to load images into %s", runtime)
 	}
 
 	log.Infof("Commit to %s ...", c.image)
 	if err = alterHelper.Commit(containerID, c.image); err != nil {
-		return errors.Wrap(err, "Image alter Failed! Failed to commit image")
+		return errors.Wrap(err, "image alter Failed! Failed to commit image")
 	}
 
 	log.Info("Image alter completed.")
@@ -315,7 +326,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 	return nil
 }
 
-func (c *Context) createAlterContainer(bc *bits.BuildContext) (id string, err error) {
+func (c *Context) createAlterContainer(bc *bits.BuildContext, runArgs, containerArgs []string) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = kinddocker.PullIfNotPresent(c.baseImage, 4)
@@ -325,10 +336,9 @@ func (c *Context) createAlterContainer(bc *bits.BuildContext) (id string, err er
 	args := []string{
 		"-d", // make the client exit while the container continues to run
 		"-v", fmt.Sprintf("%s:%s", bc.HostBasePath(), bc.ContainerBasePath()),
-		// the container should hang forever so we can exec in it
-		"--entrypoint=sleep",
 		"--name=" + id,
 	}
+	args = append(args, runArgs...)
 
 	err = kinddocker.Run(
 		c.baseImage,
@@ -336,7 +346,7 @@ func (c *Context) createAlterContainer(bc *bits.BuildContext) (id string, err er
 			args...,
 		),
 		kinddocker.WithContainerArgs(
-			"infinity", // sleep infinitely to keep the container around
+			containerArgs...,
 		),
 	)
 	if err != nil {
