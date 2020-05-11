@@ -31,9 +31,11 @@ import (
 func checkImagesForVersion(n *status.Node, version string) error {
 	n.Infof("Checking pre-loaded images")
 
+	imageListCmd := fmt.Sprintf("kubeadm config images list --kubernetes-version=%s 2>/dev/null", version)
+
 	// gets the list of images kubeadm is going to use
 	expected, err := n.Command(
-		"kubeadm", "config", "images", "list", fmt.Sprintf("--kubernetes-version=%s", version),
+		"bash", "-c", imageListCmd,
 	).Silent().RunAndCapture()
 	if err != nil {
 		return errors.Wrapf(err, "failed to read expected images for version %s from %s", version, n.Name())
