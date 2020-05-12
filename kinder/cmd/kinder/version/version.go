@@ -29,8 +29,8 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "version",
-		Short: "prints the kind CLI version",
-		Long:  "prints the kind CLI version",
+		Short: "prints the kinder CLI version",
+		Long:  "prints the kinder CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf("kinder version: %s\n", constants.KinderVersion)
 			return nil
