@@ -182,7 +182,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 
 		// record test case timeout and exits with error
 		return c.registerTestCase(t.Name,
-			withFailure(fmt.Sprintf("timeout. task did not completed in less than %s as expected", t.Timeout.Duration)),
+			withFailure(fmt.Sprintf("timeout. The task did not complete in less than %s as expected", t.Timeout.Duration)),
 			withDuration(time.Since(start)),
 		)
 	}

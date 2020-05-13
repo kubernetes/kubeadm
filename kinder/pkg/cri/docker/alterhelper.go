@@ -17,11 +17,70 @@ limitations under the License.
 package docker
 
 import (
+	"github.com/pkg/errors"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
+	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 )
+
+// GetAlterContainerArgs returns arguments for alter container for Docker
+func GetAlterContainerArgs() ([]string, []string) {
+	runArgs := []string{
+		// privileged is required for "dockerd" iptables permissions
+		"--privileged",
+	}
+	return runArgs, []string{}
+}
+
+// StartRuntime starts the runtime
+func StartRuntime(bc *bits.BuildContext) error {
+	log.Info("starting dockerd")
+	go func() {
+		bc.RunInContainer("dockerd")
+		log.Info("dockerd stopped")
+	}()
+
+	duration := 10 * time.Second
+	result := tryUntil(time.Now().Add(duration), func() bool {
+		return bc.RunInContainer("bash", "-c", "docker info &> /dev/null") == nil
+	})
+	if !result {
+		return errors.Errorf("dockerd did not start in %v", duration)
+	}
+	return nil
+}
+
+// StopRuntime stops the runtime
+func StopRuntime(bc *bits.BuildContext) error {
+	return bc.RunInContainer("pkill", "-f", "dockerd")
+}
+
+// PullImages pulls a set of images using docker
+func PullImages(bc *bits.BuildContext, images []string, targetPath string) error {
+	// pull the images
+	for _, image := range images {
+		if err := bc.RunInContainer("bash", "-c", "docker pull "+image+" > /dev/null"); err != nil {
+			return errors.Wrapf(err, "could not pull image: %s", image)
+		}
+		// extract the image name; assumes the format is "repository/image:tag"
+		r := regexp.MustCompile("[/:]")
+		s := r.Split(image, -1)
+		if len(s) < 3 {
+			return errors.Errorf("unsupported image URL: %s", image)
+		}
+		path := filepath.Join(targetPath, s[len(s)-2])
+		if err := bc.RunInContainer("docker", "save", "-o="+path+".tar", image); err != nil {
+			return errors.Wrapf(err, "could not save image %q to path %q", image, targetPath)
+		}
+	}
+	return nil
+}
 
 // PreLoadInitImages preload images required by kubeadm-init into the docker runtime that exists inside a kind(er) node
 func PreLoadInitImages(bc *bits.BuildContext) error {

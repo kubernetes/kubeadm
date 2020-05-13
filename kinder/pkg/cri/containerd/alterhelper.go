@@ -17,19 +17,70 @@ limitations under the License.
 package containerd
 
 import (
+	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 
+	log "github.com/sirupsen/logrus"
+
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 )
+
+// GetAlterContainerArgs returns arguments for the alter container for containerd
+func GetAlterContainerArgs() ([]string, []string) {
+	runArgs := []string{
+		// privileged is required for "ctr image pull" permissions
+		"--privileged",
+		// the snapshot storage must be a volume.
+		// see the info in Commit()
+		"-v=/var/lib/containerd",
+		// enable the actual entry point in the kind base image
+		"--entrypoint=/usr/local/bin/entrypoint",
+	}
+	runCommands := []string{
+		// pass the init binary to the entrypoint
+		"/sbin/init",
+	}
+	return runArgs, runCommands
+}
+
+// StartRuntime starts the runtime
+func StartRuntime(bc *bits.BuildContext) error {
+	log.Info("starting containerd")
+	go func() {
+		bc.RunInContainer("containerd")
+		log.Info("containerd stopped")
+	}()
+	return nil
+}
+
+// StopRuntime stops the runtime
+func StopRuntime(bc *bits.BuildContext) error {
+	return bc.RunInContainer("pkill", "-f", "containerd")
+}
+
+// PullImages pulls a set of images using ctr
+func PullImages(bc *bits.BuildContext, images []string, targetPath string) error {
+	// Supposedly this should be enough for containerd to snapshot the images, but it does not work.
+	// TODO: commit pre-pulled images for containerd.
+	for _, image := range images {
+		if err := bc.RunInContainer("bash", "-c", "ctr image pull "+image+" > /dev/null"); err != nil {
+			return errors.Wrapf(err, "could not pull image: %s", image)
+		}
+	}
+	return nil
+}
 
 // PreLoadInitImages preload images required by kubeadm-init into the containerd runtime installed that exists inside a kind(er) node
 func PreLoadInitImages(bc *bits.BuildContext) error {
 	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
 
 	return bc.RunInContainer(
+		// NB. the ctr call bellow used to include "--no-unpack", but his flag is not longer available
+		// TODO: importing the images, deleting the tars, committing the changes to the image and then creating
+		// a container from the image results in no images in the container, so this preload does not work.
 		"bash", "-c",
-		`containerd & find /kind/images -name *.tar -print0 | xargs -r -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack && kill %1 && rm -rf /kind/images/*`,
+		`containerd & find /kind/images -name *.tar -print0 | xargs -r -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import && kill %1 && rm -rf /kind/images/*`,
 	)
 }
 

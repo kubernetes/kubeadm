@@ -17,7 +17,10 @@ limitations under the License.
 package cri
 
 import (
+	"path/filepath"
+
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
@@ -35,6 +38,92 @@ func NewAlterHelper(cri status.ContainerRuntime) (*AlterHelper, error) {
 	return &AlterHelper{
 		cri: cri,
 	}, nil
+}
+
+// GetAlterContainerArgs ...
+func (h *AlterHelper) GetAlterContainerArgs() ([]string, []string) {
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.GetAlterContainerArgs()
+	case status.DockerRuntime:
+		return docker.GetAlterContainerArgs()
+	}
+	return []string{}, []string{}
+}
+
+// PrePullAdditionalImages uses "kubeadm config images list" to obtain additional required images such as etcd,
+// coredns and pause and pulls them using the runtime in the container.
+func (h *AlterHelper) PrePullAdditionalImages(bc *bits.BuildContext, initPath, upgradePath string) error {
+	// start the container runtime
+	switch h.cri {
+	case status.ContainerdRuntime:
+		containerd.StartRuntime(bc)
+	case status.DockerRuntime:
+		docker.StartRuntime(bc)
+	default:
+		return errors.Errorf("unknown cri: %s", h.cri)
+	}
+
+	// pull the images for init/join
+	if err := h.pullImagesForKubeadmBinary(
+		bc,
+		filepath.Join(initPath, "bin", "kubeadm"),
+		filepath.Join(initPath, "images")); err != nil {
+		return err
+	}
+
+	// check if the version file for the upgrade artifacts is in place
+	versionFile := filepath.Join(upgradePath, "version")
+	version, err := bc.CombinedOutputLinesInContainer(
+		"bash",
+		"-c",
+		"cat "+versionFile+" 2> /dev/null",
+	)
+	if err != nil {
+		// don't return the error if the version file is missing
+		return nil
+	}
+
+	if len(version) != 1 {
+		return errors.Errorf("expected the version file %q to have 1 line, got: %v", versionFile, version)
+	}
+
+	// use the resulting upgrade path e.g. /kinder/upgrade/v1.19.0-alpha.3.36+8c4e3faed35411
+	if err := h.pullImagesForKubeadmBinary(
+		bc,
+		filepath.Join(upgradePath, version[0], "kubeadm"),
+		filepath.Join(upgradePath, version[0])); err != nil {
+		return err
+	}
+
+	// stop the container runtime
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.StopRuntime(bc)
+	case status.DockerRuntime:
+		return docker.StopRuntime(bc)
+	}
+	return errors.Errorf("unknown cri: %s", h.cri)
+}
+
+func (h *AlterHelper) pullImagesForKubeadmBinary(bc *bits.BuildContext, binaryPath, imagePath string) error {
+	images, err := bc.CombinedOutputLinesInContainer(
+		"bash",
+		"-c",
+		binaryPath+" config images list --kubernetes-version=$("+binaryPath+" version -o short) 2> /dev/null | grep -v 'kube-'",
+	)
+	if err != nil {
+		return err
+	}
+	log.Infof("Found the following extra images from the binary %q: %v", binaryPath, images)
+
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.PullImages(bc, images, imagePath)
+	case status.DockerRuntime:
+		return docker.PullImages(bc, images, imagePath)
+	}
+	return errors.Errorf("unknown cri: %s", h.cri)
 }
 
 // PreLoadInitImages preload images required by kubeadm-init into the selected container runtime that exists inside a kind(er) node

@@ -182,7 +182,7 @@ func loadImages(name string) {
 		// use xargs to load images in parallel
 		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Silent().Run(); err != nil {
-		log.Warningf("Failed to preload docker images: %v", err)
+		log.Warningf("Failed to preload docker images from /kind/images: %v", err)
 		return
 	}
 }
