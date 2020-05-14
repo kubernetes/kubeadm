@@ -20,6 +20,8 @@ import (
 	"github.com/pkg/errors"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 
 	log "github.com/sirupsen/logrus"
 
@@ -28,18 +30,21 @@ import (
 
 // GetAlterContainerArgs returns arguments for the alter container for containerd
 func GetAlterContainerArgs() ([]string, []string) {
+	// NB. using /usr/local/bin/entrypoint or /sbin/init both throw errors
+	// for base image "kindest/base:v20191105-ee880e9b".
+	// Use "sleep infinity" instead, but still make sure containerd can run.
 	runArgs := []string{
 		// privileged is required for "ctr image pull" permissions
 		"--privileged",
 		// the snapshot storage must be a volume.
 		// see the info in Commit()
 		"-v=/var/lib/containerd",
-		// enable the actual entry point in the kind base image
-		"--entrypoint=/usr/local/bin/entrypoint",
+		// override the entrypoint
+		"--entrypoint=/bin/sleep",
 	}
 	runCommands := []string{
-		// pass the init binary to the entrypoint
-		"/sbin/init",
+		// pass this to the entrypoint
+		"infinity",
 	}
 	return runArgs, runCommands
 }
@@ -61,27 +66,24 @@ func StopRuntime(bc *bits.BuildContext) error {
 
 // PullImages pulls a set of images using ctr
 func PullImages(bc *bits.BuildContext, images []string, targetPath string) error {
-	// Supposedly this should be enough for containerd to snapshot the images, but it does not work.
-	// TODO: commit pre-pulled images for containerd.
 	for _, image := range images {
+		// Supposedly this should be enough for containerd to snapshot the images, but it does not work.
+		// So save them to tars and load them on cluster creation.
 		if err := bc.RunInContainer("bash", "-c", "ctr image pull "+image+" > /dev/null"); err != nil {
 			return errors.Wrapf(err, "could not pull image: %s", image)
 		}
+		// extract the image name; assumes the format is "repository/image:tag"
+		r := regexp.MustCompile("[/:]")
+		s := r.Split(image, -1)
+		if len(s) < 3 {
+			return errors.Errorf("unsupported image URL: %s", image)
+		}
+		path := filepath.Join(targetPath, s[len(s)-2])
+		if err := bc.RunInContainer("ctr", "image", "export", path+".tar", image); err != nil {
+			return errors.Wrapf(err, "could not save image %q to path %q", image, targetPath)
+		}
 	}
 	return nil
-}
-
-// PreLoadInitImages preload images required by kubeadm-init into the containerd runtime installed that exists inside a kind(er) node
-func PreLoadInitImages(bc *bits.BuildContext) error {
-	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
-
-	return bc.RunInContainer(
-		// NB. the ctr call bellow used to include "--no-unpack", but his flag is not longer available
-		// TODO: importing the images, deleting the tars, committing the changes to the image and then creating
-		// a container from the image results in no images in the container, so this preload does not work.
-		"bash", "-c",
-		`containerd & find /kind/images -name *.tar -print0 | xargs -r -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import && kill %1 && rm -rf /kind/images/*`,
-	)
 }
 
 // Commit a kind(er) node image that uses the containerd runtime internally

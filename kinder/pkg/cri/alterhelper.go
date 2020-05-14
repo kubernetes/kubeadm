@@ -126,21 +126,6 @@ func (h *AlterHelper) pullImagesForKubeadmBinary(bc *bits.BuildContext, binaryPa
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
 
-// PreLoadInitImages preload images required by kubeadm-init into the selected container runtime that exists inside a kind(er) node
-func (h *AlterHelper) PreLoadInitImages(bc *bits.BuildContext) error {
-	if err := bc.RunInContainer("mkdir", "-p", "/kind/images"); err != nil {
-		return err
-	}
-
-	switch h.cri {
-	case status.ContainerdRuntime:
-		return containerd.PreLoadInitImages(bc)
-	case status.DockerRuntime:
-		return docker.PreLoadInitImages(bc)
-	}
-	return errors.Errorf("unknown cri: %s", h.cri)
-}
-
 // Commit a kind(er) node image that uses the selected container runtime internally
 func (h *AlterHelper) Commit(containerID, targetImage string) error {
 	switch h.cri {

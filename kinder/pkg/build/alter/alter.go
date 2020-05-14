@@ -305,15 +305,14 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 	}
 
-	log.Info("Pre pull extra images ...")
+	log.Info("Pre-pull extra images ...")
 	if err := alterHelper.PrePullAdditionalImages(bc, "/kind", "/kinder/upgrade"); err != nil {
 		return errors.Wrapf(err, "image build Failed! Failed to pre-pull additional images into %s", runtime)
 	}
 
-	log.Info("Pre loading images ...")
-	// TODO: preload upgrade images for containerd too?
-	if err := alterHelper.PreLoadInitImages(bc); err != nil {
-		return errors.Wrapf(err, "image build Failed! Failed to load images into %s", runtime)
+	// Make sure the /kind/images folder exists
+	if err := bc.RunInContainer("mkdir", "-p", "/kind/images"); err != nil {
+		return err
 	}
 
 	log.Infof("Commit to %s ...", c.image)

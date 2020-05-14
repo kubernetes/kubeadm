@@ -27,7 +27,7 @@ func PreLoadUpgradeImages(n *status.Node, srcFolder string) error {
 	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
 	return n.Command(
 		"bash", "-c",
-		`find `+srcFolder+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack && rm -rf `+srcFolder+`/*.tar`,
+		`find `+srcFolder+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack`,
 	).Silent().Run()
 }
 

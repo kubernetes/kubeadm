@@ -17,6 +17,8 @@ limitations under the License.
 package containerd
 
 import (
+	log "github.com/sirupsen/logrus"
+
 	"k8s.io/kubeadm/kinder/pkg/cri/util"
 	"k8s.io/kubeadm/kinder/pkg/exec"
 )
@@ -37,5 +39,25 @@ func CreateNode(cluster, name, image, role string, volumes []string) error {
 	args = append(args, image)
 
 	// creates the container
-	return exec.NewHostCmd("docker", args...).Run()
+	if err := exec.NewHostCmd("docker", args...).Run(); err != nil {
+		return err
+	}
+
+	// load the image artifacts into containerd
+	loadImages(name)
+
+	return nil
+}
+
+// loadImages loads image tarballs stored on the node into containerd on the node
+func loadImages(name string) {
+	// load images cached on the node into containerd
+	if err := exec.NewNodeCmd(name,
+		"/bin/bash", "-c",
+		// use xargs to load images in parallel
+		`find /kind/images -name *.tar -print0 | xargs -r -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack`,
+	).Silent().Run(); err != nil {
+		log.Warningf("Failed to preload containerd images from /kind/images: %v", err)
+		return
+	}
 }
