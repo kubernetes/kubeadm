@@ -20,6 +20,8 @@ import (
 	"github.com/pkg/errors"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 
 	log "github.com/sirupsen/logrus"
 
@@ -64,11 +66,21 @@ func StopRuntime(bc *bits.BuildContext) error {
 
 // PullImages pulls a set of images using ctr
 func PullImages(bc *bits.BuildContext, images []string, targetPath string) error {
-	// Supposedly this should be enough for containerd to snapshot the images, but it does not work.
-	// TODO: commit pre-pulled images for containerd.
 	for _, image := range images {
+		// Supposedly this should be enough for containerd to snapshot the images, but it does not work.
+		// So save them to tars and load them on cluster creation.
 		if err := bc.RunInContainer("bash", "-c", "ctr image pull "+image+" > /dev/null"); err != nil {
 			return errors.Wrapf(err, "could not pull image: %s", image)
+		}
+		// extract the image name; assumes the format is "repository/image:tag"
+		r := regexp.MustCompile("[/:]")
+		s := r.Split(image, -1)
+		if len(s) < 3 {
+			return errors.Errorf("unsupported image URL: %s", image)
+		}
+		path := filepath.Join(targetPath, s[len(s)-2])
+		if err := bc.RunInContainer("ctr", "image", "export", path+".tar", image); err != nil {
+			return errors.Wrapf(err, "could not save image %q to path %q", image, targetPath)
 		}
 	}
 	return nil
