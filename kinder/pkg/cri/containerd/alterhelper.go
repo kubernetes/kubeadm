@@ -28,18 +28,21 @@ import (
 
 // GetAlterContainerArgs returns arguments for the alter container for containerd
 func GetAlterContainerArgs() ([]string, []string) {
+	// NB. using /usr/local/bin/entrypoint or /sbin/init both throw errors
+	// for base image "kindest/base:v20191105-ee880e9b".
+	// Use "sleep infinity" instead, but still make sure containerd can run.
 	runArgs := []string{
 		// privileged is required for "ctr image pull" permissions
 		"--privileged",
 		// the snapshot storage must be a volume.
 		// see the info in Commit()
 		"-v=/var/lib/containerd",
-		// enable the actual entry point in the kind base image
-		"--entrypoint=/usr/local/bin/entrypoint",
+		// override the entrypoint
+		"--entrypoint=/bin/sleep",
 	}
 	runCommands := []string{
-		// pass the init binary to the entrypoint
-		"/sbin/init",
+		// pass this to the entrypoint
+		"infinity",
 	}
 	return runArgs, runCommands
 }
