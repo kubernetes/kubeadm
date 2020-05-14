@@ -82,12 +82,6 @@ func PullImages(bc *bits.BuildContext, images []string, targetPath string) error
 	return nil
 }
 
-// PreLoadInitImages preload images required by kubeadm-init into the docker runtime that exists inside a kind(er) node
-func PreLoadInitImages(bc *bits.BuildContext) error {
-	// in docker images are pre-loaded at create time, so this action is a no-op at alter time
-	return nil
-}
-
 // Commit a kind(er) node image that uses the docker runtime internally
 func Commit(containerID, targetImage string) error {
 	// Save the image changes to a new image

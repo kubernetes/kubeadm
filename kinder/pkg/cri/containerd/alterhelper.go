@@ -71,19 +71,6 @@ func PullImages(bc *bits.BuildContext, images []string, targetPath string) error
 	return nil
 }
 
-// PreLoadInitImages preload images required by kubeadm-init into the containerd runtime installed that exists inside a kind(er) node
-func PreLoadInitImages(bc *bits.BuildContext) error {
-	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
-
-	return bc.RunInContainer(
-		// NB. the ctr call bellow used to include "--no-unpack", but his flag is not longer available
-		// TODO: importing the images, deleting the tars, committing the changes to the image and then creating
-		// a container from the image results in no images in the container, so this preload does not work.
-		"bash", "-c",
-		`containerd & find /kind/images -name *.tar -print0 | xargs -r -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import && kill %1 && rm -rf /kind/images/*`,
-	)
-}
-
 // Commit a kind(er) node image that uses the containerd runtime internally
 func Commit(containerID, targetImage string) error {
 	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
