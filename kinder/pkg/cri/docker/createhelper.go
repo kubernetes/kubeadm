@@ -73,8 +73,9 @@ func CreateNode(cluster, name, image, role string, volumes []string) error {
 	}
 
 	// wait for docker to be ready
-	if !waitForDocker(name, time.Now().Add(time.Second*30)) {
-		return errors.Errorf("timed out waiting for docker to be ready on node %s", name)
+	const dockerTimeout = time.Second * 60
+	if !waitForDocker(name, time.Now().Add(dockerTimeout)) {
+		return errors.Errorf("timed out waiting for docker to be ready on node %s after %v", name, dockerTimeout)
 	}
 
 	// load the docker image artifacts into the docker daemon
