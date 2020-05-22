@@ -29,8 +29,8 @@ func NewCommand() *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "build",
-		Short: "Build one of [base-image, node-image, node-variant]",
-		Long:  "Build the base node image (base-image) or the node image (node-image) or node image variants (node-variant)",
+		Short: "Build one of [base-image, node-image-variant]",
+		Long:  "Build the base node image (base-image) or node image variants (node-image-variant)",
 	}
 	// add subcommands
 	cmd.AddCommand(baseimage.NewCommand())
