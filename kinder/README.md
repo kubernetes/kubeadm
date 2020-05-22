@@ -119,8 +119,8 @@ It allows to execute actions (repetitive tasks/sequence of commands) on one or m
 | kubeadm-init    | Executes the kubeadm-init workflow, installs the CNI plugin and then copies the kubeconfig file on the host machine.|
 | manual-copy-certs      | Implement the manual copy of certificates to be shared across control-plane nodes (n.b. manual means not managed by kubeadm).|
 | kubeadm-join    | Executes the kubeadm-join workflow both on secondary control plane nodes and on worker nodes.|
-| kubeadm-upgrade |Executes the kubeadm upgrade workflow and upgrading K8s.|
-| Kubeadm-reset   | Executes the kubeadm-reset workflow on all the nodes.|
+| kubeadm-upgrade | Executes the kubeadm-upgrade workflow and upgrading K8s.|
+| kubeadm-reset   | Executes the kubeadm-reset workflow on all the nodes.|
 | cluster-info    | Returns a summary of cluster info|
 | smoke-test      | Implements a non-exhaustive set of tests|
 

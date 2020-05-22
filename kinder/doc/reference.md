@@ -149,8 +149,7 @@ Kind can be extremely efficient when the node image contains all the necessary a
 
 kinder allows kubeadm contributor to exploit this feature by implementing the `kinder build node-image-variant` command, that takes a node-image (or a bare base image) and allows to build variants by:
 
-- Adding a Kubernetes version to be used for initializing the cluster (as an alternative to `build node-image
-  --type`(s) already supported by kind)
+- Adding a Kubernetes version to be used for initializing the cluster (as an alternative to `build node-image` already supported by kind)
 - Adding new pre-loaded images that will be made available on all nodes at cluster creation time
 - Replacing the kubeadm binary installed in the cluster, e.g. with a locally build version of kubeadm
 - Replacing the kubelet binary installed in the cluster, e.g. with a locally build version of kubelet

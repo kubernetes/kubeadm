@@ -8,8 +8,7 @@ pack whatever you need during your test in the node-images.
 kind gives already you what you need in most cases (kubeadm, Kubernetes binaries, pre-pulled images); kinder
 on top of that allows to build node variants for addressing following use cases:
 
-- Adding a Kubernetes version to be used for initializing the cluster (as an alternative to `build node-image
-  --type`(s) already supported by kind)
+- Adding a Kubernetes version to be used for initializing the cluster (as an alternative to `build node-image` already supported by kind)
 - Adding new pre-loaded images that will be made available on all nodes at cluster creation time
 - Replacing the kubeadm binary installed in the cluster, e.g. with a locally build version of kubeadm
 - Replacing the kubelet binary installed in the cluster, e.g. with a locally build version of kubelet
@@ -26,26 +25,18 @@ docker pull kindest/node:vX
 
 ## Build a node-image
 
-For building a node image you can refer to kind documentation; below a short recap of necessary steps:
-
 Build a base-image (or download one from docker hub)
 
 ```bash
 kinder build base-image --image kindest/base:latest
 ```
 
-Build a node-image starting from the above base image using `build node-image --type`(s) supported by kind
+Build a node-image starting from the above base image:
 
 ```bash
-# To build a node-image using latest Kubernetes apt packages available
-kinder build node-image --base-image kindest/base:latest --image kindest/node:vX --type apt
-
-# To build a node-image using local Kubernetes repository
-kinder build node-image --base-image kindest/base:latest --image kindest/node:vX --type bazel
+kind build node-image --base-image kindest/base:latest --image kindest/node:vX
 ```
-
-> NB see <https://github.com/kubernetes/kubeadm/blob/master/docs/testing-pre-releases.md#change-the-target-version-number-when-building-a-local-release> for overriding
-the build version in case of `--type bazel`
+> NB see [kind documentation](https://kind.sigs.k8s.io/docs/user/quick-start/#building-images) for more information about `kind build node-image` usage.
 
 As an alternative, it is possible to pick an existing base image and customize it by adding a Kubernetes
 version with:
