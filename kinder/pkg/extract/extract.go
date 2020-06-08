@@ -153,6 +153,20 @@ func WithNamePrefix(namePrefix string) Option {
 	}
 }
 
+// WithNameOverride option instructs the Extractor to rename the bit
+func WithNameOverride(newName string) Option {
+	return func(b *Extractor) {
+		b.dstMutator.nameOverride = newName
+	}
+}
+
+// WithVersionFile option instructs the Extractor whether to add version file
+func WithVersionFile(enable bool) Option {
+	return func(b *Extractor) {
+		b.addVersionFileToDst = enable
+	}
+}
+
 // WithVersionFolder option instructs the Extractor to save all files in a folder named like the kubernetes version
 func WithVersionFolder(versionFolder bool) Option {
 	return func(b *Extractor) {
@@ -353,7 +367,7 @@ func extractFromLocalDir(src string, files []string, dst string, m fileNameMutat
 
 		// points the extractor to the upper folder (the extractor expects a folder)
 		parent := filepath.Dir(src)
-		log.Debugf("%s is a file, moving up of one level to %s", src, parent)
+		log.Debugf("%s is a file, moving up one level to %s", src, parent)
 		src = parent
 	} else {
 		// Expanding wildcards defined in the list of files (if any)
@@ -547,6 +561,7 @@ func copyFromURI(src, dst string) error {
 }
 
 type fileNameMutator struct {
+	nameOverride         string
 	namePrefix           string
 	prependVersionFolder bool
 	prependFolder        string
@@ -555,6 +570,10 @@ type fileNameMutator struct {
 func (m *fileNameMutator) Mutate(name string) string {
 	if name == "version" {
 		return name
+	}
+
+	if m.nameOverride != "" {
+		return m.nameOverride
 	}
 
 	if m.namePrefix != "" {

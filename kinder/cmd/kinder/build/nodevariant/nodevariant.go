@@ -34,6 +34,7 @@ type flagpole struct {
 	Kubeadm                 string
 	Kubelet                 string
 	PrePullAdditionalImages bool
+	Path                    []string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -94,6 +95,11 @@ func NewCommand() *cobra.Command {
 		true,
 		"pre-pull kubeadm additional required images such as etcd, coredns and pause, etc",
 	)
+	cmd.Flags().StringSliceVar(
+		&flags.Path, "with-path",
+		nil,
+		"sourcePath:destPath pairs; copies file/dir at sourcePath on the host to destPath inside the image, destPath has to be absolute",
+	)
 	return cmd
 }
 
@@ -111,6 +117,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		alter.WithPrePullAdditionalImages(flags.PrePullAdditionalImages),
 		// bits options
 		alter.WithImageNamePrefix(flags.ImageNamePrefix),
+		alter.WithPath(flags.Path),
 	)
 	if err != nil {
 		return errors.Wrap(err, "error creating alter context")
