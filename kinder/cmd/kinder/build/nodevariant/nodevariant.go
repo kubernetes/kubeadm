@@ -25,14 +25,15 @@ import (
 )
 
 type flagpole struct {
-	Image            string
-	BaseImage        string
-	InitArtifacts    string
-	ImageTars        []string
-	ImageNamePrefix  string
-	UpgradeArtifacts string
-	Kubeadm          string
-	Kubelet          string
+	Image                   string
+	BaseImage               string
+	InitArtifacts           string
+	ImageTars               []string
+	ImageNamePrefix         string
+	UpgradeArtifacts        string
+	Kubeadm                 string
+	Kubelet                 string
+	PrePullAdditionalImages bool
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -88,6 +89,11 @@ func NewCommand() *cobra.Command {
 		"",
 		"override the kubeadm binary existing in the image with the given version/build-label/file or folder containing the kubelet binary",
 	)
+	cmd.Flags().BoolVar(
+		&flags.PrePullAdditionalImages, "with-kubeadm-additional-images",
+		true,
+		"pre-pull kubeadm additional required images such as etcd, coredns and pause, etc",
+	)
 	return cmd
 }
 
@@ -102,6 +108,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		alter.WithKubelet(flags.Kubelet),
 		alter.WithImageTars(flags.ImageTars),
 		alter.WithUpgradeArtifacts(flags.UpgradeArtifacts),
+		alter.WithPrePullAdditionalImages(flags.PrePullAdditionalImages),
 		// bits options
 		alter.WithImageNamePrefix(flags.ImageNamePrefix),
 	)
