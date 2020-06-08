@@ -44,14 +44,15 @@ const DefaultImage = DefaultBaseImage
 // Context is used to alter the kind node image, and contains
 // alter configuration
 type Context struct {
-	baseImage           string
-	image               string
-	initArtifactsSrc    string
-	imageSrcs           []string
-	imageNamePrefix     string
-	upgradeArtifactsSrc string
-	kubeadmSrc          string
-	kubeletSrc          string
+	baseImage               string
+	image                   string
+	initArtifactsSrc        string
+	imageSrcs               []string
+	imageNamePrefix         string
+	upgradeArtifactsSrc     string
+	kubeadmSrc              string
+	kubeletSrc              string
+	prePullAdditionalImages bool
 }
 
 // Option is Context configuration option supplied to NewContext
@@ -110,6 +111,13 @@ func WithKubeadm(src string) Option {
 func WithKubelet(src string) Option {
 	return func(b *Context) {
 		b.kubeletSrc = src
+	}
+}
+
+// WithPrePullAdditionalImages configures a NewContext to pre-pull kubeadm additional required images
+func WithPrePullAdditionalImages(pull bool) Option {
+	return func(b *Context) {
+		b.prePullAdditionalImages = pull
 	}
 }
 
@@ -305,9 +313,11 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 	}
 
-	log.Info("Pre-pull extra images ...")
-	if err := alterHelper.PrePullAdditionalImages(bc, "/kind", "/kinder/upgrade"); err != nil {
-		return errors.Wrapf(err, "image build Failed! Failed to pre-pull additional images into %s", runtime)
+	if c.prePullAdditionalImages {
+		log.Info("Pre-pull extra images ...")
+		if err := alterHelper.PrePullAdditionalImages(bc, "/kind", "/kinder/upgrade"); err != nil {
+			return errors.Wrapf(err, "image build Failed! Failed to pre-pull additional images into %s", runtime)
+		}
 	}
 
 	// Make sure the /kind/images folder exists
