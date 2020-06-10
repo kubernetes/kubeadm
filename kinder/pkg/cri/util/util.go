@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -211,4 +212,15 @@ func ContainerArgsForExternalEtcd(name string, args []string) []string {
 	)
 
 	return args
+}
+
+// TryUntil implements an helper that calls `try()`` in a loop until the deadline `until`
+// has passed or `try()`returns true, returns whether try ever returned true
+func TryUntil(until time.Time, try func() bool) bool {
+	for until.After(time.Now()) {
+		if try() {
+			return true
+		}
+	}
+	return false
 }

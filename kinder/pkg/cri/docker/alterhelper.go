@@ -17,14 +17,15 @@ limitations under the License.
 package docker
 
 import (
-	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/kubeadm/kinder/pkg/cri/util"
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 )
@@ -43,22 +44,32 @@ func StartRuntime(bc *bits.BuildContext) error {
 	log.Info("starting dockerd")
 	go func() {
 		bc.RunInContainer("dockerd")
-		log.Info("dockerd stopped")
 	}()
 
 	duration := 10 * time.Second
-	result := tryUntil(time.Now().Add(duration), func() bool {
+	result := util.TryUntil(time.Now().Add(duration), func() bool {
 		return bc.RunInContainer("bash", "-c", "docker info &> /dev/null") == nil
 	})
 	if !result {
 		return errors.Errorf("dockerd did not start in %v", duration)
 	}
+	log.Info("dockerd started")
 	return nil
 }
 
 // StopRuntime stops the runtime
 func StopRuntime(bc *bits.BuildContext) error {
 	return bc.RunInContainer("pkill", "-f", "dockerd")
+}
+
+// PreLoadInitImages preload images required by kubeadm-init into the docker runtime that exists inside a kind(er) node
+func PreLoadInitImages(bc *bits.BuildContext, srcFolder string) error {
+	// Currently docker images preloaded at build time gets lost at commit time, so this is a NOP
+	// and images tars are loaded at node create time.
+	// If we manage to get this working then we will speed up node creation time for docker;
+	// A possible hint to solve is to remove VOLUME [ "/var/lib/docker" ] from the base image and add "--change", `VOLUME [ "/var/lib/docker" ]`
+	// on commit, however this will force kinder to start using a new base image for all the docker jobs in ci
+	return nil
 }
 
 // PullImages pulls a set of images using docker

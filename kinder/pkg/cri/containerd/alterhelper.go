@@ -17,15 +17,16 @@ limitations under the License.
 package containerd
 
 import (
-	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
+	"k8s.io/kubeadm/kinder/pkg/cri/util"
 )
 
 // GetAlterContainerArgs returns arguments for the alter container for containerd
@@ -36,9 +37,6 @@ func GetAlterContainerArgs() ([]string, []string) {
 	runArgs := []string{
 		// privileged is required for "ctr image pull" permissions
 		"--privileged",
-		// the snapshot storage must be a volume.
-		// see the info in Commit()
-		"-v=/var/lib/containerd",
 		// override the entrypoint
 		"--entrypoint=/bin/sleep",
 	}
@@ -53,9 +51,17 @@ func GetAlterContainerArgs() ([]string, []string) {
 func StartRuntime(bc *bits.BuildContext) error {
 	log.Info("starting containerd")
 	go func() {
-		bc.RunInContainer("containerd")
-		log.Info("containerd stopped")
+		bc.RunInContainer("bash", "-c", "nohup containerd > /dev/null 2>&1 &")
 	}()
+
+	duration := 10 * time.Second
+	result := util.TryUntil(time.Now().Add(duration), func() bool {
+		return bc.RunInContainer("bash", "-c", "crictl ps &> /dev/null") == nil
+	})
+	if !result {
+		return errors.Errorf("containerd did not start in %v", duration)
+	}
+	log.Info("containerd started")
 	return nil
 }
 
@@ -84,6 +90,15 @@ func PullImages(bc *bits.BuildContext, images []string, targetPath string) error
 		}
 	}
 	return nil
+}
+
+// PreLoadInitImages preload images required by kubeadm-init into the containerd runtime that exists inside a kind(er) node
+func PreLoadInitImages(bc *bits.BuildContext, srcFolder string) error {
+	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
+	return bc.RunInContainer(
+		"bash", "-c",
+		`find `+srcFolder+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --all-platforms --no-unpack`,
+	)
 }
 
 // Commit a kind(er) node image that uses the containerd runtime internally

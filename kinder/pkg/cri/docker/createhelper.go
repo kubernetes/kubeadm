@@ -155,24 +155,13 @@ func signalStart(name string) error {
 // waitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func waitForDocker(name string, until time.Time) bool {
-	return tryUntil(until, func() bool {
+	return util.TryUntil(until, func() bool {
 		out, err := exec.NewNodeCmd(name, "systemctl", "is-active", "docker").Silent().RunAndCapture()
 		if err != nil {
 			return false
 		}
 		return len(out) == 1 && out[0] == "active"
 	})
-}
-
-// helper that calls `try()`` in a loop until the deadline `until`
-// has passed or `try()`returns true, returns whether try ever returned true
-func tryUntil(until time.Time, try func() bool) bool {
-	for until.After(time.Now()) {
-		if try() {
-			return true
-		}
-	}
-	return false
 }
 
 // loadImages loads image tarballs stored on the node into docker on the node
