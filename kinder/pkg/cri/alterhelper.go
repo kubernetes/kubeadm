@@ -51,19 +51,32 @@ func (h *AlterHelper) GetAlterContainerArgs() ([]string, []string) {
 	return []string{}, []string{}
 }
 
-// PrePullAdditionalImages uses "kubeadm config images list" to obtain additional required images such as etcd,
-// coredns and pause and pulls them using the runtime in the container.
-func (h *AlterHelper) PrePullAdditionalImages(bc *bits.BuildContext, initPath, upgradePath string) error {
+// StartCRI starts the CRI engine
+func (h *AlterHelper) StartCRI(bc *bits.BuildContext) error {
 	// start the container runtime
 	switch h.cri {
 	case status.ContainerdRuntime:
-		containerd.StartRuntime(bc)
+		return containerd.StartRuntime(bc)
 	case status.DockerRuntime:
-		docker.StartRuntime(bc)
-	default:
-		return errors.Errorf("unknown cri: %s", h.cri)
+		return docker.StartRuntime(bc)
 	}
+	return errors.Errorf("unknown cri: %s", h.cri)
+}
 
+// PreLoadInitImages preload images required by kubeadm-init into the selected container runtime that exists inside a kind(er) node
+func (h *AlterHelper) PreLoadInitImages(bc *bits.BuildContext, srcFolder string) error {
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.PreLoadInitImages(bc, srcFolder)
+	case status.DockerRuntime:
+		return docker.PreLoadInitImages(bc, srcFolder)
+	}
+	return errors.Errorf("unknown cri: %s", h.cri)
+}
+
+// PrePullAdditionalImages uses "kubeadm config images list" to obtain additional required images such as etcd,
+// coredns and pause and pulls them using the runtime in the container.
+func (h *AlterHelper) PrePullAdditionalImages(bc *bits.BuildContext, initPath, upgradePath string) error {
 	// pull the images for init/join
 	if err := h.pullImagesForKubeadmBinary(
 		bc,
@@ -95,7 +108,11 @@ func (h *AlterHelper) PrePullAdditionalImages(bc *bits.BuildContext, initPath, u
 		filepath.Join(upgradePath, version[0])); err != nil {
 		return err
 	}
+	return nil
+}
 
+// StopCRI stops the CRI engine
+func (h *AlterHelper) StopCRI(bc *bits.BuildContext) error {
 	// stop the container runtime
 	switch h.cri {
 	case status.ContainerdRuntime:

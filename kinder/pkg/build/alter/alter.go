@@ -25,11 +25,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/cri"
-	"k8s.io/kubeadm/kinder/pkg/exec"
 	"k8s.io/kubeadm/kinder/pkg/extract"
 	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	kindfs "sigs.k8s.io/kind/pkg/fs"
@@ -304,6 +304,11 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 	// binds the BuildContext the container
 	bc.BindToContainer(containerID)
 
+	// Make sure the /kind/images folder exists
+	if err := bc.RunInContainer("mkdir", "-p", "/kind/images"); err != nil {
+		return err
+	}
+
 	// install the bits that are used to alter the image
 	log.Info("Starting bits install ...")
 	for _, b := range bitsInstallers {
@@ -313,6 +318,16 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 	}
 
+	log.Info("Start CRI ...")
+	if err := alterHelper.StartCRI(bc); err != nil {
+		return errors.Wrapf(err, "image build Failed! Failed to start %s", runtime)
+	}
+
+	log.Info("Pre-loading images ...")
+	if err := alterHelper.PreLoadInitImages(bc, "/kind/images"); err != nil {
+		return errors.Wrapf(err, "image build Failed! Failed to start %s", runtime)
+	}
+
 	if c.prePullAdditionalImages {
 		log.Info("Pre-pull extra images ...")
 		if err := alterHelper.PrePullAdditionalImages(bc, "/kind", "/kinder/upgrade"); err != nil {
@@ -320,9 +335,9 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 	}
 
-	// Make sure the /kind/images folder exists
-	if err := bc.RunInContainer("mkdir", "-p", "/kind/images"); err != nil {
-		return err
+	log.Info("Stop CRI ...")
+	if err := alterHelper.StopCRI(bc); err != nil {
+		return errors.Wrapf(err, "image build Failed! Failed to stop %s", runtime)
 	}
 
 	log.Infof("Commit to %s ...", c.image)
