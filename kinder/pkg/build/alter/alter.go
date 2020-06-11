@@ -53,6 +53,7 @@ type Context struct {
 	kubeadmSrc              string
 	kubeletSrc              string
 	prePullAdditionalImages bool
+	paths                   []string
 }
 
 // Option is Context configuration option supplied to NewContext
@@ -121,6 +122,13 @@ func WithPrePullAdditionalImages(pull bool) Option {
 	}
 }
 
+// WithPath configures a NewContext to include a file/dir on the host
+func WithPath(paths []string) Option {
+	return func(b *Context) {
+		b.paths = append(b.paths, paths...)
+	}
+}
+
 // NewContext creates a new Context with default configuration,
 // overridden by the options supplied in the order that they are supplied
 func NewContext(options ...Option) (ctx *Context, err error) {
@@ -157,6 +165,10 @@ func (c *Context) Alter() (err error) {
 
 	if c.upgradeArtifactsSrc != "" {
 		bitsInstallers = append(bitsInstallers, bits.NewUpgradeBits(c.upgradeArtifactsSrc))
+	}
+
+	if len(c.paths) > 0 {
+		bitsInstallers = append(bitsInstallers, bits.NewPathBits(c.paths))
 	}
 
 	// create tempdir to alter the image in
