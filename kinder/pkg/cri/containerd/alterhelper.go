@@ -88,6 +88,13 @@ func PullImages(bc *bits.BuildContext, images []string, targetPath string) error
 		if err := bc.RunInContainer("ctr", "image", "export", path+".tar", image); err != nil {
 			return errors.Wrapf(err, "could not save image %q to path %q", image, targetPath)
 		}
+
+		if err := bc.RunInContainer("ctr", "--namespace=k8s.io", "image", "import", path+".tar", "--no-unpack"); err != nil {
+			return errors.Wrapf(err, "could not import image %q from path %q", image, targetPath)
+		}
+		if err := bc.RunInContainer("rm", path+".tar"); err != nil {
+			return errors.Wrapf(err, "could not delete image %q to path %q", image, targetPath)
+		}
 	}
 	return nil
 }
@@ -97,7 +104,7 @@ func PreLoadInitImages(bc *bits.BuildContext, srcFolder string) error {
 	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
 	return bc.RunInContainer(
 		"bash", "-c",
-		`find `+srcFolder+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --all-platforms --no-unpack`,
+		`find `+srcFolder+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --all-platforms --no-unpack && rm -rf `+srcFolder+`/*.tar`,
 	)
 }
 
