@@ -41,6 +41,7 @@ type flagpole struct {
 	DryRun             bool
 	VLevel             int
 	KustomizeDir       string
+	PatchesDir         string
 	Wait               time.Duration
 }
 
@@ -114,6 +115,11 @@ func NewCommand() *cobra.Command {
 		"kustomize-dir", "k", flags.KustomizeDir,
 		"the kustomize folder to be used for init,join and upgrade",
 	)
+	cmd.Flags().StringVar(
+		&flags.PatchesDir,
+		"patches", flags.PatchesDir,
+		"the patches directory to be used for init, join and upgrade",
+	)
 	return cmd
 }
 
@@ -161,6 +167,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.UpgradeVersion(upgradeVersion),
 		actions.VLevel(flags.VLevel),
 		actions.KustomizeDir(flags.KustomizeDir),
+		actions.PatchesDir(flags.PatchesDir),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)

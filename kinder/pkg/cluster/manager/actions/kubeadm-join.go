@@ -28,8 +28,8 @@ import (
 
 // KubeadmJoin executes the kubeadm join workflow both for control-plane nodes and
 // worker nodes
-func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
-	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, discoveryMode, kustomizeDir, wait, vLevel); err != nil {
+func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, kustomizeDir, patchesDir string, wait time.Duration, vLevel int) (err error) {
+	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, discoveryMode, kustomizeDir, patchesDir, wait, vLevel); err != nil {
 		return err
 	}
 
@@ -39,7 +39,7 @@ func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discover
 	return nil
 }
 
-func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
+func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, kustomizeDir, patchesDir string, wait time.Duration, vLevel int) (err error) {
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
@@ -51,6 +51,16 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 		// if kustomize copy patches to the node
 		if kustomizeDir != "" {
 			if err := copyPatchesToNode(cp2, kustomizeDir); err != nil {
+				return err
+			}
+		}
+
+		// if patcheDir is defined, copy the patches to the node
+		if patchesDir != "" {
+			if cp2.MustKubeadmVersion().LessThan(constants.V1_19) {
+				return errors.New("--patches can't be used with kubeadm older than v1.19")
+			}
+			if err := copyPatchesToNode(cp2, patchesDir); err != nil {
 				return err
 			}
 		}
@@ -80,9 +90,9 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
-			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, kustomizeDir, vLevel)
+			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
 		} else {
-			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts, kustomizeDir, vLevel)
+			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
 		}
 		if err != nil {
 			return err
@@ -101,7 +111,7 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 	return nil
 }
 
-func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) (err error) {
+func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) (err error) {
 	joinArgs := []string{
 		"join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
@@ -117,7 +127,10 @@ func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomize
 		}
 	}
 	if kustomizeDir != "" {
-		joinArgs = append(joinArgs, "-k", constants.KustomizeDir)
+		joinArgs = append(joinArgs, "-k", constants.PatchesDir)
+	}
+	if patchesDir != "" {
+		joinArgs = append(joinArgs, "--experimental-patches", constants.PatchesDir)
 	}
 
 	if err := cp.Command(
@@ -129,7 +142,7 @@ func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomize
 	return nil
 }
 
-func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) (err error) {
+func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	preflightArgs := []string{
 		"join", "phase", "preflight",
@@ -167,7 +180,10 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 		}
 	}
 	if kustomizeDir != "" {
-		prepareArgs = append(prepareArgs, "-k", constants.KustomizeDir)
+		prepareArgs = append(prepareArgs, "-k", constants.PatchesDir)
+	}
+	if patchesDir != "" {
+		prepareArgs = append(prepareArgs, "--experimental-patches", constants.PatchesDir)
 	}
 
 	if err := cp.Command(
@@ -192,7 +208,10 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 		fmt.Sprintf("--v=%d", vLevel),
 	}
 	if kustomizeDir != "" {
-		controlPlaneArgs = append(controlPlaneArgs, "-k", constants.KustomizeDir)
+		controlPlaneArgs = append(controlPlaneArgs, "-k", constants.PatchesDir)
+	}
+	if patchesDir != "" {
+		controlPlaneArgs = append(controlPlaneArgs, "--experimental-patches", constants.PatchesDir)
 	}
 	if automaticCopyCerts {
 		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
