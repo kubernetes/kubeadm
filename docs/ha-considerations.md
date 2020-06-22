@@ -81,6 +81,26 @@ There are some placeholders in `bash` variable style to fill in:
 - `${AUTH_PASS}` should be the same for all `keepalived` cluster hosts, e.g. `42`
 - `${APISERVER_VIP}` is the virtual IP address negotiated between the `keepalived` cluster hosts.
 
+The above `keepalived` configuration uses a health check script `/etc/keepalived/check_apiserver.sh` responsible for making sure that on the node holding the virtual IP the API Server is available. This script could look like this:
+
+```
+#!/bin/sh
+
+errorExit() {
+    echo "*** $*" 1>&2
+    exit 1
+}
+
+curl --silent --max-time 2 --insecure https://localhost:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://localhost:${APISERVER_DEST_PORT}/"
+if ip addr | grep -q ${APISERVER_VIP}; then
+    curl --silent --max-time 2 --insecure https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/"
+fi
+```
+
+There are some placeholders in `bash` variable style to fill in:
+- `${APISERVER_VIP}` is the virtual IP address negotiated between the `keepalived` cluster hosts.
+- `${APISERVER_DEST_PORT}` the port through which Kubernetes will talk to the API Server.
+
 ### haproxy configuration
 
 The `haproxy` configuration consists of one file: the service configuration file which is assumed to reside in a `/etc/haproxy` directory. Note that however some Linux distributions may keep them elsewhere. The following configuration has been successfully used with `haproxy` version 2.1.4:
