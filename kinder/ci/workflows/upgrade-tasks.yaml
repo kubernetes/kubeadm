@@ -35,7 +35,7 @@ tasks:
     - --with-init-artifacts={{ .vars.initVersion }}
     - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
     - --loglevel=debug
-  timeout: 10m
+  timeout: 15m
 - name: create-cluster
   description: |
     create a set of nodes ready for hosting the Kubernetes cluster
@@ -94,7 +94,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-  timeout: 10m
+  timeout: 15m
 - name: e2e-kubeadm-after
   description: |
     Runs kubeadm e2e test on the cluster with Kubernetes "upgradeVersion"

@@ -32,7 +32,7 @@ tasks:
       - --with-init-artifacts={{ .vars.kubernetesVersion }}
       - --with-upgrade-artifacts={{ .vars.kubernetesVersion }}
       - --loglevel=debug
-    timeout: 10m
+    timeout: 15m
   - name: create-cluster
     description: |
       create a set of nodes ready for hosting the Kubernetes cluster
