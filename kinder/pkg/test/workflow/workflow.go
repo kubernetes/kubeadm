@@ -106,8 +106,8 @@ type Task struct {
 	IgnoreError bool `yaml:"ignoreError"`
 }
 
-// Duration is a wrapper around time.Duration to satisfy the encoding/json Marshaler
-// and Unmarshaler interfaces. This extends sigs.k8s.io/yaml to support JSON handling
+// Duration is a wrapper around time.Duration to satisfy the encoding/json Marshaller
+// and Unmarshaller interfaces. This extends sigs.k8s.io/yaml to support JSON handling
 // of time.Duration.
 type Duration struct {
 	time.Duration

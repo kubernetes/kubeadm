@@ -129,7 +129,7 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		return c.registerTestCase(t.Name, withFailure(err.Error()), withDuration(time.Since(start)))
 	}
 
-	// starts a go ruting responsible for waiting the command completes
+	// starts a go routine responsible for waiting the command completes
 	result := make(chan error, 1)
 	go func() {
 		result <- t.Cmd.Wait()
