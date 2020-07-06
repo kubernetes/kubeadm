@@ -37,7 +37,7 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, kustomizeDir string, wait time.Duration, vLevel int) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, kustomizeDir, patchesDir string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
 	// fail fast if required to use kustomize and kubeadm less than v1.16
@@ -48,6 +48,16 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	// if kustomize copy patches to the node
 	if kustomizeDir != "" {
 		if err := copyPatchesToNode(cp1, kustomizeDir); err != nil {
+			return err
+		}
+	}
+
+	// if patcheDir is defined, copy the patches to the node
+	if patchesDir != "" {
+		if cp1.MustKubeadmVersion().LessThan(constants.V1_19) {
+			return errors.New("--patches can't be used with kubeadm older than v1.19")
+		}
+		if err := copyPatchesToNode(cp1, patchesDir); err != nil {
 			return err
 		}
 	}
@@ -74,7 +84,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, kustomizeDir, vLevel)
+		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
 	} else {
 		err = kubeadmInit(cp1, automaticCopyCerts, kustomizeDir, vLevel)
 	}
@@ -112,7 +122,7 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string,
 		}
 	}
 	if kustomizeDir != "" {
-		initArgs = append(initArgs, "-k", constants.KustomizeDir)
+		initArgs = append(initArgs, "-k", constants.PatchesDir)
 	}
 
 	if err := cp1.Command(
@@ -124,7 +134,7 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string,
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) error {
+func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 		constants.KubeadmIgnorePreflightErrorsFlag,
@@ -154,7 +164,10 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeD
 		"init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	}
 	if kustomizeDir != "" {
-		controlplaneArgs = append(controlplaneArgs, "-k", constants.KustomizeDir)
+		controlplaneArgs = append(controlplaneArgs, "-k", constants.PatchesDir)
+	}
+	if patchesDir != "" {
+		controlplaneArgs = append(controlplaneArgs, "--experimental-patches", constants.PatchesDir)
 	}
 	if err := cp1.Command(
 		"kubeadm", controlplaneArgs...,
@@ -166,7 +179,10 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeD
 		"init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	}
 	if kustomizeDir != "" {
-		etcdArgs = append(etcdArgs, "-k", constants.KustomizeDir)
+		etcdArgs = append(etcdArgs, "-k", constants.PatchesDir)
+	}
+	if patchesDir != "" {
+		etcdArgs = append(etcdArgs, "--experimental-patches", constants.PatchesDir)
 	}
 	if err := cp1.Command(
 		"kubeadm", etcdArgs...,
@@ -368,14 +384,14 @@ func writeKubeConfig(c *status.Cluster, hostPort int32) error {
 
 func copyPatchesToNode(n *status.Node, dir string) error {
 
-	n.Infof("Importing kustomize patches from %s", dir)
+	n.Infof("Importing patches from %s", dir)
 
-	// creates the folder tree for kustomize patches
-	if err := n.Command("mkdir", "-p", constants.KustomizeDir).Silent().Run(); err != nil {
-		return errors.Wrapf(err, "failed to create %s folder", constants.KustomizeDir)
+	// creates the folder tree for patches
+	if err := n.Command("mkdir", "-p", constants.PatchesDir).Silent().Run(); err != nil {
+		return errors.Wrapf(err, "failed to create %s folder", constants.PatchesDir)
 	}
 
-	// copies kustomize patches
+	// copies patches
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
@@ -385,7 +401,7 @@ func copyPatchesToNode(n *status.Node, dir string) error {
 		fmt.Printf("%s\n", file.Name())
 
 		hostPath := filepath.Join(dir, file.Name())
-		nodePath := filepath.Join(constants.KustomizeDir, file.Name())
+		nodePath := filepath.Join(constants.PatchesDir, file.Name())
 
 		if err := n.CopyTo(hostPath, nodePath); err != nil {
 			errors.Wrapf(err, "failed to copy from host path %q to node path %q for node %q",

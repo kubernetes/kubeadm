@@ -42,13 +42,13 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.automaticCopyCerts, flags.kustomizeDir, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.automaticCopyCerts, flags.kustomizeDir, flags.patchesDir, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.discoveryMode, flags.kustomizeDir, flags.wait, flags.vLevel)
+		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.discoveryMode, flags.kustomizeDir, flags.patchesDir, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmUpgrade(c, flags.upgradeVersion, flags.kustomizeDir, flags.wait, flags.vLevel)
+		return KubeadmUpgrade(c, flags.upgradeVersion, flags.kustomizeDir, flags.patchesDir, flags.wait, flags.vLevel)
 	},
 	"kubeadm-reset": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmReset(c, flags.vLevel)
@@ -135,6 +135,13 @@ func KustomizeDir(kustomizeDir string) Option {
 	}
 }
 
+// PatchesDir option sets the patches dir for the kubeadm commands
+func PatchesDir(patchesDir string) Option {
+	return func(r *RunOptions) {
+		r.patchesDir = patchesDir
+	}
+}
+
 // RunOptions holds options supplied to actions.Run
 type RunOptions struct {
 	kubeDNS            bool
@@ -145,6 +152,7 @@ type RunOptions struct {
 	upgradeVersion     *K8sVersion.Version
 	vLevel             int
 	kustomizeDir       string
+	patchesDir         string
 }
 
 // DiscoveryMode defines discovery mode supported by kubeadm join
