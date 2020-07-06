@@ -69,7 +69,7 @@ tasks:
         EOF
 
         cat <<EOF >/tmp/kubeadm-patches/etcd+json.json
-        {"metadata":{"annotations":{"patched":"true"}}}
+        [{"op":"add","path":"/metadata/annotations/patched","value":"true"}]
         EOF
   - name: prepare verify-patches.sh script
     cmd: /bin/sh
