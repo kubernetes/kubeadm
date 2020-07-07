@@ -86,7 +86,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	if usePhases {
 		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
 	} else {
-		err = kubeadmInit(cp1, automaticCopyCerts, kustomizeDir, vLevel)
+		err = kubeadmInit(cp1, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
 	}
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string, vLevel int) error {
+func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) error {
 	initArgs := []string{
 		"init",
 		constants.KubeadmIgnorePreflightErrorsFlag,
@@ -123,6 +123,9 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir string,
 	}
 	if kustomizeDir != "" {
 		initArgs = append(initArgs, "-k", constants.PatchesDir)
+	}
+	if patchesDir != "" {
+		initArgs = append(initArgs, "--experimental-patches", constants.PatchesDir)
 	}
 
 	if err := cp1.Command(
