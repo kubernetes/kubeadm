@@ -17,7 +17,7 @@ PACKAGES_TO_TEST_EXT=("cri-tools" "kubernetes-cni")
 
 PACKAGES_TO_TEST=("${PACKAGES_TO_TEST_EXT[@]}" "${PACKAGES_TO_TEST_K8S[@]}")
 
-# harcode the LSB release to "xenial" instead of calling "lsb_release -c -s"
+# hardcode the LSB release to "xenial" instead of calling "lsb_release -c -s"
 LSB_RELEASE="xenial"
 
 # install prerequisites
