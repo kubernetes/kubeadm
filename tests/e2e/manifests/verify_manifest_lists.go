@@ -631,6 +631,7 @@ func filterVersions(versions VersionList) (VersionList, error) {
 		if err != nil {
 			return versions, err
 		}
+		verFromURL = strings.TrimSpace(verFromURL)
 		minEstimated := version.MustParseGeneric(verFromURL)
 		minor := minEstimated.Minor() - (2 - minEstimated.Minor())
 		semVersion := fmt.Sprintf("%d.%d.%d", minEstimated.Major(), minor, minEstimated.Patch())
