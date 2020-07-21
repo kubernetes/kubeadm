@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -341,9 +343,44 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 	}
 
 	if c.prePullAdditionalImages {
-		log.Info("Pre-pull extra images ...")
-		if err := alterHelper.PrePullAdditionalImages(bc, "/kind", "/kinder/upgrade"); err != nil {
-			return errors.Wrapf(err, "image build Failed! Failed to pre-pull additional images into %s", runtime)
+		log.Info("Pre-pulling additional images ...")
+
+		// pull images required for init / join
+		initPath := "/kind"
+		images, err := alterHelper.GetImagesForKubeadmBinary(bc, filepath.Join(initPath, "bin", "kubeadm"))
+		if err != nil {
+			return err
+		}
+
+		if err := pullImages(alterHelper, bc, images, filepath.Join(initPath, "images"), containerID); err != nil {
+			return err
+		}
+
+		// pull images required for upgrade
+		upgradePath := "/kinder/upgrade"
+		// check if the version file for the upgrade artifacts is in place
+		versionFile := filepath.Join(upgradePath, "version")
+		version, err := bc.CombinedOutputLinesInContainer(
+			"bash",
+			"-c",
+			"cat "+versionFile+" 2> /dev/null",
+		)
+
+		// don't return the error if the version file is missing
+		if err == nil {
+			if len(version) != 1 {
+				return errors.Errorf("expected the version file %q to have 1 line, got: %v", versionFile, version)
+			}
+
+			// use the resulting upgrade path e.g. /kinder/upgrade/v1.19.0-alpha.3.36+8c4e3faed35411
+			upgradeImages, err := alterHelper.GetImagesForKubeadmBinary(bc, filepath.Join(upgradePath, version[0], "kubeadm"))
+			if err != nil {
+				return err
+			}
+
+			if err := pullImages(alterHelper, bc, upgradeImages, filepath.Join(upgradePath, version[0]), containerID); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -359,6 +396,47 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 
 	log.Info("Image alter completed.")
 
+	return nil
+}
+
+func pullImages(alterHelper *cri.AlterHelper, bc *bits.BuildContext, images []string, savePath, containerID string) error {
+	tempDir, err := ioutil.TempDir("", "kinder-image-path")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tempDir)
+
+	imageRegExp := regexp.MustCompile("[/:]")
+
+	for _, image := range images {
+		// Pull the image on the host
+		if err := exec.NewHostCmd("docker", "pull", image).Run(); err != nil {
+			return errors.Wrapf(err, "failed to pull image %q on the host", image)
+		}
+
+		// Create the path where the tar is going to be saved
+		s := imageRegExp.Split(image, -1)
+		if len(s) < 3 {
+			return errors.Errorf("unsupported image URL: %s", image)
+		}
+		fileName := s[len(s)-2] + ".tar"
+		hostPath := filepath.Join(tempDir, fileName)
+
+		// Save the tar
+		if err := exec.NewHostCmd("docker", "save", "-o="+hostPath, image).Run(); err != nil {
+			return errors.Wrapf(err, "failed to save image %q to path %q", image, hostPath)
+		}
+
+		// Copy the tar to the container
+		if err := exec.NewHostCmd("docker", "cp", hostPath, containerID+":"+savePath).Run(); err != nil {
+			return errors.Wrapf(err, "failed to copy the file %q to container %q", image, containerID)
+		}
+
+		// Import the image in the runtime (containerd only, deletes the file from the container after import)
+		if err := alterHelper.ImportImage(bc, filepath.Join(savePath, fileName)); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

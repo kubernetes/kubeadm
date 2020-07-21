@@ -17,8 +17,6 @@ limitations under the License.
 package cri
 
 import (
-	"path/filepath"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -74,43 +72,6 @@ func (h *AlterHelper) PreLoadInitImages(bc *bits.BuildContext, srcFolder string)
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
 
-// PrePullAdditionalImages uses "kubeadm config images list" to obtain additional required images such as etcd,
-// coredns and pause and pulls them using the runtime in the container.
-func (h *AlterHelper) PrePullAdditionalImages(bc *bits.BuildContext, initPath, upgradePath string) error {
-	// pull the images for init/join
-	if err := h.pullImagesForKubeadmBinary(
-		bc,
-		filepath.Join(initPath, "bin", "kubeadm"),
-		filepath.Join(initPath, "images")); err != nil {
-		return err
-	}
-
-	// check if the version file for the upgrade artifacts is in place
-	versionFile := filepath.Join(upgradePath, "version")
-	version, err := bc.CombinedOutputLinesInContainer(
-		"bash",
-		"-c",
-		"cat "+versionFile+" 2> /dev/null",
-	)
-	if err != nil {
-		// don't return the error if the version file is missing
-		return nil
-	}
-
-	if len(version) != 1 {
-		return errors.Errorf("expected the version file %q to have 1 line, got: %v", versionFile, version)
-	}
-
-	// use the resulting upgrade path e.g. /kinder/upgrade/v1.19.0-alpha.3.36+8c4e3faed35411
-	if err := h.pullImagesForKubeadmBinary(
-		bc,
-		filepath.Join(upgradePath, version[0], "kubeadm"),
-		filepath.Join(upgradePath, version[0])); err != nil {
-		return err
-	}
-	return nil
-}
-
 // StopCRI stops the CRI engine
 func (h *AlterHelper) StopCRI(bc *bits.BuildContext) error {
 	// stop the container runtime
@@ -123,24 +84,30 @@ func (h *AlterHelper) StopCRI(bc *bits.BuildContext) error {
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
 
-func (h *AlterHelper) pullImagesForKubeadmBinary(bc *bits.BuildContext, binaryPath, imagePath string) error {
+// ImportImage imports a set of TAR files into the CR
+func (h *AlterHelper) ImportImage(bc *bits.BuildContext, tar string) error {
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.ImportImage(bc, tar)
+	case status.DockerRuntime:
+		return docker.ImportImage(bc, tar)
+	}
+	return errors.Errorf("unknown cri: %s", h.cri)
+}
+
+// GetImagesForKubeadmBinary runs a kubeadm binary located at "binaryPath" and gets the images it returns
+func (h *AlterHelper) GetImagesForKubeadmBinary(bc *bits.BuildContext, binaryPath string) ([]string, error) {
 	images, err := bc.CombinedOutputLinesInContainer(
 		"bash",
 		"-c",
 		binaryPath+" config images list --kubernetes-version=$("+binaryPath+" version -o short) 2> /dev/null | grep -v 'kube-'",
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Infof("Found the following extra images from the binary %q: %v", binaryPath, images)
 
-	switch h.cri {
-	case status.ContainerdRuntime:
-		return containerd.PullImages(bc, images, imagePath)
-	case status.DockerRuntime:
-		return docker.PullImages(bc, images, imagePath)
-	}
-	return errors.Errorf("unknown cri: %s", h.cri)
+	return images, nil
 }
 
 // Commit a kind(er) node image that uses the selected container runtime internally

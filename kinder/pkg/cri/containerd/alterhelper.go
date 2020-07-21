@@ -19,8 +19,6 @@ package containerd
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
-	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -70,31 +68,13 @@ func StopRuntime(bc *bits.BuildContext) error {
 	return bc.RunInContainer("pkill", "-f", "containerd")
 }
 
-// PullImages pulls a set of images using ctr
-func PullImages(bc *bits.BuildContext, images []string, targetPath string) error {
-	for _, image := range images {
-		// Supposedly this should be enough for containerd to snapshot the images, but it does not work.
-		// So save them to tars and load them on cluster creation.
-		if err := bc.RunInContainer("bash", "-c", "ctr image pull "+image+" > /dev/null"); err != nil {
-			return errors.Wrapf(err, "could not pull image: %s", image)
-		}
-		// extract the image name; assumes the format is "repository/image:tag"
-		r := regexp.MustCompile("[/:]")
-		s := r.Split(image, -1)
-		if len(s) < 3 {
-			return errors.Errorf("unsupported image URL: %s", image)
-		}
-		path := filepath.Join(targetPath, s[len(s)-2])
-		if err := bc.RunInContainer("ctr", "image", "export", path+".tar", image); err != nil {
-			return errors.Wrapf(err, "could not save image %q to path %q", image, targetPath)
-		}
-
-		if err := bc.RunInContainer("ctr", "--namespace=k8s.io", "image", "import", path+".tar", "--no-unpack"); err != nil {
-			return errors.Wrapf(err, "could not import image %q from path %q", image, targetPath)
-		}
-		if err := bc.RunInContainer("rm", path+".tar"); err != nil {
-			return errors.Wrapf(err, "could not delete image %q to path %q", image, targetPath)
-		}
+// ImportImage import a TAR file into the CR and delete it
+func ImportImage(bc *bits.BuildContext, tar string) error {
+	if err := bc.RunInContainer("ctr", "--namespace=k8s.io", "image", "import", tar, "--no-unpack"); err != nil {
+		return errors.Wrapf(err, "could not import image file %q", tar)
+	}
+	if err := bc.RunInContainer("rm", tar); err != nil {
+		return errors.Wrapf(err, "could not delete the file %q", tar)
 	}
 	return nil
 }
