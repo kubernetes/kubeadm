@@ -19,8 +19,6 @@ package docker
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
-	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -72,24 +70,9 @@ func PreLoadInitImages(bc *bits.BuildContext, srcFolder string) error {
 	return nil
 }
 
-// PullImages pulls a set of images using docker
-func PullImages(bc *bits.BuildContext, images []string, targetPath string) error {
-	// pull the images
-	for _, image := range images {
-		if err := bc.RunInContainer("bash", "-c", "docker pull "+image+" > /dev/null"); err != nil {
-			return errors.Wrapf(err, "could not pull image: %s", image)
-		}
-		// extract the image name; assumes the format is "repository/image:tag"
-		r := regexp.MustCompile("[/:]")
-		s := r.Split(image, -1)
-		if len(s) < 3 {
-			return errors.Errorf("unsupported image URL: %s", image)
-		}
-		path := filepath.Join(targetPath, s[len(s)-2])
-		if err := bc.RunInContainer("docker", "save", "-o="+path+".tar", image); err != nil {
-			return errors.Wrapf(err, "could not save image %q to path %q", image, targetPath)
-		}
-	}
+// ImportImage import a TAR file into the CR and delete it
+func ImportImage(bc *bits.BuildContext, tar string) error {
+	// NO-OP for Docker
 	return nil
 }
 
