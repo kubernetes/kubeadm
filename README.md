@@ -14,6 +14,12 @@ Kubeadm's scope is limited to the local node filesystem and the Kubernetes API, 
 1. **kubeadm upgrade** to upgrade a Kubernetes cluster to a newer version.
 1. **kubeadm reset** to revert any changes made to this host by kubeadm init or kubeadm join.
 
+## Documentation
+
+- [Installation Instructions](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
+- [Command Reference](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/)
+- [Config File Reference](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2) (v1beta2)
+
 ## Community, discussion, contribution, and support
 
 Learn how to engage with the Kubernetes community on the [community page](https://kubernetes.io/community/).
