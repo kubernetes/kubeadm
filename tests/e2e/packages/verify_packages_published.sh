@@ -75,9 +75,9 @@ if [[ ! -z "$available" ]]; then
 fi
 
 if [[ ! -z "$missing" ]]; then
-    echo "ERROR: These versions do not have matching packages:"
-    echo "$missing"
-    exit 1
+	echo "ERROR: These versions do not have matching packages:"
+	echo "$missing"
+	exit 1
 else
 	echo ""
 	echo "TESTS PASSED!! All necessary packages are pushed!"

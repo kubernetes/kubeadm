@@ -8,7 +8,7 @@ It is run periodically and results are available at https://k8s-testgrid.appspot
 
 ### Running
 
-If you have `go` and `curl` installed you can run the script like so:
+If you have `go`, `curl` and `gcc` installed you can run the script like so:
 
 ```
 ./verify_manifest_lists.sh
