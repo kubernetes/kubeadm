@@ -134,6 +134,15 @@ func TestFilterVersions(t *testing.T) {
 			},
 		},
 		{
+			name: "valid: list is filtered correctly [3]",
+			input: VersionList{
+				version.MustParseSemantic("2.1.7"),
+			},
+			output: VersionList{
+				version.MustParseSemantic("2.1.7"),
+			},
+		},
+		{
 			name: "valid: result is an empty list",
 			input: VersionList{
 				version.MustParseSemantic("1.12.0-beta.2"),
