@@ -33,7 +33,7 @@ func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discover
 		return err
 	}
 
-	if err := joinWorkers(c, usePhases, automaticCopyCerts, discoveryMode, wait, vLevel); err != nil {
+	if err := joinWorkers(c, usePhases, discoveryMode, wait, vLevel); err != nil {
 		return err
 	}
 	return nil
@@ -90,9 +90,9 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
-			err = kubeadmJoinControlPlaneWithPhases(cp2, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
+			err = kubeadmJoinControlPlaneWithPhases(cp2, kustomizeDir, patchesDir, vLevel)
 		} else {
-			err = kubeadmJoinControlPlane(cp2, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
+			err = kubeadmJoinControlPlane(cp2, kustomizeDir, patchesDir, vLevel)
 		}
 		if err != nil {
 			return err
@@ -111,20 +111,12 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 	return nil
 }
 
-func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) (err error) {
+func kubeadmJoinControlPlane(cp *status.Node, kustomizeDir, patchesDir string, vLevel int) (err error) {
 	joinArgs := []string{
 		"join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
 		constants.KubeadmIgnorePreflightErrorsFlag,
-	}
-	if automaticCopyCerts {
-		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
-		if cp.MustKubeadmVersion().LessThan(constants.V1_15) {
-			joinArgs = append(joinArgs,
-				fmt.Sprintf("--certificate-key=%s", constants.CertificateKey),
-			)
-		}
 	}
 	if kustomizeDir != "" {
 		joinArgs = append(joinArgs, "-k", constants.PatchesDir)
@@ -142,21 +134,13 @@ func kubeadmJoinControlPlane(cp *status.Node, automaticCopyCerts bool, kustomize
 	return nil
 }
 
-func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) (err error) {
+func kubeadmJoinControlPlaneWithPhases(cp *status.Node, kustomizeDir, patchesDir string, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	preflightArgs := []string{
 		"join", "phase", "preflight",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
 		constants.KubeadmIgnorePreflightErrorsFlag,
-	}
-	if automaticCopyCerts {
-		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
-		if cp.MustKubeadmVersion().LessThan(constants.V1_15) {
-			preflightArgs = append(preflightArgs,
-				fmt.Sprintf("--certificate-key=%s", constants.CertificateKey),
-			)
-		}
 	}
 
 	if err := cp.Command(
@@ -171,14 +155,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
 	}
-	if automaticCopyCerts {
-		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
-		if cp.MustKubeadmVersion().LessThan(constants.V1_15) {
-			prepareArgs = append(prepareArgs,
-				fmt.Sprintf("--certificate-key=%s", constants.CertificateKey),
-			)
-		}
-	}
+
 	if kustomizeDir != "" {
 		prepareArgs = append(prepareArgs, "-k", constants.PatchesDir)
 	}
@@ -213,14 +190,6 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 	if patchesDir != "" {
 		controlPlaneArgs = append(controlPlaneArgs, "--experimental-patches", constants.PatchesDir)
 	}
-	if automaticCopyCerts {
-		// if before v1.15, add certificate key flag (for >= 15, certificate key is passed via the config file)
-		if cp.MustKubeadmVersion().LessThan(constants.V1_15) {
-			controlPlaneArgs = append(controlPlaneArgs,
-				fmt.Sprintf("--certificate-key=%s", constants.CertificateKey),
-			)
-		}
-	}
 
 	if err := cp.Command(
 		"kubeadm", controlPlaneArgs...,
@@ -231,7 +200,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, automaticCopyCerts bool,
 	return nil
 }
 
-func joinWorkers(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
+func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
 	for _, w := range c.Workers().EligibleForActions() {
 		// checks pre-loaded images available on the node (this will report missing images, if any)
 		kubeVersion, err := w.KubeVersion()
