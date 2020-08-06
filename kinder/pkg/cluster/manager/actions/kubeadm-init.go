@@ -108,18 +108,10 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir, patche
 		fmt.Sprintf("--v=%d", vLevel),
 	}
 	if automaticCopyCerts {
-		if cp1.MustKubeadmVersion().AtLeast(constants.V1_15) {
-			initArgs = append(initArgs,
-				"--upload-certs",
-				// NB. certificate key is passed via the config file)
-			)
-		} else {
-			// if before v1.15, add certificate key flag and upload-certs flag requires --experimental prefix
-			initArgs = append(initArgs,
-				"--experimental-upload-certs",
-				fmt.Sprintf("--certificate-key=%s", constants.CertificateKey),
-			)
-		}
+		initArgs = append(initArgs,
+			"--upload-certs",
+			// NB. certificate key is passed via the config file)
+		)
 	}
 	if kustomizeDir != "" {
 		initArgs = append(initArgs, "-k", constants.PatchesDir)
@@ -209,23 +201,9 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeD
 
 	if automaticCopyCerts {
 		uploadCertsArgs := []string{
-			"init", "phase", "upload-certs",
+			"init", "phase", "upload-certs", "--upload-certs",
 			fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 			fmt.Sprintf("--v=%d", vLevel),
-		}
-		if automaticCopyCerts {
-			if cp1.MustKubeadmVersion().AtLeast(constants.V1_15) {
-				uploadCertsArgs = append(uploadCertsArgs,
-					"--upload-certs",
-					// NB. certificate key is passed via the config file)
-				)
-			} else {
-				// if before v1.15, add certificate key flag and upload-certs flag requires --experimental prefix
-				uploadCertsArgs = append(uploadCertsArgs,
-					"--experimental-upload-certs",
-					fmt.Sprintf("--certificate-key=%s", constants.CertificateKey),
-				)
-			}
 		}
 		if err := cp1.Command(
 			"kubeadm", uploadCertsArgs...,

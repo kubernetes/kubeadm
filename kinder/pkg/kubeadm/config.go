@@ -25,7 +25,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
-	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 // Config returns a kubeadm generated using the config API version corresponding
@@ -73,10 +72,6 @@ func getKubeadmConfigVersion(kubeadmVersion *K8sVersion.Version) (string, error)
 	// nb v1alpha1 (that is Kubernetes v1.10.0) is out of support,
 	// v1alpha2 (that is Kuberntes v1.11.0) is out of support.
 	// v1alpha3 (that is Kuberntes v1.13.0) is out of support.
-
-	if kubeadmVersion.LessThan(constants.V1_15) {
-		return "v1beta1", nil
-	}
 
 	return "v1beta2", nil
 }

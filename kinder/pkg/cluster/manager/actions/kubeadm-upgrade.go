@@ -170,41 +170,20 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 		return err
 	}
 
-	// After v1.15 there is a unique action that detects the type of node (control-plane vs worker)
-	// and adapts accordingly.
-	// before two actions where required
-	if n.MustKubeadmVersion().AtLeast(constants.V1_15) {
-		// kubeadm upgrade node
-		nodeArgs := []string{
-			"upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
-		}
-		if kustomizeDir != "" {
-			nodeArgs = append(nodeArgs, fmt.Sprintf("-k=%s", constants.PatchesDir))
-		}
-		if patchesDir != "" {
-			nodeArgs = append(nodeArgs, fmt.Sprintf("--experimental-patches=%s", constants.PatchesDir))
-		}
-		if err := n.Command(
-			"kubeadm", nodeArgs...,
-		).RunWithEcho(); err != nil {
-			return err
-		}
-	} else {
-		if n.IsControlPlane() {
-			// kubeadm upgrade node experimental-control-plane
-			if err := n.Command(
-				"kubeadm", "upgrade", "node", "experimental-control-plane", fmt.Sprintf("--v=%d", vLevel),
-			).RunWithEcho(); err != nil {
-				return err
-			}
-		}
-
-		// kubeadm upgrade node config
-		if err := n.Command(
-			"kubeadm", "upgrade", "node", "config", "--kubelet-version", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
-		).RunWithEcho(); err != nil {
-			return err
-		}
+	// kubeadm upgrade node
+	nodeArgs := []string{
+		"upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
+	}
+	if kustomizeDir != "" {
+		nodeArgs = append(nodeArgs, fmt.Sprintf("-k=%s", constants.PatchesDir))
+	}
+	if patchesDir != "" {
+		nodeArgs = append(nodeArgs, fmt.Sprintf("--experimental-patches=%s", constants.PatchesDir))
+	}
+	if err := n.Command(
+		"kubeadm", nodeArgs...,
+	).RunWithEcho(); err != nil {
+		return err
 	}
 
 	if n.IsControlPlane() {
