@@ -287,18 +287,23 @@ func cleanup(cmd *exec.Cmd) {
 		}
 	}()
 
-	/* temporary disabled to better investigate test-grid failures
+	// obtain the process ground ID
 	pgid, err := syscall.Getpgid(cmd.Process.Pid)
 	if err != nil {
-		cmd.Process.Kill()
+		fmt.Printf("error: failed obtaining the pgid for pid: %v, %v\n", cmd.Process.Pid, err)
+		goto kill_process
 	}
 
-	if err := syscall.Kill(-pgid, syscall.SIGABRT); err == nil {
-		return
+	// kill all processes in the process group
+	if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
+		fmt.Printf("error: failed to kill pgid: %v, %v\n", pgid, err)
+		goto kill_process
 	}
+	return
 
-	syscall.Kill(-pgid, syscall.SIGTERM)
-	*/
-
-	cmd.Process.Kill()
+kill_process:
+	fmt.Println("falling back to killing the parent process only...")
+	if err := cmd.Process.Kill(); err != nil {
+		fmt.Printf("error: failed killing process with pid: %v, %v\n", cmd.Process.Pid, err)
+	}
 }
