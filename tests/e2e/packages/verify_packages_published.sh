@@ -58,7 +58,7 @@ for release in $(curl -s https://api.github.com/repos/kubernetes/kubernetes/rele
 			# release we care about but has missing rpms
 			missing="$missing rpm:$release"
 		else
-			# All good, the expected deb package is available
+			# All good, the expected rpm package is available
 			available="$available rpm:$release"
 		fi
 	fi
