@@ -41,7 +41,7 @@ tar xf "${DOWNLOAD_FILE}"
 cd "${VERSION}" || exit
 
 echo "Running shellcheck..."
-cd "${ROOT_PATH}/operator" || exit
+cd "${ROOT_PATH}" || exit
 OUT="${TMP_DIR}/out.log"
 FILES=$(find . -name "*.sh")
 while read -r file; do
