@@ -36,7 +36,7 @@ trap cleanup EXIT
 cd "${TMP_DIR}" || exit
 VERSION="shellcheck-stable"
 DOWNLOAD_FILE="${VERSION}.${os}.x86_64.tar.xz"
-wget https://storage.googleapis.com/shellcheck/"${DOWNLOAD_FILE}"
+wget https://github.com/koalaman/shellcheck/releases/download/stable/"${DOWNLOAD_FILE}"
 tar xf "${DOWNLOAD_FILE}"
 cd "${VERSION}" || exit
 
