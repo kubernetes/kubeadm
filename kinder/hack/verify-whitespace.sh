@@ -25,7 +25,7 @@ echo "Verifying trailing whitespace..."
 TRAILING="$(grep -rnI '[[:blank:]]$' .)"
 
 ERR="0"
-if [[ ! -z "$TRAILING" ]]; then
+if [[ -n "$TRAILING" ]]; then
     echo "Found trailing whitespace in the follow files:"
     echo "${TRAILING}"
     ERR="1"
