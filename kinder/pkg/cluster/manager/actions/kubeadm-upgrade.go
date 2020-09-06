@@ -45,9 +45,9 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, kusto
 
 	for _, n := range nodeList {
 
-		// fail fast if required to use kustomize and kubeadm less than v1.16
-		if kustomizeDir != "" && n.MustKubeadmVersion().LessThan(constants.V1_16) {
-			return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")
+		// fail fast if required to use kustomize and kubeadm less than v1.17
+		if kustomizeDir != "" && n.MustKubeadmVersion().LessThan(constants.V1_17) {
+			return errors.New("--kustomize-dir can't be used with kubeadm older than v1.17")
 		}
 
 		// if kustomize copy patches to the node
