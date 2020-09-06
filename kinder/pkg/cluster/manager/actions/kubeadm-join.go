@@ -43,9 +43,9 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
-		// fail fast if required to use kustomize and kubeadm less than v1.16
-		if kustomizeDir != "" && cp2.MustKubeadmVersion().LessThan(constants.V1_16) {
-			return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")
+		// fail fast if required to use kustomize and kubeadm less than v1.17
+		if kustomizeDir != "" && cp2.MustKubeadmVersion().LessThan(constants.V1_17) {
+			return errors.New("--kustomize-dir can't be used with kubeadm older than v1.17")
 		}
 
 		// if kustomize copy patches to the node
