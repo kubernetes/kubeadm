@@ -287,6 +287,12 @@ func cleanup(cmd *exec.Cmd) {
 		}
 	}()
 
+	// if the process doesn't exist we can skip the cleanup
+	// https://man7.org/linux/man-pages/man2/kill.2.html
+	if err := syscall.Kill(cmd.Process.Pid, syscall.Signal(0)); err != nil {
+		return
+	}
+
 	// obtain the process ground ID
 	pgid, err := syscall.Getpgid(cmd.Process.Pid)
 	if err != nil {
