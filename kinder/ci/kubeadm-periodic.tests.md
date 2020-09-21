@@ -84,15 +84,15 @@ the minimal supported version that is tested for join discovery variants.
 | master<br />(ci/latest)                | v1.17.0-alpha...  |
 | master<br />(ci/latest-1.16)           | v1.16.2-alpha...  |
 
-### Kustomize tests
+### Patch tests
 
-Kubeadm kustomize tests are meant for testing usage of kustomize patches with kubeadm init, join and kubeadm upgrade.
-Kubernetes 1.16 is the minimal supported version that is tested for kustomize.
+Kubeadm patch tests are meant for testing usage of patches with kubeadm init, join and kubeadm upgrade.
+Kubernetes 1.19 is the minimal supported version that is tested.
 
 | Version                                | e.g.              |
 | -------------------------------------- | ------            |
-| master<br />(ci/latest)                | v1.17.0-alpha...  |
-| master<br />(ci/latest-1.16)           | v1.16.2-alpha...  |
+| master<br />(ci/latest)                | v1.20.0-alpha...  |
+| master<br />(ci/latest-1.19)           | v1.19.2-alpha...  |
 
 ### Tests without addon ConfigMaps
 
