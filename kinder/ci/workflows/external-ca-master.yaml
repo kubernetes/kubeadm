@@ -1,0 +1,9 @@
+version: 1
+summary: |
+  This workflow implements a sequence of tasks for testing the external CA functionality.
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-external-ca-master
+  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-external-ca.yaml
+vars:
+  kubernetesVersion: "{{ resolve `ci/latest` }}"
+tasks:
+- import: external-ca-tasks.yaml
