@@ -26,6 +26,8 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 )
 
+const etcKubernetes = "/etc/kubernetes"
+
 // CopyCertificates actions automate the manual copy of
 // certificates from the bootstrap control-plane to the secondary control-plane nodes
 func CopyCertificates(c *status.Cluster) error {
@@ -37,7 +39,7 @@ func CopyCertificates(c *status.Cluster) error {
 	return nil
 }
 
-// copyCertificatesToNode automate copy of certificates from the bootstrap control-plane node to the target node
+// copyCertificatesToNode copies certificate files from the bootstrap node to another node
 func copyCertificatesToNode(c *status.Cluster, n *status.Node) error {
 	// define the list of necessary cluster certificates
 	fileNames := []string{
@@ -49,11 +51,46 @@ func copyCertificatesToNode(c *status.Cluster, n *status.Node) error {
 		fileNames = append(fileNames, "etcd/ca.crt", "etcd/ca.key")
 	}
 
+	// caKeys includes the list of keys that we throw warnings for, if missing
+	caKeys := []string{"ca.key", "front-proxy-ca.key", "etcd/ca.key"}
+
+	if err := copyBootstrapEtcKubernetesFilesToNode(c, n, "pki", fileNames, caKeys); err != nil {
+		return err
+	}
+	return nil
+}
+
+// copyCAToNode copies the root CA cert and key to a node
+func copyCAToNode(c *status.Cluster, n *status.Node) error {
+	fileNames := []string{"ca.crt", "ca.key"}
+	if err := copyBootstrapEtcKubernetesFilesToNode(c, n, "pki", fileNames, []string{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// copyCertificatesToNode copies kubeconfig files from the bootstrap node to another node
+func copyKubeconfigFilesToNode(c *status.Cluster, n *status.Node) error {
+	fileNames := []string{
+		"admin.conf",
+		"controller-manager.conf",
+		"scheduler.conf",
+	}
+
+	if err := copyBootstrapEtcKubernetesFilesToNode(c, n, "", fileNames, []string{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// copyBootstrapEtcKubernetesFilesToNode is an utility function that can copy files from the bootstrap node's
+// /etc/kubernetes directory to a the same directory on a node
+func copyBootstrapEtcKubernetesFilesToNode(c *status.Cluster, n *status.Node, basePath string, fileNames, filesToWarn []string) error {
 	n.Infof("Importing cluster certificates from %s", c.BootstrapControlPlane().Name())
 
-	// creates the folder tree for pre-loading necessary cluster certificates into the node
+	// creates the folder tree for pre-loading necessary cluster certificates and kubeconfig files
 	// on the joining node
-	if err := n.Command("mkdir", "-p", "/etc/kubernetes/pki/etcd").Silent().Run(); err != nil {
+	if err := n.Command("mkdir", "-p", etcKubernetes+"/pki/etcd").Silent().Run(); err != nil {
 		return errors.Wrap(err, "failed to create pki folder")
 	}
 
@@ -62,14 +99,27 @@ func copyCertificatesToNode(c *status.Cluster, n *status.Node) error {
 		fmt.Printf("%s\n", fileName)
 
 		// sets the path of the certificate into a node
-		containerPath := filepath.Join("/etc/kubernetes/pki", fileName)
+		containerPath := filepath.Join(etcKubernetes, basePath, fileName)
 
 		// copies from bootstrap control plane node to tmp area
 		lines, err := c.BootstrapControlPlane().Command(
 			"cat", containerPath,
 		).Silent().RunAndCapture()
 		if err != nil {
-			return errors.Wrapf(err, "failed to read certificate %s from %s", fileName, c.BootstrapControlPlane().Name())
+			// assume the file is missing; check if this file should cause a warning
+			// instead of erroring out (e.g. missing ca.key)
+			var isWarnFile bool
+			for _, warnFile := range filesToWarn {
+				if fileName == warnFile {
+					isWarnFile = true
+					break
+				}
+			}
+			if !isWarnFile {
+				return errors.Wrapf(err, "failed to read file %s from %s", fileName, c.BootstrapControlPlane().Name())
+			}
+			fmt.Printf("Missing file %s on node %s\n", fileName, c.BootstrapControlPlane().Name())
+			continue
 		}
 		// copies from tmp area to joining node
 		if err := n.WriteFile(containerPath, []byte(strings.Join(lines, "\n"))); err != nil {

@@ -86,9 +86,10 @@ Following actions are available:
 | manual-copy-certs      | Implement the manual copy of certificates to be shared across control-plane nodes (n.b. manual means not managed by kubeadm) Available options are:<br />  `--only-node` to execute this action only on a specific node. <br /> `--dry-run`||
 | kubeadm-join    | Executes the kubeadm-join workflow both on secondary control plane nodes and on worker nodes. Available options are:<br /> `--use-phases` triggers execution of the init workflow by invoking single phases.<br />`--automatic-copy-certs` instruct kubeadm to use the automatic copy cert feature.<br />`--discover-mode` instruct kubeadm to use a specific discovery mode when doing kubeadm join.<br /> `--only-node` to execute this action only on a specific node. <br /> `--dry-run`||
 | kubeadm-upgrade |Executes the kubeadm upgrade workflow and upgrading K8s. Available options are:<br /> `--upgrade-version` for defining the target K8s version.<br />`--only-node` to execute this action only on a specific node.                           <br /> `--dry-run`|
-| Kubeadm-reset   | Executes the kubeadm-reset workflow on all the nodes. Available options are:<br />  `--only-node` to execute this action only on a specific node. Available options are:<br /> `--dry-run`||
+| kubeadm-reset   | Executes the kubeadm-reset workflow on all the nodes. Available options are:<br />  `--only-node` to execute this action only on a specific node. Available options are:<br /> `--dry-run`||
 | cluster-info    | Returns a summary of cluster info including<br />- List of nodes<br />- list of pods<br />- list of images used by pods<br />- list of etcd members |
 | smoke-test      | Implements a non-exhaustive set of tests that aim at ensuring that the most important functions of a Kubernetes cluster work |
+| setup-external-ca  | Setups the cluster for external CA mode:<br />- Generates shared certificates and kubeconfig files on the bootstrap node and copies them to other CP nodes<br />- Copies the CA to all nodes and signs kubelet.conf files required for bootstrap<br />- Deletes the ca.key from all nodes
 
 ### kinder exec
 

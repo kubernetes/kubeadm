@@ -56,6 +56,9 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"copy-certs": func(c *status.Cluster, flags *RunOptions) error {
 		return CopyCertificates(c)
 	},
+	"setup-external-ca": func(c *status.Cluster, flags *RunOptions) error {
+		return SetupExternalCA(c, flags.vLevel)
+	},
 	"cluster-info": func(c *status.Cluster, flags *RunOptions) error {
 		return CluterInfo(c)
 	},
