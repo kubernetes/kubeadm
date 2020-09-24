@@ -28,18 +28,18 @@ import (
 
 // KubeadmJoin executes the kubeadm join workflow both for control-plane nodes and
 // worker nodes
-func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, patchesDir string, wait time.Duration, vLevel int) (err error) {
-	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, discoveryMode, patchesDir, wait, vLevel); err != nil {
+func KubeadmJoin(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
+	if err := joinControlPlanes(c, usePhases, automaticCopyCerts, discoveryMode, patchesDir, ignorePreflightErrors, wait, vLevel); err != nil {
 		return err
 	}
 
-	if err := joinWorkers(c, usePhases, discoveryMode, wait, vLevel); err != nil {
+	if err := joinWorkers(c, usePhases, discoveryMode, wait, ignorePreflightErrors, vLevel); err != nil {
 		return err
 	}
 	return nil
 }
 
-func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, patchesDir string, wait time.Duration, vLevel int) (err error) {
+func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, discoveryMode DiscoveryMode, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
@@ -78,9 +78,9 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
-			err = kubeadmJoinControlPlaneWithPhases(cp2, patchesDir, vLevel)
+			err = kubeadmJoinControlPlaneWithPhases(cp2, patchesDir, ignorePreflightErrors, vLevel)
 		} else {
-			err = kubeadmJoinControlPlane(cp2, patchesDir, vLevel)
+			err = kubeadmJoinControlPlane(cp2, patchesDir, ignorePreflightErrors, vLevel)
 		}
 		if err != nil {
 			return err
@@ -99,12 +99,12 @@ func joinControlPlanes(c *status.Cluster, usePhases, automaticCopyCerts bool, di
 	return nil
 }
 
-func kubeadmJoinControlPlane(cp *status.Node, patchesDir string, vLevel int) (err error) {
+func kubeadmJoinControlPlane(cp *status.Node, patchesDir, ignorePreflightErrors string, vLevel int) (err error) {
 	joinArgs := []string{
 		"join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--v=%d", vLevel),
-		constants.KubeadmIgnorePreflightErrorsFlag,
 	}
 	if patchesDir != "" {
 		joinArgs = append(joinArgs, "--experimental-patches", constants.PatchesDir)
@@ -119,13 +119,13 @@ func kubeadmJoinControlPlane(cp *status.Node, patchesDir string, vLevel int) (er
 	return nil
 }
 
-func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir string, vLevel int) (err error) {
+func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePreflightErrors string, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	preflightArgs := []string{
 		"join", "phase", "preflight",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--v=%d", vLevel),
-		constants.KubeadmIgnorePreflightErrorsFlag,
 	}
 
 	if err := cp.Command(
@@ -179,7 +179,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir string, vLeve
 	return nil
 }
 
-func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode, wait time.Duration, vLevel int) (err error) {
+func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode, wait time.Duration, ignorePreflightErrors string, vLevel int) (err error) {
 	for _, w := range c.Workers().EligibleForActions() {
 		// checks pre-loaded images available on the node (this will report missing images, if any)
 		kubeVersion, err := w.KubeVersion()
@@ -198,9 +198,9 @@ func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode,
 
 		// executes the kubeadm join workflow
 		if usePhases {
-			err = kubeadmJoinWorkerWithPhases(w, vLevel)
+			err = kubeadmJoinWorkerWithPhases(w, ignorePreflightErrors, vLevel)
 		} else {
-			err = kubeadmJoinWorker(w, vLevel)
+			err = kubeadmJoinWorker(w, ignorePreflightErrors, vLevel)
 		}
 		if err != nil {
 			return err
@@ -213,12 +213,12 @@ func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode,
 	return nil
 }
 
-func kubeadmJoinWorker(w *status.Node, vLevel int) (err error) {
+func kubeadmJoinWorker(w *status.Node, ignorePreflightErrors string, vLevel int) (err error) {
 	if err := w.Command(
 		"kubeadm", "join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--v=%d", vLevel),
-		constants.KubeadmIgnorePreflightErrorsFlag,
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -226,13 +226,13 @@ func kubeadmJoinWorker(w *status.Node, vLevel int) (err error) {
 	return nil
 }
 
-func kubeadmJoinWorkerWithPhases(w *status.Node, vLevel int) (err error) {
+func kubeadmJoinWorkerWithPhases(w *status.Node, ignorePreflightErrors string, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	if err := w.Command(
 		"kubeadm", "join", "phase", "preflight",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--v=%d", vLevel),
-		constants.KubeadmIgnorePreflightErrorsFlag,
 	).RunWithEcho(); err != nil {
 		return err
 	}

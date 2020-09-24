@@ -42,10 +42,10 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.automaticCopyCerts, flags.patchesDir, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.automaticCopyCerts, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.discoveryMode, flags.patchesDir, flags.wait, flags.vLevel)
+		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.discoveryMode, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmUpgrade(c, flags.upgradeVersion, flags.patchesDir, flags.wait, flags.vLevel)
@@ -135,16 +135,24 @@ func PatchesDir(patchesDir string) Option {
 	}
 }
 
+// IgnorePreflightErrors sets which errors to ignore during kubeadm preflight
+func IgnorePreflightErrors(ignorePreflightErrors string) Option {
+	return func(r *RunOptions) {
+		r.ignorePreflightErrors = ignorePreflightErrors
+	}
+}
+
 // RunOptions holds options supplied to actions.Run
 type RunOptions struct {
-	kubeDNS            bool
-	usePhases          bool
-	automaticCopyCerts bool
-	discoveryMode      DiscoveryMode
-	wait               time.Duration
-	upgradeVersion     *K8sVersion.Version
-	vLevel             int
-	patchesDir         string
+	kubeDNS               bool
+	usePhases             bool
+	automaticCopyCerts    bool
+	discoveryMode         DiscoveryMode
+	wait                  time.Duration
+	upgradeVersion        *K8sVersion.Version
+	vLevel                int
+	patchesDir            string
+	ignorePreflightErrors string
 }
 
 // DiscoveryMode defines discovery mode supported by kubeadm join

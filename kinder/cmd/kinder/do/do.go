@@ -31,17 +31,18 @@ import (
 )
 
 type flagpole struct {
-	Name               string
-	UsePhases          bool
-	UpgradeVersion     string
-	AutomaticCopyCerts bool
-	KubeDNS            bool
-	Discovery          string
-	OnlyNode           string
-	DryRun             bool
-	VLevel             int
-	PatchesDir         string
-	Wait               time.Duration
+	Name                  string
+	UsePhases             bool
+	UpgradeVersion        string
+	AutomaticCopyCerts    bool
+	KubeDNS               bool
+	Discovery             string
+	OnlyNode              string
+	DryRun                bool
+	VLevel                int
+	PatchesDir            string
+	Wait                  time.Duration
+	IgnorePreflightErrors string
 }
 
 // NewCommand returns a new cobra.Command for exec
@@ -114,6 +115,11 @@ func NewCommand() *cobra.Command {
 		"patches", flags.PatchesDir,
 		"the patches directory to be used for init, join and upgrade",
 	)
+	cmd.Flags().StringVar(
+		&flags.IgnorePreflightErrors,
+		"ignore-preflight-errors", constants.KubeadmIgnorePreflightErrors,
+		"list of kubeadm preflight errors to skip",
+	)
 	return cmd
 }
 
@@ -161,6 +167,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.UpgradeVersion(upgradeVersion),
 		actions.VLevel(flags.VLevel),
 		actions.PatchesDir(flags.PatchesDir),
+		actions.IgnorePreflightErrors(flags.IgnorePreflightErrors),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)

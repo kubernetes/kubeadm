@@ -37,7 +37,7 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, patchesDir string, wait time.Duration, vLevel int) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
 	// if patcheDir is defined, copy the patches to the node
@@ -72,9 +72,9 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, patchesDir, vLevel)
+		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, patchesDir, ignorePreflightErrors, vLevel)
 	} else {
-		err = kubeadmInit(cp1, automaticCopyCerts, patchesDir, vLevel)
+		err = kubeadmInit(cp1, automaticCopyCerts, patchesDir, ignorePreflightErrors, vLevel)
 	}
 	if err != nil {
 		return err
@@ -88,10 +88,10 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, vLevel int) error {
+func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, patchesDir, ignorePreflightErrors string, vLevel int) error {
 	initArgs := []string{
 		"init",
-		constants.KubeadmIgnorePreflightErrorsFlag,
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
 	}
@@ -114,10 +114,10 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, v
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, vLevel int) error {
+func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, patchesDir, ignorePreflightErrors string, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
-		constants.KubeadmIgnorePreflightErrorsFlag,
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 	).RunWithEcho(); err != nil {
 		return err
 	}
