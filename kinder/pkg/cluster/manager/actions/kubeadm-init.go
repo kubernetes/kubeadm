@@ -37,20 +37,8 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, kustomizeDir, patchesDir string, wait time.Duration, vLevel int) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, patchesDir string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
-
-	// fail fast if required to use kustomize and kubeadm less than v1.16
-	if kustomizeDir != "" && cp1.MustKubeadmVersion().LessThan(constants.V1_16) {
-		return errors.New("--kustomize-dir can't be used with kubeadm older than v1.16")
-	}
-
-	// if kustomize copy patches to the node
-	if kustomizeDir != "" {
-		if err := copyPatchesToNode(cp1, kustomizeDir); err != nil {
-			return err
-		}
-	}
 
 	// if patcheDir is defined, copy the patches to the node
 	if patchesDir != "" {
@@ -84,9 +72,9 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
+		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, patchesDir, vLevel)
 	} else {
-		err = kubeadmInit(cp1, automaticCopyCerts, kustomizeDir, patchesDir, vLevel)
+		err = kubeadmInit(cp1, automaticCopyCerts, patchesDir, vLevel)
 	}
 	if err != nil {
 		return err
@@ -100,7 +88,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) error {
+func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, vLevel int) error {
 	initArgs := []string{
 		"init",
 		constants.KubeadmIgnorePreflightErrorsFlag,
@@ -112,9 +100,6 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir, patche
 			"--upload-certs",
 			// NB. certificate key is passed via the config file)
 		)
-	}
-	if kustomizeDir != "" {
-		initArgs = append(initArgs, "-k", constants.PatchesDir)
 	}
 	if patchesDir != "" {
 		initArgs = append(initArgs, "--experimental-patches", constants.PatchesDir)
@@ -129,7 +114,7 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir, patche
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeDir, patchesDir string, vLevel int) error {
+func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 		constants.KubeadmIgnorePreflightErrorsFlag,
@@ -158,9 +143,6 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeD
 	controlplaneArgs := []string{
 		"init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	}
-	if kustomizeDir != "" {
-		controlplaneArgs = append(controlplaneArgs, "-k", constants.PatchesDir)
-	}
 	if patchesDir != "" {
 		controlplaneArgs = append(controlplaneArgs, "--experimental-patches", constants.PatchesDir)
 	}
@@ -172,9 +154,6 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, kustomizeD
 
 	etcdArgs := []string{
 		"init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
-	}
-	if kustomizeDir != "" {
-		etcdArgs = append(etcdArgs, "-k", constants.PatchesDir)
 	}
 	if patchesDir != "" {
 		etcdArgs = append(etcdArgs, "--experimental-patches", constants.PatchesDir)

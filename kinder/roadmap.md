@@ -28,7 +28,7 @@ High level goals for kinder include:
       - [x] kube-dns
    - [x] Allow test of kubeadm features
       - [x] discovery types
-      - [x] kustomize
+      - [x] patches
       - [ ] certificate renewal
       - [ ] machine readable output
    - [x] Provide "topology aware" wrappers for `docker exec` and `docker cp`

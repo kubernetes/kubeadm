@@ -40,7 +40,6 @@ type flagpole struct {
 	OnlyNode           string
 	DryRun             bool
 	VLevel             int
-	KustomizeDir       string
 	PatchesDir         string
 	Wait               time.Duration
 }
@@ -110,11 +109,6 @@ func NewCommand() *cobra.Command {
 		"kubeadm-verbosity", "v", 0,
 		"Number for the log level verbosity for the kubeadm commands",
 	)
-	cmd.Flags().StringVarP(
-		&flags.KustomizeDir,
-		"kustomize-dir", "k", flags.KustomizeDir,
-		"the kustomize folder to be used for init,join and upgrade",
-	)
 	cmd.Flags().StringVar(
 		&flags.PatchesDir,
 		"patches", flags.PatchesDir,
@@ -166,7 +160,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.Wait(flags.Wait),
 		actions.UpgradeVersion(upgradeVersion),
 		actions.VLevel(flags.VLevel),
-		actions.KustomizeDir(flags.KustomizeDir),
 		actions.PatchesDir(flags.PatchesDir),
 	)
 	if err != nil {
