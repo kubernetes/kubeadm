@@ -39,13 +39,13 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
 		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeDNS, flags.automaticCopyCerts, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
+		return KubeadmConfig(c, flags.kubeDNS, flags.copyCertsMode, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.automaticCopyCerts, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.copyCertsMode, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmJoin(c, flags.usePhases, flags.automaticCopyCerts, flags.discoveryMode, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
+		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmUpgrade(c, flags.upgradeVersion, flags.patchesDir, flags.wait, flags.vLevel)
@@ -95,11 +95,11 @@ func UsePhases(usePhases bool) Option {
 	}
 }
 
-// AutomaticCopyCerts option instructs kubeadm init/join actions to use automatic copy certs when initializing the cluster and
+// CopyCerts option instructs kubeadm init/join actions to use use different methods for copying certs when initializing the cluster and
 // when joining control-plane nodes
-func AutomaticCopyCerts(automaticCopyCerts bool) Option {
+func CopyCerts(copyCertsMode CopyCertsMode) Option {
 	return func(r *RunOptions) {
-		r.automaticCopyCerts = automaticCopyCerts
+		r.copyCertsMode = copyCertsMode
 	}
 }
 
@@ -149,7 +149,7 @@ func IgnorePreflightErrors(ignorePreflightErrors string) Option {
 type RunOptions struct {
 	kubeDNS               bool
 	usePhases             bool
-	automaticCopyCerts    bool
+	copyCertsMode         CopyCertsMode
 	discoveryMode         DiscoveryMode
 	wait                  time.Duration
 	upgradeVersion        *K8sVersion.Version
@@ -199,6 +199,41 @@ func ValidateDiscoveryMode(t DiscoveryMode) error {
 	case FileDiscoveryWithExternalClientCerts:
 	default:
 		return errors.Errorf("invalid discovery mode. Use one of %s", KnownDiscoveryMode())
+	}
+	return nil
+}
+
+// CopyCertsMode defines the mode used to copy certs on kubeadm join
+type CopyCertsMode string
+
+const (
+	// CopyCertsModeNone results in no certs being copied
+	CopyCertsModeNone = CopyCertsMode("none")
+
+	// CopyCertsModeManual manually copies certs
+	CopyCertsModeManual = CopyCertsMode("manual")
+
+	// CopyCertsModeAuto copies certs using the --upload-certs / --certificate-key functionality
+	CopyCertsModeAuto = CopyCertsMode("auto")
+)
+
+// KnownCopyCertsMode returns the list of known CopyCertsMode
+func KnownCopyCertsMode() []string {
+	return []string{
+		string(CopyCertsModeNone),
+		string(CopyCertsModeManual),
+		string(CopyCertsModeAuto),
+	}
+}
+
+// ValidateCopyCertsMode validates a CopyCertsMode
+func ValidateCopyCertsMode(t CopyCertsMode) error {
+	switch t {
+	case CopyCertsModeNone:
+	case CopyCertsModeManual:
+	case CopyCertsModeAuto:
+	default:
+		return errors.Errorf("invalid copy-certs mode. Use one of %s", KnownCopyCertsMode())
 	}
 	return nil
 }

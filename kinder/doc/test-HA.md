@@ -27,7 +27,7 @@ any other shell commands.
 1. add `--kube-dns` flag to `kinder do kubeadm-init` to test usage of kube-dns instead of CoreDNS
 2. add `--external-etcd` flag to `kinder create cluster` to test usage of external etcd cluster
 3. add `--use-phases` flag to `kubeadm-init` and/or `kubeadm-join` to test phases
-4. add `--automatic-copy-certs` flag both to `kubeadm-init` and `kubeadm-join` to test the automatic copy certs feature
+4. add `--copy-certs=auto` flag both to `kubeadm-init` and `kubeadm-join` to test the automatic copy certs feature
 5. any combination of the above
 
 ## Validation

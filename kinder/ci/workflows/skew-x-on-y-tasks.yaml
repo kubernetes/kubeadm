@@ -59,7 +59,7 @@ tasks:
     - kubeadm-init
     - --name={{ .vars.clusterName }}
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-    - --automatic-copy-certs
+    - --copy-certs=auto
     - --loglevel=debug
   timeout: 5m
 - name: join
@@ -70,7 +70,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
-    - --automatic-copy-certs
+    - --copy-certs=auto
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 10m

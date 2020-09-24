@@ -34,7 +34,7 @@ type flagpole struct {
 	Name                  string
 	UsePhases             bool
 	UpgradeVersion        string
-	AutomaticCopyCerts    bool
+	CopyCerts             string
 	KubeDNS               bool
 	Discovery             string
 	OnlyNode              string
@@ -85,10 +85,10 @@ func NewCommand() *cobra.Command {
 		"upgrade-version", "",
 		"defines the target upgrade version (it should match the version of upgrades binaries)",
 	)
-	cmd.Flags().BoolVar(
-		&flags.AutomaticCopyCerts,
-		"automatic-copy-certs", false,
-		"use automatic copy certs instead of manual copy certs when joining new control-plane nodes",
+	cmd.Flags().StringVar(
+		&flags.CopyCerts,
+		"copy-certs", string(actions.CopyCertsModeManual),
+		fmt.Sprintf("mode to copy certs when joining new control-plane nodes; use one of %s", actions.KnownCopyCertsMode()),
 	)
 	cmd.Flags().BoolVar(
 		&flags.KubeDNS,
@@ -138,6 +138,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
+	copyCerts := actions.CopyCertsMode(strings.ToLower(flags.CopyCerts))
+	if err := actions.ValidateCopyCertsMode(copyCerts); err != nil {
+		return err
+	}
+
 	// get a kinder cluster manager
 	o, err := manager.NewClusterManager(flags.Name)
 	if err != nil {
@@ -160,7 +165,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 	action := args[0]
 	err = o.DoAction(action,
 		actions.UsePhases(flags.UsePhases),
-		actions.AutomaticCopyCerts(flags.AutomaticCopyCerts),
+		actions.CopyCerts(copyCerts),
 		actions.KubeDNS(flags.KubeDNS),
 		actions.Discovery(discovery),
 		actions.Wait(flags.Wait),
