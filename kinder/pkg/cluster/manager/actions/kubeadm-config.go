@@ -32,31 +32,31 @@ import (
 
 // kubeadmConfigOptionsall stores all the kinder flags that impact on the kubeadm config generation
 type kubeadmConfigOptions struct {
-	kubeDNS            bool
-	automaticCopyCerts bool
-	discoveryMode      DiscoveryMode
+	kubeDNS       bool
+	copyCertsMode CopyCertsMode
+	discoveryMode DiscoveryMode
 }
 
 // KubeadmInitConfig action writes the InitConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmInitConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, nodes ...*status.Node) error {
+func KubeadmInitConfig(c *status.Cluster, kubeDNS bool, copyCertsMode CopyCertsMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the Init Config
-	return KubeadmConfig(c, kubeDNS, automaticCopyCerts, TokenDiscovery, nodes...)
+	return KubeadmConfig(c, kubeDNS, copyCertsMode, TokenDiscovery, nodes...)
 }
 
 // KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmJoinConfig(c *status.Cluster, automaticCopyCerts bool, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+func KubeadmJoinConfig(c *status.Cluster, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the join Config
-	return KubeadmConfig(c, false, automaticCopyCerts, discoveryMode, nodes...)
+	return KubeadmConfig(c, false, copyCertsMode, discoveryMode, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeDNS bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -100,9 +100,9 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, automaticCopyCerts bool, dis
 
 	// create configOptions with all the kinder flags that impact on the kubeadm config generation
 	configOptions := kubeadmConfigOptions{
-		kubeDNS:            kubeDNS,
-		automaticCopyCerts: automaticCopyCerts,
-		discoveryMode:      discoveryMode,
+		kubeDNS:       kubeDNS,
+		copyCertsMode: copyCertsMode,
+		discoveryMode: discoveryMode,
 	}
 
 	// writs the kubeadm config file on all the K8s nodes.
@@ -218,7 +218,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	// add patches for adding the certificateKey value
 	// NB. this is a no-op in case of kubeadm config API older than v1beta2, because
 	// this feature was not supported before (the --certificate-key flag should be used instead)
-	if options.automaticCopyCerts && n.IsControlPlane() {
+	if options.copyCertsMode == CopyCertsModeAuto && n.IsControlPlane() {
 		automaticCopyCertsPatches, err := kubeadm.GetAutomaticCopyCertsPatches(kubeadmVersion)
 		if err != nil {
 			return "", err

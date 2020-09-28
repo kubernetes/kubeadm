@@ -31,17 +31,18 @@ import (
 )
 
 type flagpole struct {
-	Name               string
-	UsePhases          bool
-	UpgradeVersion     string
-	AutomaticCopyCerts bool
-	KubeDNS            bool
-	Discovery          string
-	OnlyNode           string
-	DryRun             bool
-	VLevel             int
-	PatchesDir         string
-	Wait               time.Duration
+	Name                  string
+	UsePhases             bool
+	UpgradeVersion        string
+	CopyCerts             string
+	KubeDNS               bool
+	Discovery             string
+	OnlyNode              string
+	DryRun                bool
+	VLevel                int
+	PatchesDir            string
+	Wait                  time.Duration
+	IgnorePreflightErrors string
 }
 
 // NewCommand returns a new cobra.Command for exec
@@ -84,10 +85,10 @@ func NewCommand() *cobra.Command {
 		"upgrade-version", "",
 		"defines the target upgrade version (it should match the version of upgrades binaries)",
 	)
-	cmd.Flags().BoolVar(
-		&flags.AutomaticCopyCerts,
-		"automatic-copy-certs", false,
-		"use automatic copy certs instead of manual copy certs when joining new control-plane nodes",
+	cmd.Flags().StringVar(
+		&flags.CopyCerts,
+		"copy-certs", string(actions.CopyCertsModeManual),
+		fmt.Sprintf("mode to copy certs when joining new control-plane nodes; use one of %s", actions.KnownCopyCertsMode()),
 	)
 	cmd.Flags().BoolVar(
 		&flags.KubeDNS,
@@ -114,6 +115,11 @@ func NewCommand() *cobra.Command {
 		"patches", flags.PatchesDir,
 		"the patches directory to be used for init, join and upgrade",
 	)
+	cmd.Flags().StringVar(
+		&flags.IgnorePreflightErrors,
+		"ignore-preflight-errors", constants.KubeadmIgnorePreflightErrors,
+		"list of kubeadm preflight errors to skip",
+	)
 	return cmd
 }
 
@@ -129,6 +135,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 
 	discovery := actions.DiscoveryMode(strings.ToLower(flags.Discovery))
 	if err := actions.ValidateDiscoveryMode(discovery); err != nil {
+		return err
+	}
+
+	copyCerts := actions.CopyCertsMode(strings.ToLower(flags.CopyCerts))
+	if err := actions.ValidateCopyCertsMode(copyCerts); err != nil {
 		return err
 	}
 
@@ -154,13 +165,14 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 	action := args[0]
 	err = o.DoAction(action,
 		actions.UsePhases(flags.UsePhases),
-		actions.AutomaticCopyCerts(flags.AutomaticCopyCerts),
+		actions.CopyCerts(copyCerts),
 		actions.KubeDNS(flags.KubeDNS),
 		actions.Discovery(discovery),
 		actions.Wait(flags.Wait),
 		actions.UpgradeVersion(upgradeVersion),
 		actions.VLevel(flags.VLevel),
 		actions.PatchesDir(flags.PatchesDir),
+		actions.IgnorePreflightErrors(flags.IgnorePreflightErrors),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)

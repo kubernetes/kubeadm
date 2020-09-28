@@ -37,7 +37,7 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool, patchesDir string, wait time.Duration, vLevel int) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases, kubeDNS bool, copyCertsMode CopyCertsMode, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
 	// if patcheDir is defined, copy the patches to the node
@@ -61,7 +61,7 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	}
 
 	// prepares the kubeadm config on this node
-	if err := KubeadmInitConfig(c, kubeDNS, automaticCopyCerts, cp1); err != nil {
+	if err := KubeadmInitConfig(c, kubeDNS, copyCertsMode, cp1); err != nil {
 		return err
 	}
 
@@ -72,9 +72,9 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, automaticCopyCerts, patchesDir, vLevel)
+		err = kubeadmInitWithPhases(cp1, copyCertsMode, patchesDir, ignorePreflightErrors, vLevel)
 	} else {
-		err = kubeadmInit(cp1, automaticCopyCerts, patchesDir, vLevel)
+		err = kubeadmInit(cp1, copyCertsMode, patchesDir, ignorePreflightErrors, vLevel)
 	}
 	if err != nil {
 		return err
@@ -88,14 +88,14 @@ func KubeadmInit(c *status.Cluster, usePhases, kubeDNS, automaticCopyCerts bool,
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, vLevel int) error {
+func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, patchesDir, ignorePreflightErrors string, vLevel int) error {
 	initArgs := []string{
 		"init",
-		constants.KubeadmIgnorePreflightErrorsFlag,
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
 	}
-	if automaticCopyCerts {
+	if copyCertsMode == CopyCertsModeAuto {
 		initArgs = append(initArgs,
 			"--upload-certs",
 			// NB. certificate key is passed via the config file)
@@ -114,10 +114,10 @@ func kubeadmInit(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, v
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, patchesDir string, vLevel int) error {
+func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, patchesDir, ignorePreflightErrors string, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
-		constants.KubeadmIgnorePreflightErrorsFlag,
+		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 	).RunWithEcho(); err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func kubeadmInitWithPhases(cp1 *status.Node, automaticCopyCerts bool, patchesDir
 		return err
 	}
 
-	if automaticCopyCerts {
+	if copyCertsMode == CopyCertsModeAuto {
 		uploadCertsArgs := []string{
 			"init", "phase", "upload-certs", "--upload-certs",
 			fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),

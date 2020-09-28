@@ -51,7 +51,7 @@ tasks:
   args:
     - do
     - kubeadm-init
-    - --automatic-copy-certs
+    - --copy-certs=auto
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
@@ -63,7 +63,7 @@ tasks:
   args:
     - do
     - kubeadm-join
-    - --automatic-copy-certs
+    - --copy-certs=auto
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
