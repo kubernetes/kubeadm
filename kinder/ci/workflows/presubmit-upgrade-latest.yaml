@@ -1,0 +1,151 @@
+version: 1
+summary: |
+  This workflow tests upgrades to Kubernetes ci/latest and also a set of other actions for pull requests
+  name      > pull-kubeadm-kinder-upgrade-latest
+  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/kubeadm/kubeadm-presubmits.yaml
+vars:
+  initVersion: "{{ resolve `ci/latest` }}"
+  upgradeVersion: "{{ resolve `ci/latest` }}"
+  controlPlaneNodes: 3
+  workerNodes: 2
+  baseImage: kindest/base:v20190403-1ebf15f
+  image: kindest/node:test
+  clusterName: kinder-pull
+  kubeadmVerbosity: 6
+tasks:
+- name: pull-base-image
+  description: |
+    pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
+  cmd: docker
+  args:
+    - pull
+    - "{{ .vars.baseImage }}"
+- name: add-kubernetes-versions
+  description: |
+    creates a node-image-variant by adding a Kubernetes version and
+    and a different Kubernetes version
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.initVersion }}
+    - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
+    - --loglevel=debug
+  timeout: 10m
+- name: create-cluster
+  description: |
+    create a set of nodes ready for hosting the Kubernetes cluster
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+    - --loglevel=debug
+  timeout: 5m
+- name: init
+  description: |
+    Initializes the Kubernetes cluster with version "initVersion"
+    by starting the boostrap control-plane nodes
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+    - --copy-certs=auto
+    - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 5m
+- name: join
+  description: |
+    Join the other nodes to the Kubernetes cluster
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-join
+    - --name={{ .vars.clusterName }}
+    - --copy-certs=auto
+    - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 10m
+- name: upgrade
+  description: |
+    upgrades the cluster to Kubernetes "upgradeVersion"
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-upgrade
+    - --upgrade-version={{ .vars.upgradeVersion }}
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 10m
+- name: cluster-info
+  description: |
+    Runs cluster-info
+  cmd: kinder
+  args:
+    - do
+    - cluster-info
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+- name: e2e-kubeadm
+  description: |
+    Runs kubeadm e2e test
+  cmd: kinder
+  args:
+    - test
+    - e2e-kubeadm
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm --ginkgo.dryRun=true
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+- name: e2e
+  description: |
+    Runs Kubernetes e2e test (conformance)
+  cmd: kinder
+  args:
+    - test
+    - e2e
+    - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e --ginkgo.dryRun=true
+    - --parallel
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+  timeout: 35m
+- name: get-logs
+  description: |
+    Collects all the test logs
+  cmd: kinder
+  args:
+    - export
+    - logs
+    - --loglevel=debug
+    - --name={{ .vars.clusterName }}
+    - "{{ .env.ARTIFACTS }}"
+  force: true
+  timeout: 5m
+  ignoreError: true
+- name: reset
+  description: |
+    Exec kubeadm reset
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-reset
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  force: true
+- name: delete
+  description: |
+    Deletes the cluster
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+  force: true

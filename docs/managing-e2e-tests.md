@@ -37,7 +37,7 @@ The SIG also uses another deployment tool called [kinder](https://github.com/kub
 kinder is based on kind and it's used for upgrades and version skew tests, but it does not require kubetest integration.
 
 Kinder uses test workflow files that run sequences of tasks, such as "upgrade", "run e2e conformance tests", "run e2e kubeadm tests".
-An example of such a workflow file can be seen [here](https://github.com/kubernetes/kubeadm/blob/master/kinder/ci/workflows/presubmit-upgrade-master.yaml).
+An example of such a workflow file can be seen [here](https://github.com/kubernetes/kubeadm/blob/master/kinder/ci/workflows/presubmit-upgrade-latest.yaml).
 
 ### Testgrid configuration
 
