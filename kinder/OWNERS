@@ -1,5 +1,5 @@
 # See the OWNERS file documentation:
-#  https://github.com/kubernetes/community/blob/master/contributors/devel/owners.md
+#  https://git.k8s.io/community/contributors/devel/owners.md
 approvers:
 - fabriziopandini
 - neolit123

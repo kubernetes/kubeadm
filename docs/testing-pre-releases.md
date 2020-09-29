@@ -203,7 +203,7 @@ instructions are provided for bazel only, but other builds methods supported by 
 
 See also:
 
-- [Build and test with Bazel](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/bazel.md)
+- [Build and test with Bazel](https://git.k8s.io/community/contributors/devel/sig-testing/bazel.md)
 - [Change the target version number when building a local release](#change-the-target-version-number-when-building-a-local-release)
 
 ### Build .debs packages
@@ -217,7 +217,7 @@ bazel build //build/debs
 
 build output will be stored in `bazel-bin/build/debs`.
 
-> cross build not supported yet; the unofficial [Planter tool](https://github.com/kubernetes/test-infra/tree/master/planter)
+> cross build not supported yet; the unofficial [Planter tool](https://git.k8s.io/test-infra/planter)
 > can be used to overcome the problem
 
 > currently bazel does not provide target for building rpm packages
@@ -280,9 +280,9 @@ According to selected versions to be installed (the version of .deb or .rpm pack
 
   ```bash
   array=(kube-apiserver kube-controller-manager kube-scheduler kube-proxy)
-  for i in "${array[@]}"; do 
+  for i in "${array[@]}"; do
     sudo docker load -i path/to/$i.tar
-  done 
+  done
   ```
 
   Then, you should take care of passing the exact version of your images to `kubeadm init` using `--kubernetes-version` flag

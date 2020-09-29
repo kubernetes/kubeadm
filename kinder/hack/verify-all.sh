@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # IMPORTANT! This script is called by pull-kubeadm-kinder-verify presubmits job
-# see https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/kubeadm/kubeadm-presubmits.yaml
+# see https://git.k8s.io/test-infra/config/jobs/kubernetes/kubeadm/kubeadm-presubmits.yaml
 
 set -o errexit
 set -o nounset

@@ -2,7 +2,7 @@ version: 1
 summary: |
   This workflow tests upgrades to Kubernetes ci/latest and also a set of other actions for pull requests
   name      > pull-kubeadm-kinder-upgrade-latest
-  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/kubeadm/kubeadm-presubmits.yaml
+  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/kubeadm/kubeadm-presubmits.yaml
 vars:
   initVersion: "{{ resolve `ci/latest` }}"
   upgradeVersion: "{{ resolve `ci/latest` }}"
@@ -46,7 +46,7 @@ tasks:
     - --control-plane-nodes={{ .vars.controlPlaneNodes }}
     - --worker-nodes={{ .vars.workerNodes }}
     - --loglevel=debug
-  timeout: 5m
+  timeout: 10m
 - name: init
   description: |
     Initializes the Kubernetes cluster with version "initVersion"

@@ -49,7 +49,7 @@ type PatchJSON6902 struct {
 }
 
 // Build takes a set of resource blobs (yaml), patches (strategic merge patch)
-// https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
+// https://git.k8s.io/community/contributors/devel/strategic-merge-patch.md
 // and returns the `kustomize build` result as a yaml blob
 // It does this in-memory using the build cobra command
 func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string, error) {

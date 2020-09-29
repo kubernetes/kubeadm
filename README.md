@@ -1,6 +1,6 @@
 # Kubeadm
 
-The purpose of this repo is to aggregate issues filed against the [kubeadm component](https://github.com/kubernetes/kubernetes/tree/master/cmd/kubeadm).
+The purpose of this repo is to aggregate issues filed against the [kubeadm component](https://git.k8s.io/kubernetes/cmd/kubeadm).
 
 ## What is Kubeadm ?
 Kubeadm is a tool built to provide best-practice "fast paths" for creating Kubernetes clusters.
@@ -25,7 +25,7 @@ Kubeadm's scope is limited to the local node filesystem and the Kubernetes API, 
 
 Learn how to engage with the Kubernetes community on the [community page](https://kubernetes.io/community/).
 
-You can reach the maintainers of this project at the [Cluster Lifecycle SIG](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle#cluster-lifecycle-sig).
+You can reach the maintainers of this project at the [Cluster Lifecycle SIG](https://git.k8s.io/community/sig-cluster-lifecycle#cluster-lifecycle-sig).
 
 ## Roadmap
 

@@ -33,10 +33,10 @@ These pages cover topics such as installation steps, troubleshooting and command
 You can help `kubeadm` **a lot** by filling issue reports for inconsistencies and keeping the documentation up-to-date by submitting PRs.
 
 The process for contributing to the website is very straight forward and is outlined here:
-* https://github.com/kubernetes/website/blob/master/CONTRIBUTING.md
+* https://git.k8s.io/website/CONTRIBUTING.md
 
 Here is a document that explains the process of updating the `kubeadm` command line reference:
-* https://github.com/kubernetes/kubeadm/blob/master/docs/updating-command-reference.md
+* https://git.k8s.io/kubeadm/docs/updating-command-reference.md
 
 ### Building
 
@@ -52,7 +52,7 @@ or kubeadm and how to test them.
 
 ### Adding dependencies
 
-If your patch depends on new packages, add that package with [`godep`](https://github.com/tools/godep). Follow the [instructions to add a dependency](https://github.com/kubernetes/community/blob/master/contributors/devel/development.md).
+If your patch depends on new packages, add that package with [`godep`](https://github.com/tools/godep). Follow the [instructions to add a dependency](https://git.k8s.io/community/contributors/devel/development.md).
 
 ### Running unit tests
 
@@ -70,7 +70,7 @@ make test-cmd WHAT=kubeadm
 ```
 
 For more information about running tests in Kubernetes have a look at:
-* https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/testing.md
+* https://git.k8s.io/community/contributors/devel/sig-testing/testing.md
 
 For more general information about unit tests in Go please have a look at:
 * https://golang.org/pkg/testing/

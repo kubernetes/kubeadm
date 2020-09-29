@@ -2,8 +2,8 @@ version: 1
 summary: |
   this workflow test kubeadm upgrades from Kubernetes ci/latest-1.17 version to Kubernetes ci/latest-1.18 version
   test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-upgrade-1-17-1-18
-  config    > https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml
-  config    > https://github.com/kubernetes/test-infra/blob/master/testgrid/config.yaml
+  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml
+  config    > https://git.k8s.io/test-infra/testgrid/config.yaml
 vars:
   initVersion: "{{ resolve `ci/latest-1.17` }}"
   upgradeVersion: "{{ resolve `ci/latest-1.18` }}"

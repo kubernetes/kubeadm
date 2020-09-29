@@ -185,11 +185,11 @@ kubectl label node ${master_name} node-role.kubernetes.io/master=""
 
 #### cluster-info
 
-This phase creates the `cluster-info` ConfigMap in the `kube-public` namespace as defined in [the Bootstrap Tokens proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md)
+This phase creates the `cluster-info` ConfigMap in the `kube-public` namespace as defined in [the Bootstrap Tokens proposal](https://git.k8s.io/community/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md)
  - The `ca.crt` and the address/port of the apiserver is added to the `cluster-info` ConfigMap in the `kubeconfig` key
  - Exposes the `cluster-info` ConfigMap to unauthenticated users (i.e. users in RBAC group `system:unauthenticated`)
 
-**Note:** The access to the `cluster-info` ConfigMap _is not_ rate-limited. 
+**Note:** The access to the `cluster-info` ConfigMap _is not_ rate-limited.
 This may or may not be a problem if you expose your master to the internet.
 Worst-case scenario here is a DoS attack where an attacker uses all the in-flight requests the kube-apiserver can handle to serving the `cluster-info` ConfigMap.
 TBD for v1.8
@@ -224,7 +224,7 @@ The `system:bootstrappers` Group is granted auto-approving status by it being ab
  - The auto-approving certificate controller in the controller-manager checks whether the poster of the CSR (in this case the Bootstrap Token) can POST to
    `/apis/certificates.k8s.io/certificatesigningrequests/nodeclient`. If the poster can, the controller approves the CSR.
  - This makes it possible to easily revoke the auto-approving functionality by removing the `ClusterRoleBinding` that grants Bootstrap Tokens that, or you can
-   revoke access for all Bootstrap Tokens and instead make the auto-approving more granular by granting just a few users or tokens access to auto-approved credentials. 
+   revoke access for all Bootstrap Tokens and instead make the auto-approving more granular by granting just a few users or tokens access to auto-approved credentials.
 
 ## `kubeadm join` phases
 

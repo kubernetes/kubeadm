@@ -67,16 +67,16 @@ This means we aim to standardize:
 
 `kubeadm init` internal workflow consists of a sequence of atomic work tasks to perform.
 
-The `kubeadm phase` command, (in v1.8 staged under `kubeadm alpha phase`), allows users to invoke individually each task, and ultimately offers a reusable and composable API/toolbox that can be used by other kubernetes bootstrap tools / by any IT automation tool / by advanced user for creating custom clusters. 
+The `kubeadm phase` command, (in v1.8 staged under `kubeadm alpha phase`), allows users to invoke individually each task, and ultimately offers a reusable and composable API/toolbox that can be used by other kubernetes bootstrap tools / by any IT automation tool / by advanced user for creating custom clusters.
 
 ### Preflight checks
 
-`kubeadm` executes a set of preflight checks before starting the init, with the aim to verify preconditions and avoid common cluster startup problems. 
+`kubeadm` executes a set of preflight checks before starting the init, with the aim to verify preconditions and avoid common cluster startup problems.
 In any case the user can skip preflight checks with the `--skip-preflight-checks` option.
 
 - [warning] If the Kubernetes version to use (passed with the `--kubernetes-version` flag) is one minor version higher than the kubeadm CLI version.
-- Kubernetes system requirements, 
-  - [error] if not linux, 
+- Kubernetes system requirements,
+  - [error] if not linux,
   - [error] if not Kernel 3.10+ or 4+ with specific KernelSpec,
   - [error] if required cgroups subsystem aren't in set up,
   - [error/warning] if Docker endpoint does not exist or does not work, if docker version v1.11.2 <= x <= v1.13.1,
@@ -169,7 +169,7 @@ Please note that:
 
 Common properties for the control plane components:
 
-- `hostNetwork: true` is present on all static pods since there is no network configured yet; accordingly 
+- `hostNetwork: true` is present on all static pods since there is no network configured yet; accordingly
   -  the `address` of the API server for controller-manager and the scheduler will be set to `127.0.0.1`
   -  if using a local etcd server, `etcd-servers` address  will be set to `127.0.0.1:2379`
 - Leader election is enabled for both the controller-manager and the scheduler
@@ -202,8 +202,8 @@ Other flags that are set unconditionally:
  - `--requestheader-client-ca-file` to `front-proxy-ca.crt`
  - `--admission-control` to `Initializers, NamespaceLifecycle, LimitRanger, ServiceAccount, PersistentVolumeLabel, DefaultStorageClass, DefaultTolerationSeconds, NodeRestriction, ResourceQuota`...or whatever the recommended set of admission controllers is at a given version
  - `--kubelet-preferred-address-types` to `InternalIP,ExternalIP,Hostname;` this makes `kubectl logs` and other apiserver -> kubelet communication work in environments where the hostnames of the nodes aren't resolvable
- - `requestheader-client-ca-file` to`front-proxy-ca.crt`,  `proxy-client-cert-file` to `front-proxy-client.crt`,  `proxy-client-key-file` to `front-proxy-client.key` ,  and`--requestheader-username-headers=X-Remote-User`, `--requestheader-group-headers=X-Remote-Group`, `--requestheader-extra-headers-prefix=X-Remote-Extra-`, `--requestheader-allowed-names=front-proxy-client` so the front proxy ([API Aggregation](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/aggregated-api-servers.md)) communication is secure.
- - `--allow-privileged` to `true` 
+ - `requestheader-client-ca-file` to`front-proxy-ca.crt`,  `proxy-client-cert-file` to `front-proxy-client.crt`,  `proxy-client-key-file` to `front-proxy-client.key` ,  and`--requestheader-username-headers=X-Remote-User`, `--requestheader-group-headers=X-Remote-Group`, `--requestheader-extra-headers-prefix=X-Remote-Extra-`, `--requestheader-allowed-names=front-proxy-client` so the front proxy ([API Aggregation](https://git.k8s.io/community/contributors/design-proposals/api-machinery/aggregated-api-servers.md)) communication is secure.
+ - `--allow-privileged` to `true`
 
 
 #### Controller Manager
@@ -215,7 +215,7 @@ Other flags that are set unconditionally:
  - The `BootstrapSigner` and `TokenCleaner` controllers are enabled
  - `--root-ca-file` to `ca.crt`
  - `--cluster-signing-cert-file` to `ca.crt`, if External CA mode is disabled, otherwise to `""`.
- - `--cluster-signing-key-file` to `ca.key`, if External CA mode is disabled, otherwise to `""`. 
+ - `--cluster-signing-key-file` to `ca.key`, if External CA mode is disabled, otherwise to `""`.
  - `--service-account-private-key-file` to `sa.key`
  - `--use-service-account-credentials` to `true`
 
@@ -253,25 +253,25 @@ kubeadm saves the configuration passed to `kubeadm init`, either via flags or th
 
 This will ensure that kubeadm actions executed in future (e.g `kubeadm upgrade`) will be able to determine the actual/current cluster state and make new decisions based on that data.
 
-Please note that 
+Please note that
 
 1. Upload of master configuration can be invoked individually with the `kubeadm phase upload-config` command.
 2. If you initialized your cluster using kubeadm v1.7.x or lower, you must create manually the master configuration ConfigMap before `kubeadm upgrade` to v1.8 . In order to facilitate this task, the ` kubeadm config upload (from-flags|from-file)` was implemented.
 
 ### Mark master
 
-As soon as the control plane is available, kubeadm executes following actions: 
+As soon as the control plane is available, kubeadm executes following actions:
 
-- Label  the master with `node-role.kubernetes.io/master=""` 
+- Label  the master with `node-role.kubernetes.io/master=""`
 - Taints  the master with `node-role.kubernetes.io/master:NoSchedule`
 
-Please note that 
+Please note that
 
 1. Mark master phase can be invoked individually with the `kubeadm phase mark-master` command.
 
 ### Configure TLS-Bootstrapping for node joining
 
-Kubeadm uses [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) for joining new nodes to an existing cluster; for more details see also [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
+Kubeadm uses [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) for joining new nodes to an existing cluster; for more details see also [design proposal](https://git.k8s.io/community/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
 
 `kubeadm init`  ensures that everything is properly configured for this process, and this includes following steps as well as setting API Server and controller flags as already described in previous paragraphs.
 
@@ -279,7 +279,7 @@ Kubeadm uses [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/a
 
 `kubeadm init`  create a first bootstrap token, either generated automatically or provided by the user with the `--token` flag; as documented in bootstrap token specification, token should be saved as secrets with name `bootstrap-token-<token-id>` under `kube-system` namespace.
 
-Please note that 
+Please note that
 
 1. The token will be used to validate temporary user during TLS bootstrap process; those users will be member of  `system:bootstrappers:kubeadm:default-node-token` group (nb. formerly `system:bootstrappers` in v1.7)
 2. Starting from 1.8 token has a limited validity, default 24Hours (that can be changed with `—token-ttl` flag)
@@ -291,7 +291,7 @@ kubeadm ensure that users in  `system:bootstrappers:kubeadm:default-node-token` 
 
 This is implemented by creating a ClusterRoleBinding named `kubeadm:kubelet-bootstrap` between the  group above and the default RBAC role `system:node-bootstrapper`.
 
-Please note that 
+Please note that
 
 1. This phase can be invoked individually with the `kubeadm phase bootstrap-token node allow-post-csrs` command.
 
@@ -303,7 +303,7 @@ This is implemented by creating ClusterRoleBinding named `kubeadm:node-autoappro
 
 The role `system:certificates.k8s.io:certificatesigningrequests:nodeclient` should be created as well, granting POST permission to `/apis/certificates.k8s.io/certificatesigningrequests/nodeclient` (in v1.8  role will be automatically created by default).
 
-Please note that 
+Please note that
 
 1. This phase can be invoked individually with the `kubeadm phase bootstrap-token node allow-auto-approve` command.
 
@@ -313,7 +313,7 @@ This phase creates the `cluster-info` ConfigMap in the `kube-public` namespace.
 
 Additionally it is created a role and a RoleBinding granting access for to the ConfigMap for unauthenticated users (i.e. users in RBAC group `system:unauthenticated`)
 
-Please note that 
+Please note that
 
 1. The access to the `cluster-info` ConfigMap _is not_ rate-limited. This may or may not be a problem if you expose your master to the internet; worst-case scenario here is a DoS attack where an attacker uses all the in-flight requests the kube-apiserver can handle to serving the `cluster-info` ConfigMap.
 2. This phase can be invoked individually with the `kubeadm phase bootstrap-token node allow-auto-approve` command.
@@ -326,7 +326,7 @@ A ServiceAccount for `kube-proxy` is created in the `kube-system` namespace; the
 - the location of the master comes from a ConfigMap
 - the `kube-proxy` ServiceAccount is bound to the privileges in the `system:node-proxier` ClusterRole
 
-Please note that 
+Please note that
 
 1. This phase can be invoked individually with the `kubeadm phase addon kube-proxy`  command.
 
@@ -339,7 +339,7 @@ Deploy the kube-dns Deployment and Service:
 - it's the upstream kube-dns deployment relatively unmodified
 - the `kube-dns` ServiceAccount is bound to the privileges in the `system:kube-dns` ClusterRole
 
-Please note that 
+Please note that
 
 1. This phase can be invoked individually with the `kubeadm phase addon kube-dns`  command.
 
@@ -349,10 +349,10 @@ This phase is performed only if `kubeadm init` is invoked with `—features-gate
 
 The self hosting phase basically replaces static pods for control plane components with DaemonSets; this is achieved by executing following procedure for API Server, scheduler and controller manager static pods:
 
-- Load the Static Pod specification from disk 
+- Load the Static Pod specification from disk
 - Extract the PodSpec from that Static Pod specification
 - Mutate the PodSpec to be compatible with self-hosting, and more in detail:
-  - add node selector attribute targeting nodes with`node-role.kubernetes.io/master=""`  label, 
+  - add node selector attribute targeting nodes with`node-role.kubernetes.io/master=""`  label,
   - add a toleration for `node-role.kubernetes.io/master:NoSchedule` taint,
   - set `spec.DNSPolicy` to `ClusterFirstWithHostNet`
 - Build a new DaemonSet object for the self-hosted component in question. Use the above mentioned PodSpec
@@ -380,11 +380,11 @@ Similarly to `kubeadm init`, also `kubeadm join` internal workflow consists of a
 
 This is split into discovery (having the Node trust the Kubernetes Master) and TLS bootstrap (having the Kubernetes Master trust the Node).
 
-see [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) , [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
+see [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) , [design proposal](https://git.k8s.io/community/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
 
 ### Discovery cluster-info
 
-There are 2 main schemes for discovery. The first is to use a shared token along with the IP address of the API server. The second is to provide a file (a subset of the standard kubeconfig file). 
+There are 2 main schemes for discovery. The first is to use a shared token along with the IP address of the API server. The second is to provide a file (a subset of the standard kubeconfig file).
 
 #### Shared token discovery
 
@@ -393,7 +393,7 @@ If `kubeadm join` is invoked with `--discovery-token`, token discovery is used; 
 In order to prevent "man in the middle" attacks, several steps are taken:
 
 - First, the CA certificate is retrieved via insecure connection (NB. this is possible because `kubeadm init` granted access to  `cluster-info` users for `system:unauthenticated` )
-- Then the CA certificate goes through following validation steps: 
+- Then the CA certificate goes through following validation steps:
   - "Basic validation", using the token ID against a JWT signature
   - "Pub key validation", using provided `--discovery-token-ca-cert-hash`. This value is available in the output of "kubeadm init" or can be calculated using standard tools (the hash is calculated over the bytes of the Subject Public Key Info (SPKI) object as in RFC7469). The `--discovery-token-ca-cert-hash flag` may be repeated multiple times to allow more than one public key.
   - as a additional validation, the CA certificate is retrieved via secure connection and then compared with the CA retrieved initially
@@ -428,13 +428,13 @@ Finally, when the connection with the cluster is established, kubeadm try to acc
 
 Once the cluster info are known, the file `bootstrap-kubelet.conf` is written, allowing kubelet to do TLS Bootstrapping (conversely in v.1.7 TLS were managed by kubeadm).
 
-The TLS bootstrap mechanism uses the shared token to temporarily authenticate with the Kubernetes Master to submit a certificate signing request (CSR) for a locally created key pair. 
+The TLS bootstrap mechanism uses the shared token to temporarily authenticate with the Kubernetes Master to submit a certificate signing request (CSR) for a locally created key pair.
 
 The request is then automatically approved and the operation completes saving `ca.crt` file and `kubelet.conf` file to be used by kubelet for joining the cluster, while`bootstrap-kubelet.conf` is deleted.
 
 Please note that:
 
-- The temporary authentication is validated against the token saved during the `kubeadm init` process (or with additional tokens created with `kubeadm token`) 
+- The temporary authentication is validated against the token saved during the `kubeadm init` process (or with additional tokens created with `kubeadm token`)
 - The temporary authentication resolve to a user member of  `system:bootstrappers:kubeadm:default-node-token` group which was granted access to CSR api during the `kubeadm init` process
 - The automatic CSR approval is managed by the csrapprover controller, according with configuration done the `kubeadm init` process
 
