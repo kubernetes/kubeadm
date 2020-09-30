@@ -82,6 +82,7 @@ tasks:
       - --ignore-preflight-errors=FileAvailable--etc-kubernetes-kubelet.conf,FileAvailable--etc-kubernetes-pki-ca.crt,Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    timeout: 10m
   - name: e2e-kubeadm
     description: |
       Runs kubeadm e2e tests

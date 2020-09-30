@@ -35,9 +35,11 @@ func SetupExternalCA(c *status.Cluster, vLevel int) error {
 	}
 
 	// generate certs on the primary node
+	// ensure that "localhost" is included for the SANs for the kube-apiserver serving certificate,
+	// so that the server is accessible from the kubeconfig on the host
 	if err := c.BootstrapControlPlane().Command(
 		"/bin/sh", "-c",
-		fmt.Sprintf("kubeadm init phase certs all --control-plane-endpoint=%s --v=%d",
+		fmt.Sprintf("kubeadm init phase certs all --control-plane-endpoint=%s --apiserver-cert-extra-sans=localhost --v=%d",
 			loadBalancerIP,
 			vLevel),
 	).RunWithEcho(); err != nil {
@@ -85,7 +87,7 @@ func SetupExternalCA(c *status.Cluster, vLevel int) error {
 		// generate remaining certificates
 		if err := n.Command(
 			"/bin/sh", "-c",
-			fmt.Sprintf("kubeadm init phase certs all --control-plane-endpoint=%s --v=%d",
+			fmt.Sprintf("kubeadm init phase certs all --control-plane-endpoint=%s --apiserver-cert-extra-sans=localhost --v=%d",
 				loadBalancerIP,
 				vLevel),
 		).RunWithEcho(); err != nil {
