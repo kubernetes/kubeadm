@@ -75,4 +75,4 @@ by the kubeadm maintainers.
 ### Other links
 
 - A document on managing kubeadm e2e tests:
-  https://github.com/kubernetes/kubeadm/blob/master/docs/managing-e2e-tests.md
+  https://git.k8s.io/kubeadm/docs/managing-e2e-tests.md

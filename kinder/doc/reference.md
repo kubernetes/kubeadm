@@ -277,7 +277,7 @@ Instead, when reading from a local folder or from a remote repository, a `versio
 E2E Kubernetes is a rich set of test aimed at verifying the proper functioning of a Kubernetes cluster.
 
 By default Kinder selects a subset of test the corresponds to the "Conformance" as defined in the
-Kubernetes [test grid](https://github.com/kubernetes/test-infra/tree/master/testgrid/conformance).
+Kubernetes [test grid](https://git.k8s.io/test-infra/testgrid/conformance).
 
 ```bash
 kinder test e2e

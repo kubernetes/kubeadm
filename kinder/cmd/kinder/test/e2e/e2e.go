@@ -94,9 +94,9 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// if --conformance is set, adds well know flag/values for instructing ginkgo for running only tests required for conformance in testgrid
 	if flags.TestGridConformance {
 		// instruct ginkgo to run only Conformance test as defined in [Display Conformance Tests with Testgrid]
-		// (https://github.com/kubernetes/test-infra/tree/master/testgrid/conformance)
+		// (https://git.k8s.io/test-infra/testgrid/conformance)
 
-		// see https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/e2e-tests.md
+		// see https://git.k8s.io/community/contributors/devel/sig-testing/e2e-tests.md
 		// for description of test labels
 		ginkgoFlags.AddFocusRegex(regexp.QuoteMeta("[Conformance]"))
 		ginkgoFlags.AddSkipRegex("Aggregator|Alpha|Kubectl|\\[(Disruptive|Feature:[^\\]]+|Flaky)\\]")

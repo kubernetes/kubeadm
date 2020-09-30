@@ -233,7 +233,7 @@ Other flags that are set unconditionally:
     - [`DefaultTolerationSeconds`](https://kubernetes.io/docs/admin/admission-controllers/#defaulttolerationseconds) .
     - [`NodeRestriction`](https://kubernetes.io/docs/admin/admission-controllers/#noderestriction) to limit what a kubelet can modify (e.g. its own pods).
  - `--kubelet-preferred-address-types` to `InternalIP,ExternalIP,Hostname;` this makes `kubectl logs` and other apiserver -> kubelet communication work in environments where the hostnames of the nodes aren't resolvable.
- - `requestheader-client-ca-file` to`front-proxy-ca.crt`,  `proxy-client-cert-file` to `front-proxy-client.crt`,  `proxy-client-key-file` to `front-proxy-client.key` ,  and`--requestheader-username-headers=X-Remote-User`, `--requestheader-group-headers=X-Remote-Group`, `--requestheader-extra-headers-prefix=X-Remote-Extra-`, `--requestheader-allowed-names=front-proxy-client` so the front proxy ([API Aggregation](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/aggregated-api-servers.md)) communication is secure.
+ - `requestheader-client-ca-file` to`front-proxy-ca.crt`,  `proxy-client-cert-file` to `front-proxy-client.crt`,  `proxy-client-key-file` to `front-proxy-client.key` ,  and`--requestheader-username-headers=X-Remote-User`, `--requestheader-group-headers=X-Remote-Group`, `--requestheader-extra-headers-prefix=X-Remote-Extra-`, `--requestheader-allowed-names=front-proxy-client` so the front proxy ([API Aggregation](https://git.k8s.io/community/contributors/design-proposals/api-machinery/aggregated-api-servers.md)) communication is secure.
 
 #### Controller manager
 
@@ -323,7 +323,7 @@ Please note that
 
 ### Configure TLS-Bootstrapping for node joining
 
-Kubeadm uses [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) for joining new nodes to an existing cluster; for more details see also [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
+Kubeadm uses [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) for joining new nodes to an existing cluster; for more details see also [design proposal](https://git.k8s.io/community/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
 
 `kubeadm init`  ensures that everything is properly configured for this process, and this includes following steps as well as setting API server and controller flags as already described in previous paragraphs.
 
@@ -434,7 +434,7 @@ Similarly to `kubeadm init`, also `kubeadm join` internal workflow consists of a
 
 This is split into discovery (having the Node trust the Kubernetes Master) and TLS bootstrap (having the Kubernetes Master trust the Node).
 
-see [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) , [design proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
+see [Authenticating with Bootstrap Tokens](https://kubernetes.io/docs/admin/bootstrap-tokens/) , [design proposal](https://git.k8s.io/community/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md).
 
 ### Preflight checks
 

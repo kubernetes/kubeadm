@@ -2,20 +2,20 @@
 
 ### Overview
 
-Kubernetes has a rich end-to-end (e2e) testing infrastructure, which allows detailed testing of clusters and their assets. Most settings and tools for that can be found in the [test-infra](https://github.com/kubernetes/test-infra) GitHub repository.
+Kubernetes has a rich end-to-end (e2e) testing infrastructure, which allows detailed testing of clusters and their assets. Most settings and tools for that can be found in the [test-infra](https://git.k8s.io/test-infra) GitHub repository.
 
 Kubernetes uses applications such as the web-based [testgrid](https://k8s-testgrid.appspot.com/) for monitoring the status of e2e tests. test-infra also hosts the configuration on individual test jobs and Docker images that contain tools to invoke the jobs.
 
 ### Prow job configuration
 
 The following folder contains all the SIG Cluster Lifecycle (the SIG that maintains kubeadm) originated test jobs:
-[sig-cluster-lifecycle](https://github.com/kubernetes/test-infra/tree/master/config/jobs/kubernetes/sig-cluster-lifecycle)
+[sig-cluster-lifecycle](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle)
 
 Please note that this document will only cover details on the `kubeadm*.yaml` files and only on some of the parameters
 these files contain.
 
 For example, let's have a look at this file:
-[kubeadm-kinder.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml)
+[kubeadm-kinder.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml)
 
 It contains a list of jobs such as:
 ```
@@ -26,18 +26,18 @@ It contains a list of jobs such as:
 
 In this case, `ci-kubernetes-e2e-kubeadm-kind-master` is a test job that runs every 2 hours and it also
 has a set of other parameters defined for it. Such test jobs use an image that will run as a container inside
-a Pod of the Kubernetes [Prow](https://github.com/kubernetes/test-infra/tree/master/prow) cluster.
+a Pod of the Kubernetes [Prow](https://git.k8s.io/test-infra/prow) cluster.
 
 For this example job the deployment tool is called [kind](https://github.com/kubernetes-sigs/kind).
 As a very high level summary, the way this works is when a job is invoked all the job parameters
 are passed to a CLI tool called kubetest, which then instantiates the job container and then the deployment tool
 inside it. Please note that kubetest is not required and test authors can decide to call any bash script instead.
 
-The SIG also uses another deployment tool called [kinder](https://github.com/kubernetes/kubeadm/tree/master/kinder).
+The SIG also uses another deployment tool called [kinder](https://git.k8s.io/kubeadm/kinder).
 kinder is based on kind and it's used for upgrades and version skew tests, but it does not require kubetest integration.
 
 Kinder uses test workflow files that run sequences of tasks, such as "upgrade", "run e2e conformance tests", "run e2e kubeadm tests".
-An example of such a workflow file can be seen [here](https://github.com/kubernetes/kubeadm/blob/master/kinder/ci/workflows/presubmit-upgrade-latest.yaml).
+An example of such a workflow file can be seen [here](https://git.k8s.io/kubeadm/kinder/ci/workflows/presubmit-upgrade-latest.yaml).
 
 ### Testgrid configuration
 
@@ -67,11 +67,11 @@ These annotations configure the testgrid entries for this job from the job confi
 They contain information such as dashboards where this job will appear, tab name, where to send email alerts,
 description and other.
 
-For more information about configuring testgrid see [this page](https://github.com/kubernetes/test-infra/blob/master/testgrid/config.md).
+For more information about configuring testgrid see [this page](https://git.k8s.io/test-infra/testgrid/config.md).
 
 ### Updates to kubeadm tests
 
-Before each new Kubernetes release and during the second month of the [release-cycle](https://github.com/kubernetes/kubeadm/blob/master/docs/release-cycle.md), a set of manual actions have to be performed, so that the kubeadm e2e tests are up to date with the new release.
+Before each new Kubernetes release and during the second month of the [release-cycle](https://git.k8s.io/kubeadm/docs/release-cycle.md), a set of manual actions have to be performed, so that the kubeadm e2e tests are up to date with the new release.
 
 The operation can be broken down into:
 - Sending a PR for updating kinder workflows.
@@ -94,7 +94,7 @@ The summary of the actions is the following:
 #### Updating kinder workflows
 
 Kinder workflows need to be updated each cycle in this location:
-https://github.com/kubernetes/kubeadm/blob/master/kinder/ci/workflows/
+https://git.k8s.io/kubeadm/kinder/ci/workflows/
 
 Additional actions to be performed:
 - Make sure that workflows include the correct `ci/latest-x` labels.
@@ -103,24 +103,24 @@ Additional actions to be performed:
 #### Updating test jobs in kubernetes/test-infra
 
 This document will cover information on how to perform updates on these files:
-- [kubeadm-kinder.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml)
+- [kubeadm-kinder.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml)
 
 Holds test jobs where the kubeadm version matches the Kubernetes control-plane and the kubelet versions.
 
-- [kubeadm-kinder-upgrade.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml)
+- [kubeadm-kinder-upgrade.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml)
 
 Holds test jobs that perform a upgrade from version X to version Y (usually `Y = X + 1`).
 
-- [kubeadm-kinder-x-on-y.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-x-on-y.yaml)
+- [kubeadm-kinder-x-on-y.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-x-on-y.yaml)
 
 Holds test jobs that run kubeadm version X, on a control plane and kubelet version Y,
 as kubeadm does support `Y = X - 1`
 
-- [kubeadm-kinder-external-etcd.yaml](https://github.com/kubernetes/test-infra/blob/master/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-external-etcd.yaml)
+- [kubeadm-kinder-external-etcd.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-external-etcd.yaml)
 
 Holds tests that deploy a kubeadm / kinder cluster using external etcd, instead of the default stacked etcd.
 
-The files can be found in the [sig-cluster-lifecycle](https://github.com/kubernetes/test-infra/tree/master/config/jobs/kubernetes/sig-cluster-lifecycle) folder.
+The files can be found in the [sig-cluster-lifecycle](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle) folder.
 
 
 Additional actions to be performed:
