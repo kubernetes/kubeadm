@@ -26,7 +26,7 @@ import (
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
 )
 
 // KubeadmUpgrade executes the kubeadm upgrade workflow, including also deployment of new
@@ -92,7 +92,7 @@ func preloadUpgradeImages(c *status.Cluster, upgradeVersion *K8sVersion.Version)
 			continue
 		}
 
-		actionHelper, err := cri.NewActionHelper(nodeCRI)
+		actionHelper, err := nodes.NewActionHelper(nodeCRI)
 		if err != nil {
 			fmt.Printf("error creating the action helper: %v", err)
 			continue

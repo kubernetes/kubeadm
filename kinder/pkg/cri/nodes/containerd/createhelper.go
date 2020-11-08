@@ -17,18 +17,18 @@ limitations under the License.
 package containerd
 
 import (
-	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/common"
 	"k8s.io/kubeadm/kinder/pkg/exec"
 )
 
 // CreateNode creates a container that internally hosts the containerd cri runtime
 func CreateNode(cluster, name, image, role string, volumes []string) error {
-	args, err := util.CommonArgs(cluster, name, role)
+	args, err := common.BaseRunArgs(cluster, name, role)
 	if err != nil {
 		return err
 	}
 
-	args, err = util.RunArgsForNode(role, volumes, args)
+	args, err = common.RunArgsForNode(role, volumes, args)
 	if err != nil {
 		return err
 	}

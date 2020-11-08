@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package common
 
 import (
 	"fmt"
@@ -29,9 +29,8 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/exec"
 )
 
-// CommonArgs computes docker arguments that apply to all containers
-func CommonArgs(cluster, name, role string) ([]string, error) {
-
+// BaseRunArgs computes docker arguments that apply to all containers
+func BaseRunArgs(cluster, name, role string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
 	args := []string{
 		"run",
@@ -58,10 +57,25 @@ func CommonArgs(cluster, name, role string) ([]string, error) {
 	}
 
 	// handle hosts that have user namespace remapping enabled
-	if usernsRemap() {
+	if UsernsRemap() {
 		args = append(args, "--userns=host")
 	}
 	return args, nil
+}
+
+// UsernsRemap checks if userns-remap is enabled in dockerd
+func UsernsRemap() bool {
+	cmd := exec.NewHostCmd("docker", "info", "--format", "'{{json .SecurityOptions}}'")
+	lines, err := cmd.RunAndCapture()
+	if err != nil {
+		return false
+	}
+	if len(lines) > 0 {
+		if strings.Contains(lines[0], "name=userns") {
+			return true
+		}
+	}
+	return false
 }
 
 const (
@@ -117,21 +131,6 @@ func getSubnets(networkName string) ([]string, error) {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}
 	return strings.Split(strings.TrimSpace(lines[0]), " "), nil
-}
-
-// usernsRemap checks if userns-remap is enabled in dockerd
-func usernsRemap() bool {
-	cmd := exec.NewHostCmd("docker", "info", "--format", "'{{json .SecurityOptions}}'")
-	lines, err := cmd.RunAndCapture()
-	if err != nil {
-		return false
-	}
-	if len(lines) > 0 {
-		if strings.Contains(lines[0], "name=userns") {
-			return true
-		}
-	}
-	return false
 }
 
 // RunArgsForNode computes docker run arguments that apply to containers that should host K8s nodes

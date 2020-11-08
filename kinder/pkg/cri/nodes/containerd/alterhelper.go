@@ -23,8 +23,9 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
-	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/common"
 )
 
 // GetAlterContainerArgs returns arguments for the alter container for containerd
@@ -53,7 +54,7 @@ func StartRuntime(bc *bits.BuildContext) error {
 	}()
 
 	duration := 10 * time.Second
-	result := util.TryUntil(time.Now().Add(duration), func() bool {
+	result := common.TryUntil(time.Now().Add(duration), func() bool {
 		return bc.RunInContainer("bash", "-c", "crictl ps &> /dev/null") == nil
 	})
 	if !result {

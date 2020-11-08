@@ -31,9 +31,9 @@ import (
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/cri/host"
 	"k8s.io/kubeadm/kinder/pkg/exec"
 	"k8s.io/kubeadm/kinder/pkg/exec/colors"
-	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	ksigsyaml "sigs.k8s.io/yaml"
 )
 
@@ -68,9 +68,8 @@ type NodeSettings struct {
 
 // NewNode returns a new kinder.Node wrapper
 func NewNode(name string) (n *Node, err error) {
-
 	// retrive the role the node using docker inspect
-	lines, err := kinddocker.Inspect(name, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
+	lines, err := host.InspectContainer(name, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get %q label", constants.NodeRoleKey)
 	}
@@ -367,7 +366,7 @@ func (n *Node) Ports(containerPort int32) (hostPort int32, err error) {
 		return hostPort, nil
 	}
 	// retrive the specific port mapping using docker inspect
-	lines, err := kinddocker.Inspect(n.name, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
+	lines, err := host.InspectContainer(n.name, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
@@ -395,7 +394,7 @@ func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 		return n.ipv4, n.ipv6, nil
 	}
 	// retrive the IP address of the node using docker inspect
-	lines, err := kinddocker.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	lines, err := host.InspectContainer(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to get container details")
 	}

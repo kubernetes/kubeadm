@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
 	"k8s.io/kubeadm/kinder/pkg/kubeadm"
 )
 
@@ -202,7 +202,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		return "", err
 	}
 
-	criConfigHelper, err := cri.NewConfigHelper(nodeCRI)
+	criConfigHelper, err := nodes.NewConfigHelper(nodeCRI)
 	if err != nil {
 		return "", err
 	}

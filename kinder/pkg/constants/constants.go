@@ -18,7 +18,6 @@ package constants
 
 import (
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
-	kindconstants "sigs.k8s.io/kind/pkg/cluster/constants"
 )
 
 // constants inherited from kind.
@@ -34,16 +33,16 @@ const (
 	// control-plane.
 	//
 	// NOTE: in single node clusters, control-plane nodes act as worker nodes
-	ControlPlaneNodeRoleValue string = kindconstants.ControlPlaneNodeRoleValue
+	ControlPlaneNodeRoleValue string = "control-plane"
 
 	// WorkerNodeRoleValue identifies a node that hosts a Kubernetes worker
-	WorkerNodeRoleValue string = kindconstants.WorkerNodeRoleValue
+	WorkerNodeRoleValue string = "worker"
 
 	// ExternalLoadBalancerNodeRoleValue identifies a node that hosts an
 	// external load balancer for the API server in HA configurations.
 	//
 	// Please note that `kind` nodes (containers) hosting external load balancer are not kubernetes nodes
-	ExternalLoadBalancerNodeRoleValue string = kindconstants.ExternalLoadBalancerNodeRoleValue
+	ExternalLoadBalancerNodeRoleValue string = "external-load-balancer"
 
 	// ExternalEtcdNodeRoleValue identifies a node that hosts an external-etcd
 	// instance.
@@ -51,17 +50,20 @@ const (
 	// WARNING: this node type is not yet implemented in kind! (in kinder it is implemented)
 	//
 	// Please note that `kind` nodes (containers) hosting external etcd are not kubernetes nodes
-	ExternalEtcdNodeRoleValue string = kindconstants.ExternalEtcdNodeRoleValue
+	ExternalEtcdNodeRoleValue string = "external-etcd"
 
 	// DefaultClusterName is the default cluster name
-	DefaultClusterName = kindconstants.DefaultClusterName
+	// TODO: consider if to switch to kinder
+	DefaultClusterName = "kind"
 
 	// ClusterLabelKey is applied to each "node" docker container for identification
-	ClusterLabelKey = kindconstants.ClusterLabelKey
+	// TODO: consider if to switch to a kinder specific label
+	ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 
 	// NodeRoleKey is applied to each "node" docker container for categorization
 	// of nodes by role
-	NodeRoleKey = kindconstants.NodeRoleKey
+	// TODO: consider if to switch to a kinder specific label
+	NodeRoleKey = "io.k8s.sigs.kind.role"
 
 	// PodSubnet defines the default pod subnet used by kind
 	// TODO: send a PR to define this value in a kind constant (currently it is not)

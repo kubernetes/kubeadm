@@ -27,13 +27,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/kubeadm/kinder/pkg/exec"
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/cri/host"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
+	"k8s.io/kubeadm/kinder/pkg/exec"
 	"k8s.io/kubeadm/kinder/pkg/extract"
-	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 	kindfs "sigs.k8s.io/kind/pkg/fs"
 )
 
@@ -246,7 +246,7 @@ func fixImageTar(v string) error {
 
 	// read the image tar and write the fixed version on a string builder
 	var w strings.Builder
-	err = kinddocker.EditArchiveRepositories(f, &w, fixRepository)
+	err = host.EditArchiveRepositories(f, &w, fixRepository)
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 	}
 	log.Infof("Detected %s as container runtime", runtime)
 
-	alterHelper, err := cri.NewAlterHelper(runtime)
+	alterHelper, err := nodes.NewAlterHelper(runtime)
 	if err != nil {
 		return err
 	}
@@ -399,7 +399,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 	return nil
 }
 
-func pullImages(alterHelper *cri.AlterHelper, bc *bits.BuildContext, images []string, savePath, containerID string) error {
+func pullImages(alterHelper *nodes.AlterHelper, bc *bits.BuildContext, images []string, savePath, containerID string) error {
 	tempDir, err := ioutil.TempDir("", "kinder-image-path")
 	if err != nil {
 		return err
@@ -443,7 +443,7 @@ func pullImages(alterHelper *cri.AlterHelper, bc *bits.BuildContext, images []st
 func (c *Context) createAlterContainer(bc *bits.BuildContext, runArgs, containerArgs []string) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	_, _ = kinddocker.PullIfNotPresent(c.baseImage, 4)
+	_, _ = host.PullImage(c.baseImage, 4)
 
 	// define docker default args
 	id = "kind-build-" + uuid.New().String()
@@ -454,16 +454,7 @@ func (c *Context) createAlterContainer(bc *bits.BuildContext, runArgs, container
 	}
 	args = append(args, runArgs...)
 
-	err = kinddocker.Run(
-		c.baseImage,
-		kinddocker.WithRunArgs(
-			args...,
-		),
-		kinddocker.WithContainerArgs(
-			containerArgs...,
-		),
-	)
-	if err != nil {
+	if err = host.Run(c.baseImage, args, containerArgs); err != nil {
 		return id, errors.Wrap(err, "failed to create alter container")
 	}
 	return id, nil

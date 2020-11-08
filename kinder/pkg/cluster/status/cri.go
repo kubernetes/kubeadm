@@ -20,8 +20,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
+	"k8s.io/kubeadm/kinder/pkg/cri/host"
 	"k8s.io/kubeadm/kinder/pkg/exec"
-	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 )
 
 // NB. code implemented in this package ideally should be in the CRI package, but ATM it is
@@ -41,21 +41,14 @@ const (
 func InspectCRIinImage(image string) (ContainerRuntime, error) {
 	// define docker default args
 	id := "kind-detect-" + uuid.New().String()
-	args := []string{
+	runArgs := []string{
 		"-d", // make the client exit while the container continues to run
 		"--entrypoint=sleep",
 		"--name=" + id,
 	}
+	contatinerArgs := []string{"infinity"} // sleep infinitely to keep the container around
 
-	if err := kinddocker.Run(
-		image,
-		kinddocker.WithRunArgs(
-			args...,
-		),
-		kinddocker.WithContainerArgs(
-			"infinity", // sleep infinitely to keep the container around
-		),
-	); err != nil {
+	if err := host.Run(image, runArgs, contatinerArgs); err != nil {
 		return "", errors.Wrap(err, "error creating a temporary container for CRI detection")
 	}
 	defer func() {

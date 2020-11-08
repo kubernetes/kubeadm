@@ -22,19 +22,18 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/common"
 	"k8s.io/kubeadm/kinder/pkg/exec"
-	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 )
 
 // CreateNode creates a container that internally hosts the docker cri runtime
 func CreateNode(cluster, name, image, role string, volumes []string) error {
-	args, err := util.CommonArgs(cluster, name, role)
+	args, err := common.BaseRunArgs(cluster, name, role)
 	if err != nil {
 		return err
 	}
 
-	args, err = util.RunArgsForNode(role, volumes, args)
+	args, err = common.RunArgsForNode(role, volumes, args)
 	if err != nil {
 		return err
 	}
@@ -114,7 +113,7 @@ func containerArgsForDocker(args []string) []string {
 // sharing and permissions for systemd and Docker / Kubernetes
 func fixMounts(name string) error {
 	// Check if userns-remap is enabled
-	if kinddocker.UsernsRemap() {
+	if common.UsernsRemap() {
 		// The binary /bin/mount should be owned by root:root in order to execute
 		// the following mount commands
 		if err := exec.NewNodeCmd(name, "chown", "root:root", "/bin/mount").Silent().Run(); err != nil {
@@ -149,13 +148,18 @@ func fixMounts(name string) error {
 // signalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
 // see images/node/entrypoint
 func signalStart(name string) error {
-	return kinddocker.Kill("SIGUSR1", name)
+	cmd := exec.NewHostCmd(
+		"docker", "kill",
+		"-s", "SIGUSR1",
+		name,
+	)
+	return cmd.Run()
 }
 
 // waitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func waitForDocker(name string, until time.Time) bool {
-	return util.TryUntil(until, func() bool {
+	return common.TryUntil(until, func() bool {
 		out, err := exec.NewNodeCmd(name, "systemctl", "is-active", "docker").Silent().RunAndCapture()
 		if err != nil {
 			return false

@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cri
+package nodes
 
 import (
 	"github.com/pkg/errors"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	"k8s.io/kubeadm/kinder/pkg/cri/containerd"
-	"k8s.io/kubeadm/kinder/pkg/cri/docker"
-	"k8s.io/kubeadm/kinder/pkg/cri/util"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/common"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/containerd"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/docker"
 	"k8s.io/kubeadm/kinder/pkg/exec"
 )
 
@@ -52,19 +52,19 @@ func (h *CreateHelper) CreateNode(cluster, name, image, role string, volumes []s
 
 // CreateExternalEtcd creates a container hosting a single node, insecure, external etcd cluster
 func (h *CreateHelper) CreateExternalEtcd(cluster, name, image string) error {
-	args, err := util.CommonArgs(cluster, name, constants.ExternalEtcdNodeRoleValue)
+	args, err := common.BaseRunArgs(cluster, name, constants.ExternalEtcdNodeRoleValue)
 	if err != nil {
 		return err
 	}
 
 	// Add etcd run args
-	args = util.RunArgsForExternalEtcd(args)
+	args = common.RunArgsForExternalEtcd(args)
 
 	// Specify the image to run
 	args = append(args, image)
 
 	// Add container args for starting a single node, insecure etcd
-	args = util.ContainerArgsForExternalEtcd(cluster, args)
+	args = common.ContainerArgsForExternalEtcd(cluster, args)
 
 	// creates the container
 	return exec.NewHostCmd("docker", args...).Run()
@@ -72,13 +72,13 @@ func (h *CreateHelper) CreateExternalEtcd(cluster, name, image string) error {
 
 // CreateExternalLoadBalancer creates a container hosting an external load balancer
 func (h *CreateHelper) CreateExternalLoadBalancer(cluster, name string) error {
-	args, err := util.CommonArgs(cluster, name, constants.ExternalLoadBalancerNodeRoleValue)
+	args, err := common.BaseRunArgs(cluster, name, constants.ExternalLoadBalancerNodeRoleValue)
 	if err != nil {
 		return err
 	}
 
 	// Add load balancer run args
-	args, err = util.RunArgsForExternalLoadBalancer(args)
+	args, err = common.RunArgsForExternalLoadBalancer(args)
 	if err != nil {
 		return err
 	}
