@@ -24,7 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
 )
 
 // checkImagesForVersion pre-loaded images available on the node (this will report missing images, if any)
@@ -48,7 +48,7 @@ func checkImagesForVersion(n *status.Node, version string) error {
 		return err
 	}
 
-	actionHelper, err := cri.NewActionHelper(nodeCRI)
+	actionHelper, err := nodes.NewActionHelper(nodeCRI)
 	if err != nil {
 		return err
 	}

@@ -24,8 +24,8 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
+	"k8s.io/kubeadm/kinder/pkg/cri/host"
 	"k8s.io/kubeadm/kinder/pkg/loadbalancer"
-	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 )
 
 // LoadBalancer action writes the loadbalancer configuration file on the load balancer node.
@@ -77,7 +77,7 @@ func LoadBalancer(c *status.Cluster, nodes ...*status.Node) error {
 	}
 
 	// reload the config
-	if err := kinddocker.Kill("SIGHUP", lb.Name()); err != nil {
+	if err := host.SendSignal("SIGHUP", lb.Name()); err != nil {
 		return errors.Wrap(err, "failed to reload loadbalancer")
 	}
 

@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cri
+package nodes
 
 import (
 	"github.com/pkg/errors"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	"k8s.io/kubeadm/kinder/pkg/cri/containerd"
-	"k8s.io/kubeadm/kinder/pkg/cri/docker"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/containerd"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/docker"
 )
 
 // ActionHelper helper provides CRI specific methods used by kind(er) actions

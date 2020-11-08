@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cri
+package nodes
 
 import (
 	"github.com/pkg/errors"
@@ -22,8 +22,8 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
-	"k8s.io/kubeadm/kinder/pkg/cri/containerd"
-	"k8s.io/kubeadm/kinder/pkg/cri/docker"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/containerd"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/docker"
 )
 
 // AlterHelper provides CRI specific methods for altering a kind(er) images

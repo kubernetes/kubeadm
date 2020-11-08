@@ -25,9 +25,9 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	"k8s.io/kubeadm/kinder/pkg/cri"
+	"k8s.io/kubeadm/kinder/pkg/cri/host"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
 	"k8s.io/kubeadm/kinder/pkg/exec"
-	kinddocker "sigs.k8s.io/kind/pkg/container/docker"
 )
 
 // CreateOptions holds all the options used at create time
@@ -172,7 +172,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 	}
 	log.Infof("Detected %s container runtime for image %s", runtime, flags.image)
 
-	createHelper, err := cri.NewCreateHelper(runtime)
+	createHelper, err := nodes.NewCreateHelper(runtime)
 	if err != nil {
 		log.Errorf("Error creating NewCreateHelper for CRI %s! %v", flags.image, err)
 		return err
@@ -214,7 +214,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 
 		// attempt to explicitly pull the etcdImage if it doesn't exist locally
 		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = kinddocker.PullIfNotPresent(etcdImage, 4)
+		_, _ = host.PullImage(etcdImage, 4)
 
 		log.Info("Creating external etcd...")
 		if err := createHelper.CreateExternalEtcd(clusterName, fmt.Sprintf("%s-etcd", clusterName), etcdImage); err != nil {
@@ -293,7 +293,7 @@ func ensureNodeImage(image string) {
 
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	_, _ = kinddocker.PullIfNotPresent(image, 4)
+	_, _ = host.PullImage(image, 4)
 }
 
 // UntilError runs all funcs in separate goroutines, returning the
