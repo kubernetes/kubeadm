@@ -46,6 +46,3 @@ go test -v ./verify_manifest_lists.go ./verify_manifest_lists_test.go
 
 # run main test
 go run ./verify_manifest_lists.go
-
-# cleanup
-rm -rf ./src
