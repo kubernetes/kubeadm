@@ -290,18 +290,11 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		patches = append(patches, externalEtcdPatch)
 	}
 
-	// fix all the patches to have name metadata matching the generated config
-	patches, jsonPatches = setPatchNames(patches, jsonPatches)
-
 	// apply patches
-	patched, err := kubeadm.Build([]string{rawconfig}, patches, jsonPatches)
+	patched, err := kubeadm.Build(rawconfig, patches, jsonPatches)
 	if err != nil {
 		return "", err
 	}
-
-	// remove metadata info from the kubeadm config template provided by kind;
-	// those info are not part of the kubeadm config API, but are necessary for Kustomize to work
-	patched = removeMetadata(patched)
 
 	// Select the objects that are relevant for a specific node;
 	// if the node is the bootstrap control plane, then all the objects used as init time
@@ -387,42 +380,6 @@ func createDiscoveryFile(c *status.Cluster, n *status.Node, discoveryMode Discov
 	log.Debugf("generated discovery file:\n%s", string(configBytes))
 
 	return nil
-}
-
-// objectName is the name every generated object will have
-// I.E. `metadata:\nname: config`
-const objectName = "config"
-
-// setPatchNames sets the targeted object name on every patch to be the fixed
-// name we use when generating config objects (we have one of each type, all of
-// which have the same fixed name)
-func setPatchNames(patches []string, jsonPatches []kubeadm.PatchJSON6902) ([]string, []kubeadm.PatchJSON6902) {
-	fixedPatches := make([]string, len(patches))
-	fixedJSONPatches := make([]kubeadm.PatchJSON6902, len(jsonPatches))
-	for i, patch := range patches {
-		// insert the generated name metadata
-		fixedPatches[i] = fmt.Sprintf("metadata:\nname: %s\n%s", objectName, patch)
-	}
-	for i, patch := range jsonPatches {
-		// insert the generated name metadata
-		patch.Name = objectName
-		fixedJSONPatches[i] = patch
-	}
-	return fixedPatches, fixedJSONPatches
-}
-
-// removeMetadata trims out the metadata.name we put in the config for kustomize matching,
-// kubeadm will complain about this otherwise
-func removeMetadata(kustomized string) string {
-	lines := strings.Split(kustomized, "\n")
-	out := []string{}
-	for _, l := range lines {
-		if strings.Contains(l, "metadata:") || (strings.Contains(l, "name:") && strings.Contains(l, "config")) {
-			continue
-		}
-		out = append(out, l)
-	}
-	return strings.Join(out, "\n")
 }
 
 const yamlSeparator = "---\n"
