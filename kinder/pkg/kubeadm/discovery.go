@@ -53,7 +53,6 @@ func GetRemoveTokenPatch(kubeadmVersion *K8sVersion.Version) (PatchJSON6902, err
 		Group:   "kubeadm.k8s.io",
 		Version: kubeadmConfigVersion,
 		Kind:    kind,
-		Name:    "config",
 		Patch:   patch,
 	}, nil
 }
