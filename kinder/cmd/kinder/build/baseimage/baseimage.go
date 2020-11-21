@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/kubeadm/kinder/pkg/build/base"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kindbase "sigs.k8s.io/kind/pkg/build/base"
 )
 
 type flagpole struct {
@@ -67,14 +66,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	switch strings.ToLower(flags.CRI) {
 	case "containerd":
 		// Use build base image from Kind
-		ctx := kindbase.NewBuildContext(
-			kindbase.WithImage(flags.Image),
-			kindbase.WithSourceDir(flags.Source),
-		)
-		if err := ctx.Build(); err != nil {
-			return errors.Wrap(err, "build failed")
-		}
-		return nil
+		return errors.New("kinder doesn't support building base images for conainerd. Use a base image from Kind")
 	case "docker":
 		// Use build base image from kinder
 		ctx := base.NewBuildContext(

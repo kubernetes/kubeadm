@@ -80,10 +80,10 @@ kind packages that are not intended for public usage, but this was agreed with t
 new use cases, share lessons learned, issues and solutions, and ultimately contribute
 back new features.
 
-- "sigs.k8s.io/kind/cmd/*" for
+- "sigs.k8s.io/kind/pkg/cmd"
+- "sigs.k8s.io/kind/pkg/cmd/kind/delete"
+- "sigs.k8s.io/kind/pkg/cmd/kind/export"
     - providing access to few kind commands useful for the use cases targeted by kinder
-- "sigs.k8s.io/kind/pkg/build/base" for
-    - building a containerd base image
 - "sigs.k8s.io/kind/pkg/fs" (*) for
     - `TempDir`
     - `Copy`

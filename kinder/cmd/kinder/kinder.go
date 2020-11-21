@@ -32,8 +32,9 @@ import (
 	"k8s.io/kubeadm/kinder/cmd/kinder/test"
 	"k8s.io/kubeadm/kinder/cmd/kinder/version"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	kinddelete "sigs.k8s.io/kind/cmd/kind/delete"
-	kindexport "sigs.k8s.io/kind/cmd/kind/export"
+	kindcmd "sigs.k8s.io/kind/pkg/cmd"
+	kinddelete "sigs.k8s.io/kind/pkg/cmd/kind/delete"
+	kindexport "sigs.k8s.io/kind/pkg/cmd/kind/export"
 )
 
 const defaultLevel = log.WarnLevel
@@ -71,9 +72,12 @@ func NewCommand() *cobra.Command {
 		"logrus log level [panic, fatal, error, warning, info, debug, trace]",
 	)
 
+	logger := kindcmd.NewLogger()
+	ioStreams := kindcmd.StandardIOStreams()
+
 	// add kind top level subcommands re-used without changes
-	cmd.AddCommand(kinddelete.NewCommand())
-	cmd.AddCommand(kindexport.NewCommand())
+	cmd.AddCommand(kinddelete.NewCommand(logger, ioStreams))
+	cmd.AddCommand(kindexport.NewCommand(logger, ioStreams))
 
 	// add kind commands customized in kind
 	cmd.AddCommand(build.NewCommand())
