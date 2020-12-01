@@ -1,12 +1,12 @@
 version: 1
 summary: |
-  This workflow tests the proper functioning of kubeadm version from latest with Kubernetes v1.19
-  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-latest-on-1.19
+  This workflow tests the proper functioning of kubeadm version from latest with Kubernetes v1.20
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-latest-on-1.20
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-X-on-Y.yaml
   config    > https://git.k8s.io/test-infra/testgrid/config.yaml
 vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
-  kubernetesVersion: "{{ resolve `ci/latest-1.19` }}"
+  kubernetesVersion: "{{ resolve `ci/latest-1.20` }}"
   controlPlaneNodes: 3
 tasks:
 - import: skew-x-on-y-tasks.yaml
