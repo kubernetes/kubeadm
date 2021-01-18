@@ -297,7 +297,6 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	images["kube-proxy"] = k8sVersionV
 	images["etcd"] = ""
 	images["pause"] = ""
-	images["coredns"] = ""
 	// TODO(neolit123): kube-dns is being deprecated eventually [*].
 	images["k8s-dns-kube-dns"] = ""
 	images["k8s-dns-sidecar"] = ""
@@ -319,6 +318,13 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 		images["conformance"] = k8sVersionV
 	}
 
+	// coredns changed image location after 1.21.0-alpha.1
+	coreDNSNewVer := version.MustParseSemantic("v1.21.0-alpha.1")
+	coreDNSPath := "coredns"
+	if ver.AtLeast(coreDNSNewVer) {
+		coreDNSPath = "coredns/coredns"
+	}
+
 	// parse the constants file and fetch versions.
 	// note: Split(...)[1] is safe here given a line contains the key.
 	for _, line := range lines {
@@ -326,7 +332,7 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 			line = strings.TrimSpace(line)
 			line = strings.Split(line, "CoreDNSVersion = ")[1]
 			line = strings.Replace(line, `"`, "", -1)
-			images["coredns"] = line
+			images[coreDNSPath] = line
 		} else if strings.Contains(line, "DefaultEtcdVersion = ") {
 			line = strings.TrimSpace(line)
 			line = strings.Split(line, "DefaultEtcdVersion = ")[1]
@@ -352,7 +358,7 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	}
 	// verify.
 	fmt.Printf("* getImageVersions(): [%s] %#v\n", ver.String(), images)
-	if images["coredns"] == "" || images["etcd"] == "" || images["k8s-dns-kube-dns"] == "" { // [*]
+	if images[coreDNSPath] == "" || images["etcd"] == "" || images["k8s-dns-kube-dns"] == "" { // [*]
 		return fmt.Errorf("at least one image version could not be set: %#v", images)
 	}
 	return nil
