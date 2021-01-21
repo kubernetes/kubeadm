@@ -45,7 +45,7 @@ import (
 )
 
 const (
-	ciBuildRepository       = "https://storage.googleapis.com/kubernetes-release-dev/ci"
+	ciBuildRepository       = "https://storage.googleapis.com/k8s-release-dev/ci"
 	releaseBuildURepository = "https://storage.googleapis.com/kubernetes-release/release"
 
 	kubeadmBinary = "kubeadm"
