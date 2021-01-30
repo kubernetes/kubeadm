@@ -58,12 +58,21 @@ const (
 
 	// ClusterLabelKey is applied to each "node" docker container for identification
 	// TODO: consider if to switch to a kinder specific label
-	ClusterLabelKey = "io.k8s.sigs.kind.cluster"
+	ClusterLabelKey = "io.x-k8s.kind.cluster"
 
-	// NodeRoleKey is applied to each "node" docker container for categorization
+	// DeprecatedClusterLabelKey is applied to each "node" docker container for identification
+	// This is the deprecated value of ClusterLabelKey, and will be removed in a future release
+	DeprecatedClusterLabelKey = "io.k8s.sigs.kind.cluster"
+
+	// NodeRoleLabelKey is applied to each "node" docker container for categorization
 	// of nodes by role
 	// TODO: consider if to switch to a kinder specific label
-	NodeRoleKey = "io.k8s.sigs.kind.role"
+	NodeRoleLabelKey = "io.x-k8s.kind.role"
+
+	// DeprecatedNodeRoleLabelKey is applied to each "node" docker container for categorization
+	// of nodes by role.
+	// This is the deprecated value of NodeRoleKey, and will be removed in a future release
+	DeprecatedNodeRoleLabelKey = "io.k8s.sigs.kind.role"
 
 	// PodSubnet defines the default pod subnet used by kind
 	// TODO: send a PR to define this value in a kind constant (currently it is not)
