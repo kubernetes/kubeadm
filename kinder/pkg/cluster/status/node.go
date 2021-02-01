@@ -69,12 +69,12 @@ type NodeSettings struct {
 // NewNode returns a new kinder.Node wrapper
 func NewNode(name string) (n *Node, err error) {
 	// retrive the role the node using docker inspect
-	lines, err := host.InspectContainer(name, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
+	lines, err := host.InspectContainer(name, fmt.Sprintf("{{index .Config.Labels %q}}", constants.DeprecatedNodeRoleLabelKey))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get %q label", constants.NodeRoleKey)
+		return nil, errors.Wrapf(err, "failed to get %q label", constants.DeprecatedNodeRoleLabelKey)
 	}
 	if len(lines) != 1 {
-		return nil, errors.Errorf("%q label should only be one line, got %d lines", constants.NodeRoleKey, len(lines))
+		return nil, errors.Errorf("%q label should only be one line, got %d lines", constants.DeprecatedNodeRoleLabelKey, len(lines))
 	}
 	role := strings.Trim(lines[0], "'")
 

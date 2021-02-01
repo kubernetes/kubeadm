@@ -38,10 +38,12 @@ func BaseRunArgs(cluster, name, role string) ([]string, error) {
 		"--tty",    // allocate a tty for entrypoint logs
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", constants.ClusterLabelKey, cluster),
+		"--label", fmt.Sprintf("%s=%s", constants.DeprecatedClusterLabelKey, cluster),
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleLabelKey, role),
+		"--label", fmt.Sprintf("%s=%s", constants.DeprecatedNodeRoleLabelKey, role),
 	}
 
 	// TODO: enable IPv6 if necessary
