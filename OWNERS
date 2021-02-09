@@ -1,26 +1,16 @@
-# See the OWNERS file documentation:
-#  https://git.k8s.io/community/contributors/devel/owners.md
+# See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-- luxas
-- timothysc
 - fabriziopandini
 - neolit123
-- rosti
-- ereslibre
-reviewers:
-- luxas
-- timothysc
-- fabriziopandini
-- kad
-- detiber
-- dixudx
-- neolit123
-- rosti
-- yagonobre
-- ereslibre
 - SataQiu
-- yastij
-# Might want to add @xiangpengzhao, @stealthybox, @kargakis, @jamiehannaford, @krousey, @dmmcquay, @liztio and/or @chuckha back in the future
+reviewers:
+- yagonobre
+- pacoxu
+emeritus_approvers:
+- luxas
+- timothysc
+- rosti
+- ereslibre
 labels:
 - sig/cluster-lifecycle
