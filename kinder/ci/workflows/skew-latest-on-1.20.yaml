@@ -2,10 +2,11 @@ version: 1
 summary: |
   This workflow tests the proper functioning of kubeadm version from latest with Kubernetes v1.20
   test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-latest-on-1.20
-  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-X-on-Y.yaml
+  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-x-on-y.yaml
   config    > https://git.k8s.io/test-infra/testgrid/config.yaml
 vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
+  kubeletVersion: "{{ resolve `ci/latest-1.20` }}"
   kubernetesVersion: "{{ resolve `ci/latest-1.20` }}"
   controlPlaneNodes: 3
 tasks:
