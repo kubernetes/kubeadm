@@ -22,7 +22,7 @@ fi
 
 # install go if missing
 if ! `go version > /dev/null`; then
-	curl https://dl.google.com/go/go1.13.8.linux-amd64.tar.gz -o /tmp/go.tar.gz
+	curl https://golang.org/dl/go1.16.linux-amd64.tar.gz -o /tmp/go.tar.gz
 	tar -C /usr/local -xzf /tmp/go.tar.gz
 	export PATH="$PATH":/usr/local/go/bin
 	rm /tmp/go.tar.gz
@@ -41,6 +41,9 @@ cd "$LPATH"
 
 # use go modules. this forces using the latest k8s.io/apimachinery package.
 go mod init verify-manifest-lists
+
+# add module requirements and sums (required in go 1.16)
+go mod tidy
 
 # run unit tests
 go test -v ./verify_manifest_lists.go ./verify_manifest_lists_test.go

@@ -109,6 +109,10 @@ var (
 
 // bellow are some types as per the docker specs.
 
+type archContents struct {
+	Architecture string `json:"architecture"`
+}
+
 type imageLayer struct {
 	MediaType string `json:"mediaType"`
 	Size      int    `json:"size"`
@@ -297,10 +301,6 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	images["kube-proxy"] = k8sVersionV
 	images["etcd"] = ""
 	images["pause"] = ""
-	// TODO(neolit123): kube-dns is being deprecated eventually [*].
-	images["k8s-dns-kube-dns"] = ""
-	images["k8s-dns-sidecar"] = ""
-	images["k8s-dns-dnsmasq-nanny"] = ""
 
 	// images outside the scope of kubeadm, but still using the k8s version
 
@@ -343,13 +343,6 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 			line = strings.Split(line, "PauseVersion = ")[1]
 			line = strings.Replace(line, `"`, "", -1)
 			images["pause"] = line
-		} else if strings.Contains(line, "KubeDNSVersion = ") { // [*]
-			line = strings.TrimSpace(line)
-			line = strings.Split(line, "KubeDNSVersion = ")[1]
-			line = strings.Replace(line, `"`, "", -1)
-			images["k8s-dns-kube-dns"] = line
-			images["k8s-dns-sidecar"] = line
-			images["k8s-dns-dnsmasq-nanny"] = line
 		}
 	}
 	// hardcode the tag for pause as older k8s branches lack a constant.
@@ -358,18 +351,18 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	}
 	// verify.
 	fmt.Printf("* getImageVersions(): [%s] %#v\n", ver.String(), images)
-	if images[coreDNSPath] == "" || images["etcd"] == "" || images["k8s-dns-kube-dns"] == "" { // [*]
+	if images[coreDNSPath] == "" || images["etcd"] == "" {
 		return fmt.Errorf("at least one image version could not be set: %#v", images)
 	}
 	return nil
 }
 
 // verify an image manifest and it's layers.
-func verifyArchImage(imageName, archImage string) error {
+func verifyArchImage(arch, imageName, archImage string) error {
 	// parse the arch image.
 	image := manifestImage{}
 	if err := json.Unmarshal([]byte(archImage), &image); err != nil {
-		return err
+		return fmt.Errorf("could not unmarshal arch image: %v", err)
 	}
 
 	if image.MediaType != typeManifest {
@@ -382,7 +375,7 @@ func verifyArchImage(imageName, archImage string) error {
 		return fmt.Errorf("no layers for image %#v", image)
 	}
 
-	// verify config.
+	// download the config blob.
 	if image.Config.Digest == "" {
 		return fmt.Errorf("empty digest for image config: %#v", image.Config)
 	}
@@ -391,9 +384,22 @@ func verifyArchImage(imageName, archImage string) error {
 	if err != nil {
 		return fmt.Errorf("cannot download image blob for digest %q: %v", image.Config.Digest, err)
 	}
+
+	// verify the blob size.
 	sz := len(configBlob)
 	if image.Config.Size != sz {
 		return fmt.Errorf("config size and image blob size differ for digest %q; wanted: %d, got: %d", image.Config.Digest, image.Config.Size, sz)
+	}
+
+	// verify the architecture in the config blob
+	contents := archContents{}
+	if err := json.Unmarshal([]byte(configBlob), &contents); err != nil {
+		return fmt.Errorf("could not unmarshal config blob contents: %v", err)
+	}
+	if contents.Architecture != arch {
+		// TODO(neolit123): consider making this an error at some point
+		// https://github.com/kubernetes/kubernetes/issues/98908
+		fmt.Printf("WARNING: in config digest %s: found architecture %q, expected %q\n", image.Config.Digest, contents.Architecture, arch)
 	}
 
 	// verify layers.
@@ -498,7 +504,7 @@ func verifyManifestList(manifest, imageName, tag string) error {
 		}
 
 		// verify the arch image.
-		err = verifyArchImage(imageName, archImageSrc)
+		err = verifyArchImage(m.Platform.Architecture, imageName, archImageSrc)
 		if err != nil {
 			return err
 		}
