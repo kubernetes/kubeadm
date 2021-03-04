@@ -7,6 +7,7 @@ vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
   kubeadmVersion: v1.13.5
+  kubeletVersion: v1.12.8
   kubernetesVersion: v1.12.8
   controlPlaneNodes: 1
   workerNodes: 2
@@ -14,6 +15,8 @@ vars:
   image: kindest/node:test
   clusterName: kinder-xony
   kubeadmVerbosity: 6
+  defaultIgnorePreflightErrors: Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables,
+  ignorePreflightErrors: ""
 tasks:
 - name: pull-base-image
   description: |
@@ -34,6 +37,7 @@ tasks:
     - --image={{ .vars.image }}
     - --with-init-artifacts={{ .vars.kubernetesVersion }}
     - --with-kubeadm={{ .vars.kubeadmVersion }}
+    - --with-kubelet={{ .vars.kubeletVersion }}
     - --loglevel=debug
   timeout: 15m
 - name: create-cluster
@@ -60,6 +64,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
     - --copy-certs=auto
+    - --ignore-preflight-errors={{ .vars.defaultIgnorePreflightErrors }}{{ .vars.ignorePreflightErrors }}
     - --loglevel=debug
   timeout: 5m
 - name: join
@@ -71,6 +76,7 @@ tasks:
     - kubeadm-join
     - --name={{ .vars.clusterName }}
     - --copy-certs=auto
+    - --ignore-preflight-errors={{ .vars.defaultIgnorePreflightErrors }}{{ .vars.ignorePreflightErrors }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 10m
