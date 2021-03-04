@@ -39,6 +39,7 @@ echo "Cloning ${URL} in ${TMP_DIR}..."
 git clone --quiet --depth=1 "${URL}" "${TMP_DIR}"
 pushd "${TMP_DIR}" > /dev/null
 go mod init misspell
+go mod tidy
 popd > /dev/null
 
 # build misspell
