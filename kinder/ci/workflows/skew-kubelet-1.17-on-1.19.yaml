@@ -9,6 +9,7 @@ vars:
   kubeletVersion: "{{ resolve `ci/latest-1.17` }}"
   kubernetesVersion: "{{ resolve `ci/latest-1.19` }}"
   ignorePreflightErrors: "KubeletVersion"
+  ginkgoSkip: "\\[MinimumKubeletVersion:(1.18|1.19)\\]"
   controlPlaneNodes: 3
 tasks:
 - import: skew-x-on-y-tasks.yaml
