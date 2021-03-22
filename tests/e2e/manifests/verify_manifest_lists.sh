@@ -22,7 +22,7 @@ fi
 
 # install go if missing
 if ! `go version > /dev/null`; then
-	curl https://golang.org/dl/go1.16.linux-amd64.tar.gz -o /tmp/go.tar.gz
+	curl -sSL https://dl.google.com/go/go1.16.linux-amd64.tar.gz -o /tmp/go.tar.gz
 	tar -C /usr/local -xzf /tmp/go.tar.gz
 	export PATH="$PATH":/usr/local/go/bin
 	rm /tmp/go.tar.gz
