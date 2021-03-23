@@ -313,8 +313,10 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 		images["cloud-controller-manager"] = k8sVersionV
 	}
 	// test the conformance image, but only for newer versions as it was added in v1.13.0-alpha.2
+	// also skip v1.21.0-beta.1 due to a bug that caused this image tag to not be released.
 	conformanceMinVer := version.MustParseSemantic("v1.13.0-alpha.2")
-	if ver.AtLeast(conformanceMinVer) {
+	is21beta1, _ := ver.Compare("v1.21.0-beta.1")
+	if ver.AtLeast(conformanceMinVer) && is21beta1 != 0 {
 		images["conformance"] = k8sVersionV
 	}
 
