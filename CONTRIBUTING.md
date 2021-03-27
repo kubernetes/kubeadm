@@ -28,7 +28,7 @@ Follow either of the two links above to access the appropriate CLA and instructi
 
 ### Contributing kubeadm documentation
 
-`kubeadm` is documented in various places on the [kubernetes.io](https://kubernetes.io/docs/search/?q=kubeadm) website.
+`kubeadm` is documented in various places on the [kubernetes.io](https://kubernetes.io/docs/search/?q=kubeadmin) website.
 These pages cover topics such as installation steps, troubleshooting and command line syntax.
 You can help `kubeadm` **a lot** by filling issue reports for inconsistencies and keeping the documentation up-to-date by submitting PRs.
 
