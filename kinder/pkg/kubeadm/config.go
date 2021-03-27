@@ -172,7 +172,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
 ---
 # no-op entry that exists solely so it can be patched
@@ -189,7 +188,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
 discovery:
   bootstrapToken:
@@ -210,6 +208,7 @@ healthzBindAddress: "::"
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
 imageGCHighThresholdPercent: 100
+failSwapOn: false
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
@@ -269,7 +268,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
 ---
 # no-op entry that exists solely so it can be patched
@@ -286,7 +284,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
 discovery:
   bootstrapToken:
@@ -307,6 +304,7 @@ healthzBindAddress: "::"
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
 imageGCHighThresholdPercent: 100
+failSwapOn: false
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
