@@ -92,8 +92,7 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, copyCertsMode CopyCertsMode,
 		APIBindPort:          constants.APIServerPort,
 		APIServerAddress:     controlPlaneIP,
 		Token:                constants.Token,
-		PodSubnet:            "192.168.0.0/16", // default for calico
-		ServiceSubnet:        "",               // let kubeadm apply default
+		PodSubnet:            "192.168.0.0/16", // default for kindnet
 		ControlPlane:         true,
 		IPv6:                 c.Settings.IPFamily == status.IPv6Family,
 	}

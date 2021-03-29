@@ -18,6 +18,7 @@ package actions
 
 import (
 	"bytes"
+	_ "embed" // enable go:embed
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -32,7 +33,11 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-	"k8s.io/kubeadm/kinder/pkg/data"
+)
+
+var (
+	//go:embed assets/kindnet.yaml
+	kindnetManifest string
 )
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
@@ -219,28 +224,11 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 		return err
 	}
 
-	// Calico requires net.ipv4.conf.all.rp_filter to be set to 0 or 1.
-	// If you require loose RPF and you are not concerned about spoofing, this check can be disabled by setting the IgnoreLooseRPF configuration parameter to 'true'.
-	for _, cp := range c.K8sNodes() {
-		if err := cp.Command(
-			"sysctl", "-w", "net.ipv4.conf.all.rp_filter=1",
-		).Silent().Run(); err != nil {
-			return err
-		}
-	}
-
 	// Apply a CNI plugin using a hardcoded manifest
 	cmd := cp1.Command("kubectl", "apply", "--kubeconfig=/etc/kubernetes/admin.conf", "-f", "-")
-	cp1.Infof("applying Calico version 3.8.2")
-	cmd.Stdin(strings.NewReader(data.CalicoCNI3_8_2))
+	cp1.Infof("applying kindnet version 0.5.4")
+	cmd.Stdin(strings.NewReader(kindnetManifest))
 	if err := cmd.RunWithEcho(); err != nil {
-		return err
-	}
-
-	// Fix calico as per https://alexbrand.dev/post/creating-a-kind-cluster-with-calico-networking/
-	if err := cp1.Command(
-		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "-n=kube-system", "set", "env", "daemonset/calico-node", "FELIX_IGNORELOOSERPF=true",
-	).RunWithEcho(); err != nil {
 		return err
 	}
 
