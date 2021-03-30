@@ -151,9 +151,11 @@ func (c *ClusterManager) CopyFile(source, target string) error {
 	}
 
 	if targetNodes == nil {
-		fmt.Printf("Copying from %s ...\n", sourceNodes[0].Name())
-		if err := sourceNodes[0].CopyFrom(sourcePath, targetPath); err != nil {
-			return err
+		if sourceNodes != nil {
+			fmt.Printf("Copying from %s ...\n", sourceNodes[0].Name())
+			if err := sourceNodes[0].CopyFrom(sourcePath, targetPath); err != nil {
+				return err
+			}
 		}
 	}
 
