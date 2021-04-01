@@ -19,7 +19,7 @@ Kubeadm's scope is limited to the local node filesystem and the Kubernetes API, 
 - [Installing kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 - [Creating a cluster](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 - [Command-line reference](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/)
-- [Configuration API reference](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm) (pick an API version from the [list of packages](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm#pkg-subdirectories))
+- [Configuration API reference](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm) (pick an API version from the [list of packages](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm#section-directories))
 
 ## Community, discussion, contribution, and support
 
