@@ -1,0 +1,103 @@
+version: 1
+summary: |
+  This workflow implements a sequence of tasks for testing kubeadm join
+  and upgrade when the "kube-proxy" and "coredns" ConfigMaps are missing.
+vars:
+  initVersion: "{{ resolve `ci/latest` }}"
+  controlPlaneNodes: 1
+  workerNodes: 1
+  baseImage: kindest/base:v20190403-1ebf15f
+  image: kindest/node:test
+  clusterName: kinder-upgrade
+  kubeadmVerbosity: 6
+tasks:
+- name: pull-base-image
+  description: |
+    Pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
+  cmd: docker
+  args:
+    - pull
+    - "{{ .vars.baseImage }}"
+- name: add-kubernetes-versions
+  description: |
+    Creates a node-image-variant by adding Kubernetes version "initVersion"
+    to be used when executing "kinder do kubeadm-init" and Kubernetes
+    version "upgradeVersion" to be used afterwards when executing "kinder do kubeadm-upgrade"
+  cmd: kinder
+  args:
+    - build
+    - node-image-variant
+    - --base-image={{ .vars.baseImage }}
+    - --image={{ .vars.image }}
+    - --with-init-artifacts={{ .vars.initVersion }}
+    - --loglevel=debug
+  timeout: 10m
+- name: create-cluster
+  description: |
+    Create a set of nodes ready for hosting the Kubernetes cluster
+  cmd: kinder
+  args:
+    - create
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --image={{ .vars.image }}
+    - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+    - --worker-nodes={{ .vars.workerNodes }}
+    - --loglevel=debug
+  timeout: 5m
+- name: init
+  description: |
+    Initializes the Kubernetes cluster with version "initVersion"
+    by starting the boostrap control-plane nodes
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-init
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 5m
+- name: delete-addon-config-maps
+  description: |
+    Deletes the "coredns" ConfigMap and renames the "kube-proxy" ConfigMaps under "kube-system"
+  cmd: /bin/sh
+  args:
+    - -c
+    - |
+      docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "kubectl get cm kube-proxy -n kube-system --kubeconfig /etc/kubernetes/admin.conf -o yaml | sed s/'  name: kube-proxy/  name: kube-proxy-foo'/ | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -"
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubectl patch ds -n kube-system --kubeconfig /etc/kubernetes/admin.conf kube-proxy -p '{"spec":{"template":{"spec":{"volumes":[{"name":"kube-proxy","configMap":{"name":"kube-proxy-foo"}}]}}}}'
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubectl delete cm -n kube-system --kubeconfig=/etc/kubernetes/admin.conf kube-proxy
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubectl delete cm -n kube-system --kubeconfig=/etc/kubernetes/admin.conf coredns
+  timeout: 5m
+- name: join
+  description: |
+    Joins a worker node and verifies that it tolerates missing addon ConfigMaps
+  cmd: kinder
+  args:
+    - do
+    - kubeadm-join
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+    - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 5m
+- name: upgrade-control-plane
+  description: |
+    Upgrades the control-plane node to the same version of the existing control-plane. This verifies
+    that "kubeadm upgrade apply" tolerates missing addon ConfigMaps. Ignoring preflight errors
+    is still required due to CoreDNS checks.
+  cmd: /bin/sh
+  args:
+    - -c
+    - |
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply -f --ignore-preflight-errors=CoreDNSMigration,CoreDNSUnsupportedPlugins --v={{ .vars.kubeadmVerbosity }} {{ .vars.initVersion }}
+  timeout: 5m
+- name: delete
+  description: |
+    Deletes the cluster
+  cmd: kinder
+  args:
+    - delete
+    - cluster
+    - --name={{ .vars.clusterName }}
+    - --loglevel=debug
+  force: true
