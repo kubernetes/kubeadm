@@ -56,7 +56,7 @@ _Actions on a running cluster:_
         - shortcut for testing different kubeadm join discovery mechanics
     - `kubeadm init` can be executed as a unique workflow or using phases
     - `kubeadm join` can be executed as a unique workflow or using phases
-    - the init action installs Calico as a CNI plugin instead of kindnet
+    - the init action installs kindnet CNI plugin in a custom workflow defined by kinder. kubeadm should be CNI agnostic and that validation of other CNI providers is out of the scope of our current E2E testing.
     - the init/join actions can use the automatic copy certs feature of kubeadm (or mimic the manual copy process)
 - kinder support additional actions
     - upgrade
