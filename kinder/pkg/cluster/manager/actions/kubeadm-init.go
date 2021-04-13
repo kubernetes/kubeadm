@@ -18,7 +18,6 @@ package actions
 
 import (
 	"bytes"
-	_ "embed" // enable go:embed
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -31,13 +30,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions/assets"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
-)
-
-var (
-	//go:embed assets/kindnet.yaml
-	kindnetManifest string
 )
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
@@ -227,7 +222,7 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 	// Apply a CNI plugin using a hardcoded manifest
 	cmd := cp1.Command("kubectl", "apply", "--kubeconfig=/etc/kubernetes/admin.conf", "-f", "-")
 	cp1.Infof("applying kindnet version 0.5.4")
-	cmd.Stdin(strings.NewReader(kindnetManifest))
+	cmd.Stdin(strings.NewReader(assets.KindnetManifest054))
 	if err := cmd.RunWithEcho(); err != nil {
 		return err
 	}
