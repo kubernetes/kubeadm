@@ -59,11 +59,13 @@ tasks:
   timeout: 5m
 - name: delete-addon-config-maps
   description: |
-    Deletes the "coredns" and "kube-proxy" ConfigMaps under "kube-system"
+    Deletes the "coredns" ConfigMap and renames the "kube-proxy" ConfigMaps under "kube-system"
   cmd: /bin/sh
   args:
     - -c
     - |
+      docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "kubectl get cm kube-proxy -n kube-system --kubeconfig /etc/kubernetes/admin.conf -o yaml | sed s/'  name: kube-proxy/  name: kube-proxy-foo'/ | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -"
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubectl patch ds -n kube-system --kubeconfig /etc/kubernetes/admin.conf kube-proxy -p '{"spec":{"template":{"spec":{"volumes":[{"name":"kube-proxy","configMap":{"name":"kube-proxy-foo"}}]}}}}'
       docker exec {{ .vars.clusterName }}-control-plane-1 kubectl delete cm -n kube-system --kubeconfig=/etc/kubernetes/admin.conf kube-proxy
       docker exec {{ .vars.clusterName }}-control-plane-1 kubectl delete cm -n kube-system --kubeconfig=/etc/kubernetes/admin.conf coredns
   timeout: 5m
@@ -87,7 +89,7 @@ tasks:
   args:
     - -c
     - |
-      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply -f --ignore-preflight-errors=all --v={{ .vars.kubeadmVerbosity }} {{ .vars.initVersion }}
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply -f --ignore-preflight-errors=CoreDNSMigration,CoreDNSUnsupportedPlugins --v={{ .vars.kubeadmVerbosity }} {{ .vars.initVersion }}
   timeout: 5m
 - name: delete
   description: |
