@@ -315,7 +315,7 @@ kinder test e2e --reporting-flags "--report-dir=/tmp/_artifacts --report-prefix=
 
 Similarly to E2E Kubernetes, there is a suite of tests aimed at checking that kubeadm has created
 and properly configured all the ConfigMap, Secrets, RBAC Roles and RoleBinding required for the
-proper functioning of future calls to `kubeadm join` or `kubeadm upgrade`.
+proper functioning of future calls to `kubeadm join` or `kubeadm upgrade`.
 
 This can be achieved by a simple
 
