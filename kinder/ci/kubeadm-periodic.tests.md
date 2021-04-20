@@ -25,6 +25,15 @@ Kubeadm tests span across 5 Kubernetes versions:
 Note that some tests do not span the full support skew, because they could be testing a feature that was added later
 than the oldest supported version.
 
+## Modifying e2e tests
+
+The contents of `kinder/ci/workflows` and the test-infra Prow jobs are generated
+by the `kinder/ci/tool/update-workflows` tool. To modify/add/remove the kinder workflows and/or
+test-infra Jobs you must modify their templates in `kinder/ci/tool/update-workflows/templates`.
+
+See [Managing e2e tests](../../docs/managing-e2e-tests.md) to understand more about the e2e test
+setup.
+
 ## Type of tests
 
 Kubeadm tests can be grouped in different families of tests, each one covering a different type of test workflow. Each test workflow

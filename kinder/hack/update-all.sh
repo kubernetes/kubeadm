@@ -24,3 +24,4 @@ REPO_PATH=$(get_root_path)
 
 "${REPO_PATH}"/hack/update-deps.sh
 "${REPO_PATH}"/hack/update-gofmt.sh
+"${REPO_PATH}"/hack/update-workflows.sh

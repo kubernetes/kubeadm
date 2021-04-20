@@ -67,6 +67,12 @@ if [[ "${VERIFY_GOVET:-true}" == "true" ]]; then
   cd_root_path
 fi
 
+if [[ "${VERIFY_UPDATE_WORKFLOWS:-true}" == "true" ]]; then
+  echo "[*] Verifying updated workflows..."
+  hack/verify-update-workflows.sh || res=1
+  cd_root_path
+fi
+
 if [[ "${VERIFY_WORKFLOWS:-true}" == "true" ]]; then
   echo "[*] Verifying workflows..."
   hack/verify-workflows.sh || res=1

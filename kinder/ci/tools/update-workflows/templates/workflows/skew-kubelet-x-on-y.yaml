@@ -1,0 +1,14 @@
+version: 1
+summary: |
+  This workflow tests the proper functioning of kubeadm and control plane from {{ .KubernetesVersion }} against {{ .KubeletVersion }} kubelet
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-kubelet-{{ dashVer .KubeletVersion }}-on-{{ .KubernetesVersion }}
+  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/{{ .TargetFile }}
+vars:
+  kubeadmVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubeadmVersion }}` \}\}"
+  kubeletVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubeletVersion }}` \}\}"
+  kubernetesVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
+  ignorePreflightErrors: "KubeletVersion"
+  ginkgoSkip: "\\[MinimumKubeletVersion:({{ .SkipVersions }})\\]"
+  controlPlaneNodes: 3
+tasks:
+- import: skew-x-on-y-tasks.yaml

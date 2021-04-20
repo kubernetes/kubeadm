@@ -19,25 +19,26 @@ For example, let's have a look at this file:
 
 It contains a list of jobs such as:
 ```
-- name: ci-kubernetes-e2e-kubeadm-kind-master
+- name: ci-kubernetes-e2e-kubeadm-foo
   interval: 2h
   ...
 ```
 
-In this case, `ci-kubernetes-e2e-kubeadm-kind-master` is a test job that runs every 2 hours and it also
+In this case, `ci-kubernetes-e2e-kubeadm-foo` is a test job that runs every 2 hours and it also
 has a set of other parameters defined for it. Such test jobs use an image that will run as a container inside
 a Pod of the Kubernetes [Prow](https://git.k8s.io/test-infra/prow) cluster.
 
-For this example job the deployment tool is called [kind](https://github.com/kubernetes-sigs/kind).
-As a very high level summary, the way this works is when a job is invoked all the job parameters
-are passed to a CLI tool called kubetest, which then instantiates the job container and then the deployment tool
-inside it. Please note that kubetest is not required and test authors can decide to call any bash script instead.
+Prow jobs execute a tool called `kinder`.
 
-The SIG also uses another deployment tool called [kinder](https://git.k8s.io/kubeadm/kinder).
-kinder is based on kind and it's used for upgrades and version skew tests, but it does not require kubetest integration.
+### Kinder workflows
+
+kubeadm uses a deployment tool called [kinder](https://git.k8s.io/kubeadm/kinder).
+kinder is based on kind and it's used for a variety of different tests, such as upgrades and skew tests.
 
 Kinder uses test workflow files that run sequences of tasks, such as "upgrade", "run e2e conformance tests", "run e2e kubeadm tests".
-An example of such a workflow file can be seen [here](https://git.k8s.io/kubeadm/kinder/ci/workflows/presubmit-upgrade-latest.yaml).
+
+More information on kinder workflows can be found [here](kinder/ci/kubeadm-periodic.tests.md).
+The same document must be updated every time kinder workflows are added/deleted.
 
 ### Testgrid configuration
 
@@ -46,8 +47,8 @@ Testgrid contains elements like dashboard groups, dashboards and tabs.
 As an overview:
 - SIG Cluster Lifecycle dashboards reside in a dashboard group that can be found [here](https://k8s-testgrid.appspot.com).
 - Inside this dashboard group there is a [dashboard for kubeadm](https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-kubeadm).
-- Inside this dashboard there are individual tabs such as `kubeadm-kind-master` (which is the tab name for the
-job `ci-kubernetes-e2e-kubeadm-kind-master`).
+- Inside this dashboard there are individual tabs such as `kubeadm-foo` (which is the tab name for the
+job `ci-kubernetes-e2e-kubeadm-foo`).
 
 In the YAML structure of jobs such as `ci-kubernetes-e2e-kubeadm-kind-master` the following list
 of annotations can be seen:
@@ -55,9 +56,9 @@ of annotations can be seen:
 ```
 annotations:
   testgrid-dashboards: sig-cluster-lifecycle-kubeadm,sig-release-master-informing
-  testgrid-tab-name: kubeadm-kind-master
-  testgrid-alert-email: kubernetes-sig-cluster-lifecycle@googlegroups.com
-  description: "OWNER: sig-cluster-lifecycle (kind); Uses kubeadm/kind to create a cluster and run the conformance suite"
+  testgrid-tab-name: kubeadm-foo
+  testgrid-alert-email: kubernetes-sig-cluster-lifecycle+testgrid@googlegroups.com
+  description: "OWNER: sig-cluster-lifecycle: some description here"
   testgrid-num-columns-recent: "20"
   testgrid-num-failures-to-alert: "4"
   testgrid-alert-stale-results-hours: "8"
@@ -69,119 +70,40 @@ description and other.
 
 For more information about configuring testgrid see [this page](https://git.k8s.io/test-infra/testgrid/config.md).
 
-### Updates to kubeadm tests
+### Updating kubeadm e2e test jobs
 
-Before each new Kubernetes release and during the second month of the [release-cycle](https://git.k8s.io/kubeadm/docs/release-cycle.md), a set of manual actions have to be performed, so that the kubeadm e2e tests are up to date with the new release.
+The script `kinder/hack/update-workflows.sh` can be used to update
+the workflows in the current clone of the kubeadm repository and also
+update the test-infra jobs in a local `kubernetes/test-infra` clone.
 
-The operation can be broken down into:
-- Sending a PR for updating kinder workflows.
-- Sending a PR for updating test jobs in kubernetes/test-infra.
+It requires the following environment variable to be set:
+- `TEST_INFRA_KUBEADM_PATH`: passes `--path-test-infra ` to the
+[`kinder/ci/tools/update-workflows`](kinder/ci/tools/update-workflows/README.md) tool.
 
-Ideally both PRs should be merged around the same time, so that there are no failed runs.
+The `update-workflows` tool uses templates to generate YAML files.
+The templates are located in `kinder/ci/tools/update-workflows/templates`.
 
-The idea is to remove old tests and add new ones. For example. If Kubernetes 1.15 is about to be released soon,
-this means that the `15 - 3 = 12` MINOR version would go outside of the support skew of the project. `1.12` jobs
-have to be removed and `1.15` jobs have to be added. The project would support version `15 - 2 = 13` as the minimum.
+Let's define the size of the Kubernetes support skew as `N`.
+For `N=3`, 3 releases will be in support.
 
-The summary of the actions is the following:
-- If there are `1.12 -> 1.13` upgrade jobs leave them, because upgrades to `1.13` still have to be supported.
-- Remove plain `1.12` jobs (only after 1.15 is released).
-- Remove `1.13 on 1.12` version skew jobs (only after 1.15 is released).
-- Remove `1.11 -> 1.12` upgrade jobs (only after 1.15 is released).
-- Add upgrade jobs for `1.14 -> 1.15` and `1.15 on 1.14` skew jobs.
-- Add plain `1.15` jobs.
+When a new release is about to happen, the kubeadm test workflows and jobs have
+two be updated two times:
+1. When the new `release-x.yy` branch of `kubernetes/kubernetes` is created and the
+  `release-x.yy-*` test-grid dashboards are created.
+  - Edit `kinder/hack/update-workflows.sh`:
+    - The MINOR value of `KUBERNETES_VERSION` must be incremented
+    - `SKEW_SIZE` must be set to `N+1` to also include the new version
+  - Run `./hack/update-workflows.sh` from the kinder directory
 
-#### Updating kinder workflows
-
-Kinder workflows need to be updated each cycle in this location:
-https://git.k8s.io/kubeadm/kinder/ci/workflows/
-
-Additional actions to be performed:
-- Make sure that workflows include the correct `ci/latest-x` labels.
-- Make sure that workflows have the correct testgrid URLs.
-
-#### Updating test jobs in kubernetes/test-infra
-
-This document will cover information on how to perform updates on these files:
-- [kubeadm-kinder.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder.yaml)
-
-Holds test jobs where the kubeadm version matches the Kubernetes control-plane and the kubelet versions.
-
-- [kubeadm-kinder-upgrade.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-upgrade.yaml)
-
-Holds test jobs that perform a upgrade from version X to version Y (usually `Y = X + 1`).
-
-- [kubeadm-kinder-x-on-y.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-x-on-y.yaml)
-
-Holds test jobs that run kubeadm version X, on a control plane and kubelet version Y,
-as kubeadm does support `Y = X - 1`
-
-- [kubeadm-kinder-external-etcd.yaml](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-external-etcd.yaml)
-
-Holds tests that deploy a kubeadm / kinder cluster using external etcd, instead of the default stacked etcd.
-
-The files can be found in the [sig-cluster-lifecycle](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle) folder.
-
-
-Additional actions to be performed:
-- Make sure the correct image tag for kubekins is used:
-  - `kubekins-e2e:<TAG>-1.15` should be the kubekins image:tag for a `1.15` job.
-  - `kubekins-e2e:<TAG>-master` should be the kubekins image:tag for `master` job.
-- Include the correct annotations:
-
-```
-annotations:
-  testgrid-dashboards: sig-cluster-lifecycle-kubeadm,sig-release-1.15-informing
-  testgrid-tab-name: kubeadm-kind-1-15
-```
-
-The above indicates that a tab called `kubeadm-kind-1-15` will appear in the dashboards
-`sig-cluster-lifecycle-kubeadm` and `sig-release-1.15-informing`.
-
-- Jobs should clone the correct kubernetes/kubernetes branch:
-
-```
-extra_refs:
-- org: kubernetes
-  repo: kubernetes
-  base_ref: <branch-name>
-```
-For example, a `1.15` job would need to clone the branch `release-1.15` and `master` job would
-need to clone `master`.
-
-- kinder jobs would also need to execute the correct workflow - e.g. `upgrade-1.14-1.15` or `upgrade-1.15-master`.
-
-Once you have made the above test-infra changes, you need to run a certain script to reflect the changes in generated configuration. For that you can call the following command:
-
-```
-./hack/update-all.sh
-```
-
-You can also run verification for your changes by calling the verification scripts:
-```
-./hack/verify-*.sh
-```
-
-Or building test-infra:
-```
-make
-```
-Note that test-infra requires [Bazel](https://bazel.build/).
-
-At this point you can commit your changes and send a GitHub PR against the test-infra repository.
+2. When the oldest release (i.e. `x.yy-N`) goes out support:
+  - Edit `kinder/hack/update-workflows.sh`:
+    - `SKEW_SIZE` must be set back to `N`, to exclude the oldest release
+  - Run `./hack/update-workflows.sh`  from the kinder directory
 
 ### Job run frequency
 
 Different kubeadm test jobs run on a different frequency of time.
-
-Jobs against the `master` kubernetes/kubernetes branch
-run more often, e.g `ci-kubernetes-e2e-kubeadm-kind-master`, `ci-kubernetes-e2e-kubeadm-kinder-master-on-stable` and `ci-kubernetes-e2e-kubeadm-kinder-upgrade-stable-master` run every 2 hours. Given the `master` branch receives a lot
-of updates it's important to catch problems more often.
-
-Test jobs for the older branches, e.g. `ci-kubernetes-e2e-kubeadm-kind-(master-1)`,
-`ci-kubernetes-e2e-kubeadm-kinder-(master-1)-on-(master-2)` and `ci-kubernetes-e2e-kubeadm-kinder-upgrade-(master-2)-(master-1)`
-run every 12 hours. The older maintained kubernetes/kubernetes branches receive less updates, so less frequent job runs there
-are sufficient.
+Jobs against the latest development branch run more often.
 
 ### Email alerts
 
@@ -193,15 +115,15 @@ Test job failures can trigger email alerts. This can be configured using annotat
   testgrid-alert-stale-results-hours: "8"
 ```
 
-- `testgrid-alert-email` should be set to `kubernetes-sig-cluster-lifecycle@googlegroups.com`.
+- `testgrid-alert-email` should be set to `kubernetes-sig-cluster-lifecycle+testgrid@googlegroups.com`.
 in the case of SIG Cluster Lifecycle. This is a mailing list (Google Group) that will receive the alert.
 - `testgrid-alert-stale-results-hours` means an alert will be sent in case the job is in a stale state
 and is not reporting new status after N hours. Usually a restart by a test-infra "on-call" operator
 is required in such cases.
 - `testgrid-num-failures-to-alert` sets the N failed runs ("red runs") after which an alert will be sent.
 
-Jobs that runs against the `master` kubernetes/kubernetes branch should send email alerts more often (e.g. 8 hours),
-while jobs for the older branches should report less often (e.g. 24 hours).
+Jobs that runs against the development kubernetes/kubernetes branch should send email alerts more often
+(e.g. 8 hours), while jobs for the older branches should report less often (e.g. 24 hours).
 
 ### Release informing and blocking jobs
 
@@ -216,9 +138,3 @@ SIG Cluster Lifecycle must be responsive in case the release team tries to conta
 
 Please note that if a job is consistently failing or flaky it will be removed from release dashboards,
 by SIG Release or SIG Testing.
-
-### Resources
-
-- Example PRs can be found at the following links:
-  - https://github.com/kubernetes/kubeadm/pull/1744
-  - https://github.com/kubernetes/test-infra/pull/14037

@@ -1,0 +1,168 @@
+jobGroups:
+
+- name: discovery
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-discovery.yaml
+    template: ./templates/testinfra/kubeadm-kinder-discovery.yaml
+  kinderWorkflowSpec:
+    targetFile: discovery-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/discovery.yaml
+    additionalFiles:
+    - ./templates/workflows/discovery-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+  - kubernetesVersion: 0
+  - kubernetesVersion: -1
+  - kubernetesVersion: -2
+  - kubernetesVersion: -3
+
+- name: external-ca
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-external-ca.yaml
+    template: ./templates/testinfra/kubeadm-kinder-external-ca.yaml
+  kinderWorkflowSpec:
+    targetFile: external-ca-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/external-ca.yaml
+    additionalFiles:
+    - ./templates/workflows/external-ca-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+  - kubernetesVersion: 0
+  - kubernetesVersion: -1
+  - kubernetesVersion: -2
+  - kubernetesVersion: -3
+
+- name: external-etcd
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-external-etcd.yaml
+    template: ./templates/testinfra/kubeadm-kinder-external-etcd.yaml
+  kinderWorkflowSpec:
+    targetFile: external-etcd-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/external-etcd.yaml
+    additionalFiles:
+    - ./templates/workflows/external-etcd-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+  - kubernetesVersion: 0
+  - kubernetesVersion: -1
+  - kubernetesVersion: -2
+  - kubernetesVersion: -3
+
+- name: patches
+  minimumKubernetesVersion: v1.19.0
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-patches.yaml
+    template: ./templates/testinfra/kubeadm-kinder-patches.yaml
+  kinderWorkflowSpec:
+    targetFile: patches-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/patches.yaml
+    additionalFiles:
+    - ./templates/workflows/patches-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+  - kubernetesVersion: 0
+  - kubernetesVersion: -1
+  - kubernetesVersion: -2
+  - kubernetesVersion: -3
+
+- name: presubmit-upgrade-latest
+  kinderWorkflowSpec:
+    additionalFiles:
+    - ./templates/workflows/presubmit-upgrade-latest.yaml
+
+- name: skew-kubelet-x-on-y
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-kubelet-x-on-y.yaml
+    template: ./templates/testinfra/kubeadm-kinder-kubelet-x-on-y.yaml
+  kinderWorkflowSpec:
+    targetFile: skew-kubelet-{{ .KubeletVersion }}-on-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/skew-kubelet-x-on-y.yaml
+    additionalFiles:
+    - ./templates/workflows/skew-x-on-y-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+    kubeletVersion: 0
+    skipVersions: [ +1 ]
+  - kubernetesVersion: latest
+    kubeletVersion: -1
+    skipVersions: [ 0, +1 ]
+  - kubernetesVersion: 0
+    kubeletVersion: -1
+    skipVersions: [ 0 ]
+  - kubernetesVersion: 0
+    kubeletVersion: -2
+    skipVersions: [ -1, 0 ]
+  - kubernetesVersion: -1
+    kubeletVersion: -2
+    skipVersions: [ -1 ]
+  - kubernetesVersion: -1
+    kubeletVersion: -3
+    skipVersions: [ -2, -1 ]
+  - kubernetesVersion: -2
+    kubeletVersion: -3
+    skipVersions: [ -2 ]
+
+- name: skew-x-on-y
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-x-on-y.yaml
+    template: ./templates/testinfra/kubeadm-kinder-x-on-y.yaml
+  kinderWorkflowSpec:
+    targetFile: skew-{{ .KubeadmVersion }}-on-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/skew-x-on-y.yaml
+    additionalFiles:
+    - ./templates/workflows/skew-x-on-y-tasks.yaml
+  jobs:
+  - kubernetesVersion: 0
+    kubeadmVersion: latest
+  - kubernetesVersion: -1
+    kubeadmVersion: 0
+  - kubernetesVersion: -2
+    kubeadmVersion: -1
+  - kubernetesVersion: -3
+    kubeadmVersion: -2
+
+- name: upgrade
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-upgrade.yaml
+    template: ./templates/testinfra/kubeadm-kinder-upgrade.yaml
+  kinderWorkflowSpec:
+    targetFile: upgrade-{{ .InitVersion }}-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/upgrade.yaml
+    additionalFiles:
+    - ./templates/workflows/upgrade-tasks.yaml
+  jobs:
+  - initVersion: 0
+    kubernetesVersion: latest
+  - initVersion: -1
+    kubernetesVersion: 0
+  - initVersion: -2
+    kubernetesVersion: -1
+  - initVersion: -3
+    kubernetesVersion: -2
+
+- name: regular
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder.yaml
+    template: ./templates/testinfra/kubeadm-kinder.yaml
+  kinderWorkflowSpec:
+    targetFile: regular-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/regular.yaml
+    additionalFiles:
+    - ./templates/workflows/regular-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+  - kubernetesVersion: 0
+  - kubernetesVersion: -1
+  - kubernetesVersion: -2
+  - kubernetesVersion: -3
+
+- name: upgrade-latest-no-addon-config-maps
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-addons.yaml
+    template: ./templates/testinfra/kubeadm-kinder-addons.yaml
+  kinderWorkflowSpec:
+    targetFile: upgrade-latest-no-addon-config-maps.yaml
+    additionalFiles:
+    - ./templates/workflows/upgrade-latest-no-addon-config-maps.yaml
+  jobs:
+  - kubernetesVersion: latest
