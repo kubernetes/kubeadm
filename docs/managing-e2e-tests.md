@@ -57,7 +57,7 @@ of annotations can be seen:
 annotations:
   testgrid-dashboards: sig-cluster-lifecycle-kubeadm,sig-release-master-informing
   testgrid-tab-name: kubeadm-foo
-  testgrid-alert-email: kubernetes-sig-cluster-lifecycle+testgrid@googlegroups.com
+  testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io
   description: "OWNER: sig-cluster-lifecycle: some description here"
   testgrid-num-columns-recent: "20"
   testgrid-num-failures-to-alert: "4"
@@ -110,12 +110,12 @@ Jobs against the latest development branch run more often.
 Test job failures can trigger email alerts. This can be configured using annotations:
 
 ```
-  testgrid-alert-email: kubernetes-sig-cluster-lifecycle@googlegroups.com
+  testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io
   testgrid-num-failures-to-alert: "4"
   testgrid-alert-stale-results-hours: "8"
 ```
 
-- `testgrid-alert-email` should be set to `kubernetes-sig-cluster-lifecycle+testgrid@googlegroups.com`.
+- `testgrid-alert-email` should be set to `sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io`.
 in the case of SIG Cluster Lifecycle. This is a mailing list (Google Group) that will receive the alert.
 - `testgrid-alert-stale-results-hours` means an alert will be sent in case the job is in a stale state
 and is not reporting new status after N hours. Usually a restart by a test-infra "on-call" operator
