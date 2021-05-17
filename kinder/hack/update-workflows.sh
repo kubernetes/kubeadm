@@ -23,7 +23,7 @@ cd_root_path
 KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.21.0}"
 
 # set skew
-KUBERNETES_SKEW="${KUBERNETES_SKEW:-4}"
+KUBERNETES_SKEW="${KUBERNETES_SKEW:-2}"
 
 # path to the config
 PATH_CONFIG="${PATH_CONFIG:-./ci/tools/update-workflows/config.yaml}"
