@@ -19,6 +19,6 @@ package host
 /*
 Package host provide utilities for dealing with the CRI engine on the host machine (docker).
 
-The current implementation is a fork from "https://github.com/kubernetes-sigs/kind/blob/master/pkg/build/nodeimage/internal/container/docker/",
+The current implementation is a fork from "https://sigs.k8s.io/kind/pkg/build/nodeimage/internal/container/docker/",
 which can't be used because it is internal. The code in this package is now evolving independently from the original.
 */

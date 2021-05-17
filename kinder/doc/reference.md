@@ -113,7 +113,7 @@ Following node selectors are available
 | @all     | all the Kubernetes nodes in the cluster.<br />(control-plane and worker nodes are included, load balancer and etcd not) |
 | @cp*     | all the control-plane nodes                                  |
 | @cp1     | the bootstrap-control plane node                             |
-| @cpN     | the secondary master nodes                                   |
+| @cpN     | the secondary control plane nodes                            |
 | @w*      | all the worker nodes                                         |
 | @lb      | the external load balancer                                   |
 | @etcd    | the external etcd                                            |

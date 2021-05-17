@@ -30,7 +30,7 @@ import (
 /*
 patch.go provides utilities for applying patches to a YAML file.
 
-The current implementation is a fork from "https://github.com/kubernetes-sigs/kind/blob/master/pkg/cluster/internal/patch",
+The current implementation is a fork from "https://sigs.k8s.io/kind/pkg/cluster/internal/patch",
 which can't be used because it is internal. The code in this package is now evolving independently from the original.
 */
 

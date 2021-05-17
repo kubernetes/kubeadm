@@ -191,7 +191,7 @@ func (c *Cluster) Validate() error {
 	return nil
 }
 
-// ReadSettings read cluster settings from a control-plane node
+// ReadSettings read cluster settings from a control plane node
 func (c *Cluster) ReadSettings() (err error) {
 	log.Debug("Reading cluster settings...")
 	c.Settings, err = c.BootstrapControlPlane().ReadClusterSettings()

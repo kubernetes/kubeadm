@@ -40,7 +40,7 @@ func NewCommand() *cobra.Command {
 			"    @all 	all the control-plane and worker nodes \n" +
 			"    @cp* 	all the control-plane nodes \n" +
 			"    @cp1 	the bootstrap-control plane node \n" +
-			"    @cpN 	the secondary master nodes \n" +
+			"    @cpN 	the secondary control plane nodes \n" +
 			"    @w* 	all the worker nodes\n" +
 			"    @lb 	the external load balancer\n" +
 			"    @etcd 	the external etcd",

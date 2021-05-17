@@ -50,7 +50,7 @@ As an overview:
 - Inside this dashboard there are individual tabs such as `kubeadm-foo` (which is the tab name for the
 job `ci-kubernetes-e2e-kubeadm-foo`).
 
-In the YAML structure of jobs such as `ci-kubernetes-e2e-kubeadm-kind-master` the following list
+In the YAML structure of jobs such as `ci-kubernetes-e2e-kubeadm-foo` the following list
 of annotations can be seen:
 
 ```
