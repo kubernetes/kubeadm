@@ -25,7 +25,7 @@ sub-command in the parent command MD file like so:
 	{{< include "generated/kubeadm_config_newcommand.md" >}}
 	```
 	Full example:
-	* https://raw.githubusercontent.com/kubernetes/website/master/content/en/docs/reference/setup-tools/kubeadm/kubeadm-config.md
+	* https://git.k8s.io/website/content/en/docs/reference/setup-tools/kubeadm/kubeadm-config.md
 - Please note that these files will act only as placeholders with respect to the `kubernetes/website`
 and they will later be overwritten with generated files by a [separate tool](https://github.com/kubernetes-incubator/reference-docs)
 that also supports HTML styles. This process is managed by SIG Docs on each release.
@@ -36,4 +36,4 @@ that also supports HTML styles. This process is managed by SIG Docs on each rele
 - When sending a PR for `kubernetes/website` make sure that you remove files related to `*newcommand*` in:
 `./content/en/docs/reference/setup-tools/kubeadm/generated`
 - Also, remove includes and any notes about this command in the parent command MD file.
-- Make sure that you commit these changes in your PR for `kubernetes/website`. 
+- Make sure that you commit these changes in your PR for `kubernetes/website`.

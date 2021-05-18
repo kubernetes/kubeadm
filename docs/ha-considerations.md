@@ -77,7 +77,7 @@ There are some placeholders in `bash` variable style to fill in:
 - `${STATE}` is `MASTER` for one and `BACKUP` for all other hosts, hence the virtual IP will initially be assigned to the `MASTER`.
 - `${INTERFACE}` is the network interface taking part in the negotiation of the virtual IP, e.g. `eth0`.
 - `${ROUTER_ID}` should be the same for all `keepalived` cluster hosts while unique amongst all clusters in the same subnet. Many distros pre-configure its value to `51`.
-- `${PRIORITY}` should be higher on the master than on the backups. Hence `101` and `100` respectively will suffice.
+- `${PRIORITY}` should be higher on the control plane node than on the backups. Hence `101` and `100` respectively will suffice.
 - `${AUTH_PASS}` should be the same for all `keepalived` cluster hosts, e.g. `42`
 - `${APISERVER_VIP}` is the virtual IP address negotiated between the `keepalived` cluster hosts.
 
@@ -137,7 +137,7 @@ defaults
     timeout check           10s
 
 #---------------------------------------------------------------------
-# apiserver frontend which proxys to the masters
+# apiserver frontend which proxys to the control plane nodes
 #---------------------------------------------------------------------
 frontend apiserver
     bind *:${APISERVER_DEST_PORT}

@@ -32,7 +32,7 @@ necessary.
 
 If tests fail due to an upstream change to test-infra or a related ecosystem
 project, it is the responsibility of maintainers to correct and recalibrate
-tests.  
+tests.
 
 Ideally, maintainers and those accountable for such upstream projects should
 make it a habit of routinely reaching out to relevant stakeholders when such
@@ -52,5 +52,5 @@ Test failure will look like:
 ```error during make -C /workspace/kubernetes-anywhere WAIT_FOR_KUBECONFIG=y deploy: exit status 2```
 
 To debug further, dig into the collected logs
-1. Determine if master was able to set up with kubeadm. Logs are under: ```/artifacts/master-node-name/serial-1.log```
+1. Determine if a control plane was able to set up with kubeadm. Logs are under: ```/artifacts/control-plane-node-name/serial-1.log```
 2. Determine if nodes were able to set up with kubeadm. Logs are under: ```/artifacts/node-name/serial-1.log```
