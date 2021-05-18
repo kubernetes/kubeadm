@@ -7,7 +7,7 @@
   annotations:
     testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-{{ sigReleaseVer .KubeadmVersion }}-informing
     testgrid-tab-name: kubeadm-kinder-{{ dashVer .KubeadmVersion }}-on-{{ dashVer .KubernetesVersion }}
-    testgrid-alert-email: kubernetes-sig-cluster-lifecycle+testgrid@googlegroups.com, release-team@kubernetes.io
+    testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io, release-team@kubernetes.io
     description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster with version skew and run kubeadm-e2e and the conformance suite"
     testgrid-num-columns-recent: "20"
 {{ .AlertAnnotations }}
