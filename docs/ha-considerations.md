@@ -39,7 +39,7 @@ This combination can be run either as services on the operating system or as sta
 
 The `keepalived` configuration consists of two files: the service configuration file and a health check script which will be called periodically to verify that the node holding the virtual IP is still operational.
 
-The files are assumed to reside in a `/etc/keepalived` directory. Note that however some Linux distributions may keep them elsewhere. The following configuration has been successfully used with `keepalived` version 1.3.5:
+The files are assumed to reside in a `/etc/keepalived` directory. Note that however some Linux distributions may keep them elsewhere. The following configuration has been successfully used with `keepalived` version 2.0.17:
 
 ```bash
 ! /etc/keepalived/keepalived.conf
@@ -191,7 +191,7 @@ metadata:
   namespace: kube-system
 spec:
   containers:
-  - image: osixia/keepalived:1.3.5-1
+  - image: osixia/keepalived:2.0.17
     name: keepalived
     resources: {}
     securityContext:
