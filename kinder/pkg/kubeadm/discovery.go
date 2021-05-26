@@ -43,8 +43,8 @@ func GetRemoveTokenPatch(kubeadmVersion *K8sVersion.Version) (PatchJSON6902, err
 	switch kubeadmConfigVersion {
 	case "v1beta2":
 		patch = removeTokenPatchv1beta2
-	case "v1beta1":
-		patch = removeTokenPatchv1beta1
+	case "v1beta3":
+		patch = removeTokenPatchv1beta3
 	default:
 		return PatchJSON6902{}, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -61,7 +61,7 @@ const removeTokenPatchv1beta2 = `
 - op: remove
   path: "/discovery/bootstrapToken"`
 
-const removeTokenPatchv1beta1 = `
+const removeTokenPatchv1beta3 = `
 - op: remove
   path: "/discovery/bootstrapToken"`
 
@@ -81,8 +81,8 @@ func GetFileDiscoveryPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
 	switch kubeadmConfigVersion {
 	case "v1beta2":
 		patch = fileDiscoveryPatchv1beta2
-	case "v1beta1":
-		patch = fileDiscoveryPatchv1beta1
+	case "v1beta3":
+		patch = fileDiscoveryPatchv1beta3
 	default:
 		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -98,7 +98,7 @@ discovery:
   file:
     kubeConfigPath: %s`
 
-const fileDiscoveryPatchv1beta1 = `apiVersion: kubeadm.k8s.io/v1beta1
+const fileDiscoveryPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
 metadata:
   name: config
@@ -123,8 +123,8 @@ func GetTLSBootstrapPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
 	switch kubeadmConfigVersion {
 	case "v1beta2":
 		patch = tlsBootstrapPatchv1beta2
-	case "v1beta1":
-		patch = tlsBootstrapPatchv1beta1
+	case "v1beta3":
+		patch = tlsBootstrapPatchv1beta3
 	default:
 		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -139,7 +139,7 @@ metadata:
 discovery:
   tlsBootstrapToken: %s`
 
-const tlsBootstrapPatchv1beta1 = `apiVersion: kubeadm.k8s.io/v1beta1
+const tlsBootstrapPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
 metadata:
   name: config

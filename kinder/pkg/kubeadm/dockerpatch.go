@@ -41,13 +41,13 @@ func GetDockerPatch(kubeadmVersion *K8sVersion.Version, ControlPlane bool) ([]st
 	switch kubeadmConfigVersion {
 	case "v1beta2":
 		basePatch = dockerPatchv1beta2
-	case "v1beta1":
-		basePatch = dockerPatchv1beta1
+	case "v1beta3":
+		basePatch = dockerPatchv1beta3
 	default:
 		return nil, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
 
-	// kind kubeadm config template for v1alpha3, v1beta1,v1beta2 returns both InitConfiguration and JoinConfiguration
+	// kind kubeadm config template for v1alpha3, v1beta1, v1beta2, v1beta3 returns both InitConfiguration and JoinConfiguration
 	// so we should create two patches
 	return []string{
 		fmt.Sprintf(basePatch, "InitConfiguration"),
@@ -62,7 +62,7 @@ metadata:
 nodeRegistration:
   criSocket: /var/run/dockershim.sock`
 
-const dockerPatchv1beta1 = `apiVersion: kubeadm.k8s.io/v1beta1
+const dockerPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: %s
 metadata:
   name: config
