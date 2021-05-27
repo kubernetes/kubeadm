@@ -19,7 +19,6 @@ package nodes
 import (
 	"github.com/pkg/errors"
 
-	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/kubeadm"
 )
@@ -37,14 +36,14 @@ func NewConfigHelper(cri status.ContainerRuntime) (*ConfigHelper, error) {
 }
 
 // GetKubeadmConfigPatches returns kustomize patches for configuring the kubeadm config file for using the selected container runtime
-func (h *ConfigHelper) GetKubeadmConfigPatches(kubeadmVersion *K8sVersion.Version, controlPlane bool) ([]string, error) {
+func (h *ConfigHelper) GetKubeadmConfigPatches(kubeadmConfigVersion string, controlPlane bool) ([]string, error) {
 	switch h.cri {
 	case status.ContainerdRuntime:
 		// since we are using kind library for generating the kubeadm-config file, and kind uses by default containerd, no
 		// additional patches are required in this case
 		return []string{}, nil
 	case status.DockerRuntime:
-		return kubeadm.GetDockerPatch(kubeadmVersion, controlPlane)
+		return kubeadm.GetDockerPatch(kubeadmConfigVersion, controlPlane)
 	}
 	return nil, errors.Errorf("unknown cri: %s", h.cri)
 }

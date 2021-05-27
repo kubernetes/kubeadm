@@ -28,18 +28,18 @@ import (
 
 // KubeadmJoin executes the kubeadm join workflow both for control-plane nodes and
 // worker nodes
-func KubeadmJoin(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
-	if err := joinControlPlanes(c, usePhases, copyCertsMode, discoveryMode, patchesDir, ignorePreflightErrors, wait, vLevel); err != nil {
+func KubeadmJoin(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, kubeadmConfigVersion, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
+	if err := joinControlPlanes(c, usePhases, copyCertsMode, discoveryMode, kubeadmConfigVersion, patchesDir, ignorePreflightErrors, wait, vLevel); err != nil {
 		return err
 	}
 
-	if err := joinWorkers(c, usePhases, discoveryMode, wait, ignorePreflightErrors, vLevel); err != nil {
+	if err := joinWorkers(c, usePhases, discoveryMode, wait, kubeadmConfigVersion, ignorePreflightErrors, vLevel); err != nil {
 		return err
 	}
 	return nil
 }
 
-func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
+func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, kubeadmConfigVersion, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
@@ -72,7 +72,7 @@ func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCert
 
 		// prepares the kubeadm config on this node
 		// NB. kubeDNS flag is set to false because it is not relevant for joinConfiguration
-		if err := KubeadmJoinConfig(c, copyCertsMode, discoveryMode, cp2); err != nil {
+		if err := KubeadmJoinConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, cp2); err != nil {
 			return err
 		}
 
@@ -179,7 +179,7 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePrefli
 	return nil
 }
 
-func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode, wait time.Duration, ignorePreflightErrors string, vLevel int) (err error) {
+func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode, wait time.Duration, kubeadmConfigVersion, ignorePreflightErrors string, vLevel int) (err error) {
 	for _, w := range c.Workers().EligibleForActions() {
 		// checks pre-loaded images available on the node (this will report missing images, if any)
 		kubeVersion, err := w.KubeVersion()
@@ -192,7 +192,7 @@ func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode,
 		}
 
 		// prepares the kubeadm config on this node
-		if err := KubeadmJoinConfig(c, CopyCertsModeNone, discoveryMode, w); err != nil {
+		if err := KubeadmJoinConfig(c, kubeadmConfigVersion, CopyCertsModeNone, discoveryMode, w); err != nil {
 			return err
 		}
 
