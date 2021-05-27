@@ -21,21 +21,13 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
-	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 )
 
 // GetDockerPatch returns the kubeadm config patch that will instruct kubeadm
 // to setup user docker CRI defaults.
-func GetDockerPatch(kubeadmVersion *K8sVersion.Version, ControlPlane bool) ([]string, error) {
-	// gets the config version corresponding to a kubeadm version
-	kubeadmConfigVersion, err := getKubeadmConfigVersion(kubeadmVersion)
-	if err != nil {
-		return nil, err
-	}
-
+func GetDockerPatch(kubeadmConfigVersion string, ControlPlane bool) ([]string, error) {
 	// select the patches for the kubeadm config version
-	log.Debugf("Preparing dockerPatch for kubeadm config %s (kubeadm version %s)", kubeadmConfigVersion, kubeadmVersion)
+	log.Debugf("Preparing dockerPatch for kubeadm config %s", kubeadmConfigVersion)
 
 	var basePatch string
 	switch kubeadmConfigVersion {

@@ -33,6 +33,7 @@ import (
 // kubeadmConfigOptionsall stores all the kinder flags that impact on the kubeadm config generation
 type kubeadmConfigOptions struct {
 	kubeDNS       bool
+	configVersion string
 	copyCertsMode CopyCertsMode
 	discoveryMode DiscoveryMode
 }
@@ -40,23 +41,23 @@ type kubeadmConfigOptions struct {
 // KubeadmInitConfig action writes the InitConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmInitConfig(c *status.Cluster, kubeDNS bool, copyCertsMode CopyCertsMode, nodes ...*status.Node) error {
+func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, kubeDNS bool, copyCertsMode CopyCertsMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the Init Config
-	return KubeadmConfig(c, kubeDNS, copyCertsMode, TokenDiscovery, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, kubeDNS, copyCertsMode, TokenDiscovery, nodes...)
 }
 
 // KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmJoinConfig(c *status.Cluster, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+func KubeadmJoinConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the join Config
-	return KubeadmConfig(c, false, copyCertsMode, discoveryMode, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, false, copyCertsMode, discoveryMode, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeDNS bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, kubeDNS bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -100,6 +101,7 @@ func KubeadmConfig(c *status.Cluster, kubeDNS bool, copyCertsMode CopyCertsMode,
 	// create configOptions with all the kinder flags that impact on the kubeadm config generation
 	configOptions := kubeadmConfigOptions{
 		kubeDNS:       kubeDNS,
+		configVersion: kubeadmConfigVersion,
 		copyCertsMode: copyCertsMode,
 		discoveryMode: discoveryMode,
 	}
@@ -181,9 +183,16 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	if err != nil {
 		return "", err
 	}
+	log.Debugf("kubeadm version %s", kubeadmVersion)
+
+	kubeadmConfigVersion := options.configVersion
+	if len(kubeadmConfigVersion) == 0 {
+		kubeadmConfigVersion = kubeadm.GetKubeadmConfigVersion(kubeadmVersion)
+	}
+	log.Debugf("using kubeadm config version %s", kubeadmConfigVersion)
 
 	// generate the "raw config", using the kubeadm config template provided by kind
-	rawconfig, err := kubeadm.Config(kubeadmVersion, data)
+	rawconfig, err := kubeadm.Config(kubeadmConfigVersion, data)
 	if err != nil {
 		return "", err
 	}
@@ -206,7 +215,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		return "", err
 	}
 
-	criPatches, err := criConfigHelper.GetKubeadmConfigPatches(kubeadmVersion, data.ControlPlane)
+	criPatches, err := criConfigHelper.GetKubeadmConfigPatches(kubeadmConfigVersion, data.ControlPlane)
 	if err != nil {
 		return "", err
 	}
@@ -218,7 +227,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	// NB. this is a no-op in case of kubeadm config API older than v1beta2, because
 	// this feature was not supported before (the --certificate-key flag should be used instead)
 	if options.copyCertsMode == CopyCertsModeAuto && n.IsControlPlane() {
-		automaticCopyCertsPatches, err := kubeadm.GetAutomaticCopyCertsPatches(kubeadmVersion)
+		automaticCopyCertsPatches, err := kubeadm.GetAutomaticCopyCertsPatches(kubeadmConfigVersion)
 		if err != nil {
 			return "", err
 		}
@@ -228,7 +237,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 
 	// if requested, add patches for using kube-dns addon instead of coreDNS
 	if options.kubeDNS {
-		kubeDNSPatch, err := kubeadm.GetKubeDNSPatch(kubeadmVersion)
+		kubeDNSPatch, err := kubeadm.GetKubeDNSPatch(kubeadmConfigVersion)
 		if err != nil {
 			return "", err
 		}
@@ -238,7 +247,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	// if requested to use file discovery and not the first control-plane, add patches for using file discovery
 	if options.discoveryMode != TokenDiscovery && !(n == c.BootstrapControlPlane()) {
 		// remove token from config
-		removeTokenPatch, err := kubeadm.GetRemoveTokenPatch(kubeadmVersion)
+		removeTokenPatch, err := kubeadm.GetRemoveTokenPatch(kubeadmConfigVersion)
 		if err != nil {
 			return "", err
 		}
@@ -252,7 +261,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		}
 
 		// add discovery file path to the config
-		fileDiscoveryPatch, err := kubeadm.GetFileDiscoveryPatch(kubeadmVersion)
+		fileDiscoveryPatch, err := kubeadm.GetFileDiscoveryPatch(kubeadmConfigVersion)
 		if err != nil {
 			return "", err
 		}
@@ -260,7 +269,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 
 		// if the file discovery does not contains the authorization credentials, add tls discovery token
 		if options.discoveryMode == FileDiscoveryWithoutCredentials {
-			tlsBootstrapPatch, err := kubeadm.GetTLSBootstrapPatch(kubeadmVersion)
+			tlsBootstrapPatch, err := kubeadm.GetTLSBootstrapPatch(kubeadmConfigVersion)
 			if err != nil {
 				return "", err
 			}
@@ -281,7 +290,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 			externalEtcdIP = externalEtcdIPV6
 		}
 
-		externalEtcdPatch, err := kubeadm.GetExternalEtcdPatch(kubeadmVersion, externalEtcdIP)
+		externalEtcdPatch, err := kubeadm.GetExternalEtcdPatch(kubeadmConfigVersion, externalEtcdIP)
 		if err != nil {
 			return "", err
 		}

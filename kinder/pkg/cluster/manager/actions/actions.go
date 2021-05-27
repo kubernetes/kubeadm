@@ -39,13 +39,13 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
 		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeDNS, flags.copyCertsMode, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
+		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.kubeDNS, flags.copyCertsMode, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.copyCertsMode, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
+		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmUpgrade(c, flags.upgradeVersion, flags.patchesDir, flags.wait, flags.vLevel)
@@ -145,6 +145,13 @@ func IgnorePreflightErrors(ignorePreflightErrors string) Option {
 	}
 }
 
+// KubeadmConfigVersion option sets the kubeadm config version for the kubeadm commands
+func KubeadmConfigVersion(kubeadmConfigVersion string) Option {
+	return func(r *RunOptions) {
+		r.kubeadmConfigVersion = kubeadmConfigVersion
+	}
+}
+
 // RunOptions holds options supplied to actions.Run
 type RunOptions struct {
 	kubeDNS               bool
@@ -156,6 +163,7 @@ type RunOptions struct {
 	vLevel                int
 	patchesDir            string
 	ignorePreflightErrors string
+	kubeadmConfigVersion  string
 }
 
 // DiscoveryMode defines discovery mode supported by kubeadm join

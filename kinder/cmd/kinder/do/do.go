@@ -43,6 +43,7 @@ type flagpole struct {
 	PatchesDir            string
 	Wait                  time.Duration
 	IgnorePreflightErrors string
+	KubeadmConfigVersion  string
 }
 
 // NewCommand returns a new cobra.Command for exec
@@ -120,6 +121,13 @@ func NewCommand() *cobra.Command {
 		"ignore-preflight-errors", constants.KubeadmIgnorePreflightErrors,
 		"list of kubeadm preflight errors to skip",
 	)
+	cmd.Flags().StringVar(
+		&flags.KubeadmConfigVersion,
+		"kubeadm-config-version", flags.KubeadmConfigVersion,
+		"the kubeadm config version to be used for init, join and upgrade. "+
+			"If not set, kubeadm will automatically choose the kubeadm config version "+
+			"according to the Kubernetes version in use",
+	)
 	return cmd
 }
 
@@ -173,6 +181,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.VLevel(flags.VLevel),
 		actions.PatchesDir(flags.PatchesDir),
 		actions.IgnorePreflightErrors(flags.IgnorePreflightErrors),
+		actions.KubeadmConfigVersion(flags.KubeadmConfigVersion),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)

@@ -22,21 +22,14 @@ import (
 	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
-	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 // GetRemoveTokenPatch returns the kubeadm config patch that will instruct kubeadm
 // to not uses token discovery.
-func GetRemoveTokenPatch(kubeadmVersion *K8sVersion.Version) (PatchJSON6902, error) {
-	// gets the config version corresponding to a kubeadm version
-	kubeadmConfigVersion, err := getKubeadmConfigVersion(kubeadmVersion)
-	if err != nil {
-		return PatchJSON6902{}, err
-	}
-
+func GetRemoveTokenPatch(kubeadmConfigVersion string) (PatchJSON6902, error) {
 	// select the patches for the kubeadm config version
-	log.Debugf("Preparing removeTokenPatch for kubeadm config %s (kubeadm version %s)", kubeadmConfigVersion, kubeadmVersion)
+	log.Debugf("Preparing removeTokenPatch for kubeadm config %s", kubeadmConfigVersion)
 
 	var patch string
 	kind := "JoinConfiguration"
@@ -67,15 +60,9 @@ const removeTokenPatchv1beta3 = `
 
 // GetFileDiscoveryPatch returns the kubeadm config patch that will instruct kubeadm
 // to use FileDiscovery.
-func GetFileDiscoveryPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
-	// gets the config version corresponding to a kubeadm version
-	kubeadmConfigVersion, err := getKubeadmConfigVersion(kubeadmVersion)
-	if err != nil {
-		return "", err
-	}
-
+func GetFileDiscoveryPatch(kubeadmConfigVersion string) (string, error) {
 	// select the patches for the kubeadm config version
-	log.Debugf("Preparing fileDiscoveryPatch for kubeadm config %s (kubeadm version %s)", kubeadmConfigVersion, kubeadmVersion)
+	log.Debugf("Preparing fileDiscoveryPatch for kubeadm config %s", kubeadmConfigVersion)
 
 	var patch string
 	switch kubeadmConfigVersion {
@@ -109,15 +96,9 @@ discovery:
 // GetTLSBootstrapPatch returns the kubeadm config patch that will instruct kubeadm
 // to use a TLSBootstrap token.
 // NB. for sake of semplicity, we are using the same Token already used for Token discovery
-func GetTLSBootstrapPatch(kubeadmVersion *K8sVersion.Version) (string, error) {
-	// gets the config version corresponding to a kubeadm version
-	kubeadmConfigVersion, err := getKubeadmConfigVersion(kubeadmVersion)
-	if err != nil {
-		return "", err
-	}
-
+func GetTLSBootstrapPatch(kubeadmConfigVersion string) (string, error) {
 	// select the patches for the kubeadm config version
-	log.Debugf("Preparing tlsBootstrapPatch for kubeadm config %s (kubeadm version %s)", kubeadmConfigVersion, kubeadmVersion)
+	log.Debugf("Preparing tlsBootstrapPatch for kubeadm config %s", kubeadmConfigVersion)
 
 	var patch string
 	switch kubeadmConfigVersion {

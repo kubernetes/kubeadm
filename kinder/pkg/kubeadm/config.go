@@ -27,17 +27,11 @@ import (
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
 )
 
-// Config returns a kubeadm generated using the config API version corresponding
-// to the kubeadmVersion and with the customizable settings based on data
-func Config(kubeadmVersion *K8sVersion.Version, data ConfigData) (config string, err error) {
-	// gets the config version corresponding to a kubeadm version
-	kubeadmConfigVersion, err := getKubeadmConfigVersion(kubeadmVersion)
-	if err != nil {
-		return "", err
-	}
-
+// Config returns a kubeadm config generated using the config API version
+// and with the customizable settings based on data
+func Config(kubeadmConfigVersion string, data ConfigData) (config string, err error) {
 	// select the patches for the kubeadm config version
-	log.Debugf("Preparing kubeadm config %s (kubeadm version %s)", kubeadmConfigVersion, kubeadmVersion)
+	log.Debugf("Preparing kubeadm config %s", kubeadmConfigVersion)
 	var templateSource string
 	switch kubeadmConfigVersion {
 	case "v1beta2":
@@ -66,14 +60,15 @@ func Config(kubeadmVersion *K8sVersion.Version, data ConfigData) (config string,
 	return buff.String(), nil
 }
 
-// getKubeadmConfigVersion returns the kubeadm config version corresponding to a Kubernetes kubeadmVersion
-func getKubeadmConfigVersion(kubeadmVersion *K8sVersion.Version) (string, error) {
-	// returns the corresponding config version
-	// nb v1alpha1 (that is Kubernetes v1.10.0) is out of support,
-	// v1alpha2 (that is Kuberntes v1.11.0) is out of support.
-	// v1alpha3 (that is Kuberntes v1.13.0) is out of support.
-
-	return "v1beta3", nil
+// GetKubeadmConfigVersion returns the kubeadm config version corresponding to a Kubernetes kubeadmVersion
+func GetKubeadmConfigVersion(kubeadmVersion *K8sVersion.Version) string {
+	// v1alpha1 (that is Kubernetes v1.10.0) is out of support
+	// v1alpha2 (that is Kubernetes v1.11.0) is out of support
+	// v1alpha3 (that is Kubernetes v1.13.0) is out of support
+	if kubeadmVersion.Major() > 1 || kubeadmVersion.Minor() >= 22 {
+		return "v1beta3"
+	}
+	return "v1beta2"
 }
 
 // ConfigData is supplied to the kubeadm config template, with values populated
