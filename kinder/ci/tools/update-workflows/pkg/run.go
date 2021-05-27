@@ -66,7 +66,7 @@ func processjobGroup(settings *Settings, cfg *jobGroup) error {
 
 	log.Infof("oldest supported version in the skew is %s", oldestVer.String())
 
-	// go trough the jobs in this group and parse version skew values like 'latest', '+1' etc
+	// go through the jobs in this group and parse version skew values like 'latest', '+1' etc
 	// and update them in place.
 	for i := range cfg.Jobs {
 		log.Infof("processing version skew modifiers in Job %d", i)
