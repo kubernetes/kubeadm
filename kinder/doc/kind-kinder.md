@@ -51,7 +51,6 @@ _Actions on a running cluster:_
     - generate kubeadm config and generate load balancer config can be invoked also after `kinder create`
     - generate kubeadm config supports:
         - automatic configuration for external etcd/external lb, if present
-        - shortcut for using kube-dns instead of CoreDNS
         - shortcut for setting certificateKey field (for testing the automatic copy certs feature of kubeadm)
         - shortcut for testing different kubeadm join discovery mechanics
     - `kubeadm init` can be executed as a unique workflow or using phases

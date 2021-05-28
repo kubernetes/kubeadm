@@ -24,10 +24,9 @@ any other shell commands.
 
 ## Test variants
 
-1. add `--kube-dns` flag to `kinder do kubeadm-init` to test usage of kube-dns instead of CoreDNS
-2. add `--external-etcd` flag to `kinder create cluster` to test usage of external etcd cluster
-3. add `--use-phases` flag to `kubeadm-init` and/or `kubeadm-join` to test phases
-4. any combination of the above
+1. add `--external-etcd` flag to `kinder create cluster` to test usage of external etcd cluster
+2. add `--use-phases` flag to `kubeadm-init` and/or `kubeadm-join` to test phases
+3. any combination of the above
 
 ## Validation
 

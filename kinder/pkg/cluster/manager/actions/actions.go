@@ -39,10 +39,10 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
 		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.kubeDNS, flags.copyCertsMode, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
+		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.copyCertsMode, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.kubeDNS, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
@@ -80,13 +80,6 @@ func KnownActions() []string {
 
 // Option is configuration option supplied to actions.Run
 type Option func(*RunOptions)
-
-// KubeDNS option instructs kubeadm config action to prepare the cluster for using kube-dns instead of CoreDNS
-func KubeDNS(kubeDNS bool) Option {
-	return func(r *RunOptions) {
-		r.kubeDNS = kubeDNS
-	}
-}
 
 // UsePhases option instructs kubeadm actions to use kubeadm phases when supported
 func UsePhases(usePhases bool) Option {
@@ -154,7 +147,6 @@ func KubeadmConfigVersion(kubeadmConfigVersion string) Option {
 
 // RunOptions holds options supplied to actions.Run
 type RunOptions struct {
-	kubeDNS               bool
 	usePhases             bool
 	copyCertsMode         CopyCertsMode
 	discoveryMode         DiscoveryMode

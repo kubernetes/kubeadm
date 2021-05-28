@@ -35,7 +35,6 @@ type flagpole struct {
 	UsePhases             bool
 	UpgradeVersion        string
 	CopyCerts             string
-	KubeDNS               bool
 	Discovery             string
 	OnlyNode              string
 	DryRun                bool
@@ -90,11 +89,6 @@ func NewCommand() *cobra.Command {
 		&flags.CopyCerts,
 		"copy-certs", string(actions.CopyCertsModeManual),
 		fmt.Sprintf("mode to copy certs when joining new control-plane nodes; use one of %s", actions.KnownCopyCertsMode()),
-	)
-	cmd.Flags().BoolVar(
-		&flags.KubeDNS,
-		"kube-dns", false,
-		"setup kubeadm for installing kube-dns instead of CoreDNS",
 	)
 	cmd.Flags().StringVar(
 		&flags.Discovery,
@@ -174,7 +168,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 	err = o.DoAction(action,
 		actions.UsePhases(flags.UsePhases),
 		actions.CopyCerts(copyCerts),
-		actions.KubeDNS(flags.KubeDNS),
 		actions.Discovery(discovery),
 		actions.Wait(flags.Wait),
 		actions.UpgradeVersion(upgradeVersion),
