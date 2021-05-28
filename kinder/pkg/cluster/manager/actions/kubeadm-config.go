@@ -32,7 +32,6 @@ import (
 
 // kubeadmConfigOptionsall stores all the kinder flags that impact on the kubeadm config generation
 type kubeadmConfigOptions struct {
-	kubeDNS       bool
 	configVersion string
 	copyCertsMode CopyCertsMode
 	discoveryMode DiscoveryMode
@@ -41,9 +40,9 @@ type kubeadmConfigOptions struct {
 // KubeadmInitConfig action writes the InitConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, kubeDNS bool, copyCertsMode CopyCertsMode, nodes ...*status.Node) error {
+func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the Init Config
-	return KubeadmConfig(c, kubeadmConfigVersion, kubeDNS, copyCertsMode, TokenDiscovery, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, nodes...)
 }
 
 // KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
@@ -51,13 +50,13 @@ func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, kubeDNS b
 // to invoke it separately as well.
 func KubeadmJoinConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the join Config
-	return KubeadmConfig(c, kubeadmConfigVersion, false, copyCertsMode, discoveryMode, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, kubeDNS bool, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -100,7 +99,6 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, kubeDNS bool,
 
 	// create configOptions with all the kinder flags that impact on the kubeadm config generation
 	configOptions := kubeadmConfigOptions{
-		kubeDNS:       kubeDNS,
 		configVersion: kubeadmConfigVersion,
 		copyCertsMode: copyCertsMode,
 		discoveryMode: discoveryMode,
@@ -233,15 +231,6 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		}
 
 		patches = append(patches, automaticCopyCertsPatches...)
-	}
-
-	// if requested, add patches for using kube-dns addon instead of coreDNS
-	if options.kubeDNS {
-		kubeDNSPatch, err := kubeadm.GetKubeDNSPatch(kubeadmConfigVersion)
-		if err != nil {
-			return "", err
-		}
-		patches = append(patches, kubeDNSPatch)
 	}
 
 	// if requested to use file discovery and not the first control-plane, add patches for using file discovery

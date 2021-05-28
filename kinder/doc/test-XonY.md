@@ -42,7 +42,7 @@ kinder do kubeadm-join
 
 Also in this case:
 
-- test variants can be achieved adding  `--external-etcd`, `--copy-certs` flags to `kinder create cluster`, or by adding flags `--kube-dns`, `--use-phases` to `kubeadm-init` and/or `kubeadm-join`
+- test variants can be achieved adding  `--external-etcd`, `--copy-certs` flags to `kinder create cluster`, or by adding flags `--use-phases` to `kubeadm-init` and/or `kubeadm-join`
 
 ## Validation
 

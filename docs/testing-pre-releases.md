@@ -171,7 +171,7 @@ To explore versions available in Google Container Registry use
 gcloud container images list-tags gcr.io/{gcr-repository-name}/{image-name}
 ```
 
-Valid image names are `kube-apiserver-amd64`, `pause-amd64`, `etcd-amd64`, `k8s-dns-kube-dns-amd64` etc. e.g.
+Valid image names are `kube-apiserver-amd64`, `pause-amd64`, `etcd-amd64` etc. e.g.
 
 ```bash
 gcloud container images list-tags k8s.gcr.io/kube-apiserver-amd64 --sort-by=~tags --filter=tags:v1.10.2 --limit=50

@@ -71,7 +71,6 @@ func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCert
 		}
 
 		// prepares the kubeadm config on this node
-		// NB. kubeDNS flag is set to false because it is not relevant for joinConfiguration
 		if err := KubeadmJoinConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, cp2); err != nil {
 			return err
 		}
