@@ -255,7 +255,7 @@ With the services up, now the Kubernetes cluster can be bootstrapped using `kube
 
 ## kube-vip
 
-As an alternative to the more "traditional" approach of `keepalived` and `haproxy`, [kube-vip](https://plndr.io/kube-vip/) implements both management of a virtual IP and load balancing in one service. Similar to option 2 above, `kube-vip` will be run as a static pod on the control plane nodes.
+As an alternative to the more "traditional" approach of `keepalived` and `haproxy`, [kube-vip](https://kube-vip.io/) implements both management of a virtual IP and load balancing in one service. Similar to option 2 above, `kube-vip` will be run as a static pod on the control plane nodes.
 
 Like with `keepalived`, the hosts negotiating a virtual IP need to be in the same IP subnet. Similarly, like with `haproxy`, stream-based load-balancing allows TLS termination to be handled by the API Server instances behind it.
 
