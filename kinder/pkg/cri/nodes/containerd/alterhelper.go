@@ -46,6 +46,18 @@ func GetAlterContainerArgs() ([]string, []string) {
 	return runArgs, runCommands
 }
 
+// SetupRuntime setups the runtime
+func SetupRuntime(bc *bits.BuildContext) error {
+	// Append the containerd settings for a systemd cgroup driver at the end of the config.toml.
+	// This assumes runc is used as the underlying runtime.
+	if err := bc.RunInContainer("bash", "-c",
+		"printf '[plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]\nsystemdCgroup = true\n' >> /etc/containerd/config.toml",
+	); err != nil {
+		return errors.Wrap(err, "could not append to /etc/containerd/config.toml")
+	}
+	return nil
+}
+
 // StartRuntime starts the runtime
 func StartRuntime(bc *bits.BuildContext) error {
 	log.Info("starting containerd")
