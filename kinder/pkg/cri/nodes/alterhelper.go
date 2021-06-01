@@ -61,6 +61,17 @@ func (h *AlterHelper) StartCRI(bc *bits.BuildContext) error {
 	return errors.Errorf("unknown cri: %s", h.cri)
 }
 
+// SetupCRI setups the container runtime.
+func (h *AlterHelper) SetupCRI(bc *bits.BuildContext) error {
+	switch h.cri {
+	case status.ContainerdRuntime:
+		return containerd.SetupRuntime(bc)
+	case status.DockerRuntime:
+		return docker.SetupRuntime(bc)
+	}
+	return errors.Errorf("unknown cri: %s", h.cri)
+}
+
 // PreLoadInitImages preload images required by kubeadm-init into the selected container runtime that exists inside a kind(er) node
 func (h *AlterHelper) PreLoadInitImages(bc *bits.BuildContext, srcFolder string) error {
 	switch h.cri {

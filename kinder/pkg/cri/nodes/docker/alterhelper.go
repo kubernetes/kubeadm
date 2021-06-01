@@ -37,6 +37,32 @@ func GetAlterContainerArgs() ([]string, []string) {
 	return runArgs, []string{}
 }
 
+// SetupRuntime setups the runtime
+func SetupRuntime(bc *bits.BuildContext) error {
+	// Rewrite the Docker daemon config to include:
+	// - the "cri-containerd: true", which is something that already exists in kindest/base:v20190403-1ebf15f
+	// - the cgroup driver setting (systemd)
+	if err := bc.RunInContainer("bash", "-c",
+		"printf '{\"cri-containerd\": true, \"exec-opts\": [\"native.cgroupdriver=systemd\"]}\n' > /etc/docker/daemon.json",
+	); err != nil {
+		return errors.Wrap(err, "could not overwrite /etc/docker/daemon.json")
+	}
+	// Workaround from https://github.com/kubernetes/kubernetes/issues/43704#issuecomment-289484654
+	// Using the systemd driver in our rather old base image results in errors around the kubepods.slice.
+	// Write the flags --cgroups-per-qos=false --enforce-node-allocatable="" in the KUBELET_EXTRA_ARGS file.
+	//
+	// It's not possible to pass these via the KubeletConfiguration because the validation / defaulting is bogus.
+	// Empty slice gets defaulted to "pods" and non-empty slice fails for 'cgroupsPerQOS: false' -
+	// i.e. it is not possible to pass 'none' or '[]' for the 'enforceNodeAllocatable' config field.
+	// https://github.com/kubernetes/kubernetes/blob/ea0764452222146c47ec826977f49d7001b0ea8c/pkg/kubelet/apis/config/validation/validation.go#L53-L54
+	if err := bc.RunInContainer("bash", "-c",
+		"printf 'KUBELET_EXTRA_ARGS=\"--cgroups-per-qos=false --enforce-node-allocatable=\"\"\"' > /etc/default/kubelet",
+	); err != nil {
+		return errors.Wrap(err, "could not write /etc/default/kubelet")
+	}
+	return nil
+}
+
 // StartRuntime starts the runtime
 func StartRuntime(bc *bits.BuildContext) error {
 	log.Info("starting dockerd")

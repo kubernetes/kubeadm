@@ -332,6 +332,11 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 	}
 
+	log.Info("Setup CRI ...")
+	if err := alterHelper.SetupCRI(bc); err != nil {
+		return errors.Wrapf(err, "image build Failed! Failed to setup %s", runtime)
+	}
+
 	log.Info("Start CRI ...")
 	if err := alterHelper.StartCRI(bc); err != nil {
 		return errors.Wrapf(err, "image build Failed! Failed to start %s", runtime)

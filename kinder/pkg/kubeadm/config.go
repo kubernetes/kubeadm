@@ -206,6 +206,9 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+# pin the cgroup driver to systemd.
+# this assumes that the CR on the node image is configured accordingly.
+cgroupDriver: "systemd"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -302,6 +305,9 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+# pin the cgroup driver to systemd.
+# this assumes that the CR on the node image is configured accordingly.
+cgroupDriver: "systemd"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
