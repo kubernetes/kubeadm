@@ -6,6 +6,7 @@ summary: |
 vars:
   initVersion: "\{\{ resolve `ci/{{ ciLabelFor .InitVersion }}` \}\}"
   upgradeVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
+  kubeadmConfigVersion: "{{ .KubeadmConfigVersion }}"
   controlPlaneNodes: 3
 tasks:
 - import: upgrade-tasks.yaml

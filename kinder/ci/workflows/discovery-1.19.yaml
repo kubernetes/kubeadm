@@ -7,5 +7,6 @@ summary: |
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-discovery.yaml
 vars:
   kubernetesVersion: "{{ resolve `ci/latest-1.19` }}"
+  kubeadmConfigVersion: "v1beta2"
 tasks:
 - import: discovery-tasks.yaml

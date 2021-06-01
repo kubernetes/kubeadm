@@ -27,6 +27,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	versionutil "k8s.io/apimachinery/pkg/util/version"
+
+	"k8s.io/kubeadm/kinder/pkg/kubeadm"
 )
 
 func processWorkflows(settings *Settings, cfg *jobGroup, oldestVer, minVer *versionutil.Version) error {
@@ -87,6 +89,18 @@ func processWorkflows(settings *Settings, cfg *jobGroup, oldestVer, minVer *vers
 			if err != nil {
 				return errors.Wrapf(err, "malformed SkipVersions %v", job.SkipVersions)
 			}
+		}
+
+		// determine kubeadm config version
+		var kubernetesVersion *versionutil.Version
+		if job.KubernetesVersion == latestVersion {
+			kubernetesVersion = settings.KubernetesVersion.WithMinor(settings.KubernetesVersion.Minor() + 1)
+		} else {
+			kubernetesVersion = versionutil.MustParseGeneric(job.KubernetesVersion)
+		}
+		vars.KubeadmConfigVersion, err = kubeadm.GetKubeadmConfigVersion(kubernetesVersion)
+		if err != nil {
+			return err
 		}
 
 		// execute templates

@@ -7,6 +7,7 @@ vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
   kubernetesVersion: v1.16.0
+  kubeadmConfigVersion: v1beta2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-patches
@@ -120,6 +121,7 @@ tasks:
       - --patches=/tmp/kubeadm-patches
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+      - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
     timeout: 5m
   - name: join
     description: |
@@ -132,6 +134,7 @@ tasks:
       - --patches=/tmp/kubeadm-patches
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+      - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
     timeout: 10m
   - name: run verify-patches.sh on controlplane nodes before upgrades
     cmd: kinder
@@ -153,6 +156,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+      - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
     timeout: 15m
   - name: run verify-patches.sh on controlplane nodes after upgrades
     cmd: kinder

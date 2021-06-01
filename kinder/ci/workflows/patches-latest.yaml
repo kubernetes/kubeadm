@@ -6,5 +6,6 @@ summary: |
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-patches.yaml
 vars:
   kubernetesVersion: "{{ resolve `ci/latest` }}"
+  kubeadmConfigVersion: "v1beta3"
 tasks:
 - import: patches-tasks.yaml

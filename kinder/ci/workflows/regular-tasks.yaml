@@ -8,6 +8,7 @@ vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
   kubernetesVersion: v1.13.5
+  kubeadmConfigVersion: v1beta2
   controlPlaneNodes: 3
   workerNodes: 2
   baseImage: kindest/base:v20191105-ee880e9b # has containerd
@@ -58,6 +59,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -69,6 +71,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 10m
 - name: cluster-info
   description: |

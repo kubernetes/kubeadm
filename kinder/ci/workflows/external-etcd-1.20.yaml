@@ -7,5 +7,6 @@ summary: |
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-external-etcd.yaml
 vars:
   kubernetesVersion: "{{ resolve `ci/latest-1.20` }}"
+  kubeadmConfigVersion: "v1beta2"
 tasks:
 - import: external-etcd-tasks.yaml

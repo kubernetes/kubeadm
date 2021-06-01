@@ -185,7 +185,10 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 
 	kubeadmConfigVersion := options.configVersion
 	if len(kubeadmConfigVersion) == 0 {
-		kubeadmConfigVersion = kubeadm.GetKubeadmConfigVersion(kubeadmVersion)
+		kubeadmConfigVersion, err = kubeadm.GetKubeadmConfigVersion(kubeadmVersion)
+		if err != nil {
+			return "", err
+		}
 	}
 	log.Debugf("using kubeadm config version %s", kubeadmConfigVersion)
 

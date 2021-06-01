@@ -8,6 +8,7 @@ vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
   kubeletVersion: "{{ resolve `ci/latest-1.21` }}"
   kubernetesVersion: "{{ resolve `ci/latest-1.21` }}"
+  kubeadmConfigVersion: "v1beta2"
   controlPlaneNodes: 3
 tasks:
 - import: skew-x-on-y-tasks.yaml

@@ -33,7 +33,7 @@ PATH_WORKFLOWS="${PATH_WORKFLOWS:-./ci/workflows/}"
 
 # set test-infra path
 TEST_INFRA_SIG_DIR="config/jobs/kubernetes/sig-cluster-lifecycle"
-PATH_TEST_INFRA="${PATH_TEST_INFRA:-"$HOME/go/src/k8s.io/test-infra/$TEST_INFRA_SIG_DIR"}"
+PATH_TEST_INFRA="${PATH_TEST_INFRA:-"$GOPATH/src/k8s.io/test-infra/$TEST_INFRA_SIG_DIR"}"
 
 # try to get the image from the provided test-infra path
 if [[ -z "${TEST_INFRA_IMAGE}" ]]; then

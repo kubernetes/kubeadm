@@ -8,6 +8,7 @@ vars:
   # those values might be overridden when importing this files.
   initVersion: v1.12.8
   upgradeVersion: v1.13.5
+  kubeadmConfigVersion: v1beta2
   controlPlaneNodes: 1
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f
@@ -62,6 +63,7 @@ tasks:
     - --copy-certs=auto
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -74,6 +76,7 @@ tasks:
     - --copy-certs=auto
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 10m
 - name: cluster-info-before
   description: |
@@ -95,6 +98,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 15m
 - name: e2e-kubeadm-after
   description: |

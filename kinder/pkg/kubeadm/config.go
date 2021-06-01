@@ -23,8 +23,9 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
+
+	"k8s.io/kubeadm/kinder/pkg/constants"
 )
 
 // Config returns a kubeadm config generated using the config API version
@@ -61,14 +62,12 @@ func Config(kubeadmConfigVersion string, data ConfigData) (config string, err er
 }
 
 // GetKubeadmConfigVersion returns the kubeadm config version corresponding to a Kubernetes kubeadmVersion
-func GetKubeadmConfigVersion(kubeadmVersion *K8sVersion.Version) string {
-	// v1alpha1 (that is Kubernetes v1.10.0) is out of support
-	// v1alpha2 (that is Kubernetes v1.11.0) is out of support
-	// v1alpha3 (that is Kubernetes v1.13.0) is out of support
-	if kubeadmVersion.Major() > 1 || kubeadmVersion.Minor() >= 22 {
-		return "v1beta3"
+func GetKubeadmConfigVersion(kubeadmVersion *K8sVersion.Version) (string, error) {
+	ver, ok := constants.SupportedKubeadmConfigVersion[uint8(kubeadmVersion.Minor())]
+	if !ok {
+		return ver, errors.Errorf("cannot determine Kubeadm config version for Kubeadm version %s", kubeadmVersion)
 	}
-	return "v1beta2"
+	return ver, nil
 }
 
 // ConfigData is supplied to the kubeadm config template, with values populated

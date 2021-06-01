@@ -68,10 +68,11 @@ type job struct {
 }
 
 type templateVars struct {
-	KubernetesVersion string
-	KubeletVersion    string
-	KubeadmVersion    string
-	InitVersion       string
+	KubernetesVersion    string
+	KubeletVersion       string
+	KubeadmVersion       string
+	KubeadmConfigVersion string
+	InitVersion          string
 
 	TargetFile   string
 	SkipVersions string

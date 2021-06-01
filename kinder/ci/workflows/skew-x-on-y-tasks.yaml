@@ -10,6 +10,7 @@ vars:
   kubeadmVersion: v1.13.5
   kubeletVersion: v1.12.8
   kubernetesVersion: v1.12.8
+  kubeadmConfigVersion: v1beta2
   controlPlaneNodes: 1
   workerNodes: 2
   baseImage: kindest/base:v20190403-1ebf15f
@@ -68,6 +69,7 @@ tasks:
     - --copy-certs=auto
     - --ignore-preflight-errors={{ .vars.defaultIgnorePreflightErrors }}{{ .vars.ignorePreflightErrors }}
     - --loglevel=debug
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -81,6 +83,7 @@ tasks:
     - --ignore-preflight-errors={{ .vars.defaultIgnorePreflightErrors }}{{ .vars.ignorePreflightErrors }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 10m
 - name: cluster-info
   description: |

@@ -120,6 +120,16 @@ const (
 var (
 	// V1.19 minor version
 	V1_19 = K8sVersion.MustParseSemantic("v1.19.0-0")
+
+	// SupportedKubeadmConfigVersion lists officially supported kubeadm config versions with corresponding Kubernetes releases
+	SupportedKubeadmConfigVersion = map[uint8]string{
+		18: "v1beta2",
+		19: "v1beta2",
+		20: "v1beta2",
+		21: "v1beta2",
+		22: "v1beta3",
+		23: "v1beta3",
+	}
 )
 
 // other constants

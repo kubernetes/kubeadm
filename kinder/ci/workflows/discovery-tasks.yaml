@@ -8,6 +8,7 @@ vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
   kubernetesVersion: v1.16.0
+  kubeadmConfigVersion: v1beta2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-discovery
@@ -56,6 +57,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -69,6 +71,7 @@ tasks:
     - --discovery-mode=file
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -82,6 +85,7 @@ tasks:
     - --discovery-mode=file-with-token
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -95,6 +99,7 @@ tasks:
     - --discovery-mode=file-with-embedded-client-certificates
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -108,6 +113,7 @@ tasks:
     - --discovery-mode=file-with-external-client-certificates
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: e2e-kubeadm
   description: |

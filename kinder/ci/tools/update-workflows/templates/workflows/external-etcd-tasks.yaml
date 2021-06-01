@@ -4,6 +4,7 @@ summary: |
   cluster with an external etcd cluster.
 vars:
   kubernetesVersion: v1.14.1
+  kubeadmConfigVersion: v1beta2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-external-etcd
@@ -55,6 +56,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 5m
 - name: join
   description: |
@@ -67,6 +69,7 @@ tasks:
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
   timeout: 10m
 - name: e2e-kubeadm
   description: |

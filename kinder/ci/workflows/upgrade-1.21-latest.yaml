@@ -7,6 +7,7 @@ summary: |
 vars:
   initVersion: "{{ resolve `ci/latest-1.21` }}"
   upgradeVersion: "{{ resolve `ci/latest` }}"
+  kubeadmConfigVersion: "v1beta3"
   controlPlaneNodes: 3
 tasks:
 - import: upgrade-tasks.yaml

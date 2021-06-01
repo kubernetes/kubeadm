@@ -6,6 +6,7 @@ vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
   kubernetesVersion: v1.16.0
+  kubeadmConfigVersion: v1beta2
   baseImage: kindest/base:v20190403-1ebf15f
   image: kindest/node:test
   clusterName: kinder-external-ca
@@ -67,6 +68,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+      - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
     timeout: 5m
   - name: join
     description: |
@@ -82,6 +84,7 @@ tasks:
       - --ignore-preflight-errors=FileAvailable--etc-kubernetes-kubelet.conf,FileAvailable--etc-kubernetes-pki-ca.crt,Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+      - --kubeadm-config-version={{ .vars.kubeadmConfigVersion }}
     timeout: 10m
   - name: e2e-kubeadm
     description: |
