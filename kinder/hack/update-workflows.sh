@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# script to run gofmt over our code (not vendor)
+# script to update kinder workflows and test-infra Prow jobs
 # shellcheck source=/dev/null
 source "$(dirname "$0")/utils.sh"
 # cd to the root path
@@ -33,7 +33,7 @@ PATH_WORKFLOWS="${PATH_WORKFLOWS:-./ci/workflows/}"
 
 # set test-infra path
 TEST_INFRA_SIG_DIR="config/jobs/kubernetes/sig-cluster-lifecycle"
-PATH_TEST_INFRA="${PATH_TEST_INFRA:-"$HOME/go/src/k8s.io/test-infra/$TEST_INFRA_SIG_DIR"}"
+PATH_TEST_INFRA="${PATH_TEST_INFRA:-"${GOPATH}/src/k8s.io/test-infra/${TEST_INFRA_SIG_DIR}"}"
 
 # try to get the image from the provided test-infra path
 if [[ -z "${TEST_INFRA_IMAGE}" ]]; then
