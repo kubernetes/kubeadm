@@ -37,7 +37,7 @@ import (
 
 // KubeadmInit executes the kubeadm init workflow including also post init task
 // like installing the CNI network plugin
-func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode, kubeadmConfigVersion, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
+func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode, kubeadmConfigVersion, patchesDir, ignorePreflightErrors, featureGates string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
 	// if patcheDir is defined, copy the patches to the node
@@ -61,7 +61,7 @@ func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 	}
 
 	// prepares the kubeadm config on this node
-	if err := KubeadmInitConfig(c, kubeadmConfigVersion, copyCertsMode, cp1); err != nil {
+	if err := KubeadmInitConfig(c, kubeadmConfigVersion, copyCertsMode, featureGates, cp1); err != nil {
 		return err
 	}
 

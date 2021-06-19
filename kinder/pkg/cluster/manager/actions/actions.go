@@ -39,10 +39,10 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
 		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.copyCertsMode, flags.discoveryMode, c.K8sNodes().EligibleForActions()...)
+		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.copyCertsMode, flags.discoveryMode, flags.featureGate, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.featureGate, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
@@ -145,6 +145,13 @@ func KubeadmConfigVersion(kubeadmConfigVersion string) Option {
 	}
 }
 
+// FeatureGate option sets a single kubeadm feature-gate for the kubeadm commands
+func FeatureGate(featureGate string) Option {
+	return func(r *RunOptions) {
+		r.featureGate = featureGate
+	}
+}
+
 // RunOptions holds options supplied to actions.Run
 type RunOptions struct {
 	usePhases             bool
@@ -156,6 +163,7 @@ type RunOptions struct {
 	patchesDir            string
 	ignorePreflightErrors string
 	kubeadmConfigVersion  string
+	featureGate           string
 }
 
 // DiscoveryMode defines discovery mode supported by kubeadm join

@@ -40,9 +40,9 @@ type kubeadmConfigOptions struct {
 // KubeadmInitConfig action writes the InitConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, nodes ...*status.Node) error {
+func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, featureGate string, nodes ...*status.Node) error {
 	// defaults everything not relevant for the Init Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, featureGate, nodes...)
 }
 
 // KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
@@ -50,13 +50,13 @@ func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCerts
 // to invoke it separately as well.
 func KubeadmJoinConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the join Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, "" /* feature-gates */, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, featureGate string, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -84,6 +84,24 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 		controlPlaneEndpoint = controlPlaneEndpointIPv6
 	}
 
+	featureGateName := ""
+	featureGateValue := ""
+	// We remove the leading and trailing double or single quotes because the
+	// feature-gate could be set as
+	// --kubeadm-feature-gate="RootlessControlPlane=true" or
+	// --kubeadm-feature-gate='RootlessControlPlane=true', so the value
+	// of featureGate string would be "\"RootlessControlPlane=true"\" or "RootlessControlPlane=true'" respectively.
+	// Once we trim the value double or single quotes the value will be "RootlessControlPlane=true".
+	trimmedFeatureGate := strings.Trim(featureGate, "\"'")
+	if len(trimmedFeatureGate) > 0 {
+		split := strings.Split(trimmedFeatureGate, "=")
+		if len(split) != 2 {
+			return errors.New("feature gate must be formatted as 'key=value'")
+		}
+		featureGateName = split[0]
+		featureGateValue = split[1]
+	}
+
 	// create configData with all the configurations supported by the kubeadm config template implemented in kind
 	configData := kubeadm.ConfigData{
 		ClusterName:          c.Name(),
@@ -95,6 +113,8 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 		PodSubnet:            "192.168.0.0/16", // default for kindnet
 		ControlPlane:         true,
 		IPv6:                 c.Settings.IPFamily == status.IPv6Family,
+		FeatureGateName:      featureGateName,
+		FeatureGateValue:     featureGateValue,
 	}
 
 	// create configOptions with all the kinder flags that impact on the kubeadm config generation

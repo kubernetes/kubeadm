@@ -43,6 +43,7 @@ type flagpole struct {
 	Wait                  time.Duration
 	IgnorePreflightErrors string
 	KubeadmConfigVersion  string
+	FeatureGate           string
 }
 
 // NewCommand returns a new cobra.Command for exec
@@ -122,6 +123,11 @@ func NewCommand() *cobra.Command {
 			"If not set, kubeadm will automatically choose the kubeadm config version "+
 			"according to the Kubernetes version in use",
 	)
+	cmd.Flags().StringVar(
+		&flags.FeatureGate,
+		"kubeadm-feature-gate", "",
+		"a single kubeadm feature-gate to be used for init, join and upgrade",
+	)
 	return cmd
 }
 
@@ -175,6 +181,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.PatchesDir(flags.PatchesDir),
 		actions.IgnorePreflightErrors(flags.IgnorePreflightErrors),
 		actions.KubeadmConfigVersion(flags.KubeadmConfigVersion),
+		actions.FeatureGate(flags.FeatureGate),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)
