@@ -95,6 +95,9 @@ type ConfigData struct {
 	ServiceSubnet string
 	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
 	IPv6 bool
+	// The kubeadm feature-gate
+	FeatureGateName  string
+	FeatureGateValue string
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -149,6 +152,10 @@ scheduler:
 networking:
   podSubnet: "{{ .PodSubnet }}"
   serviceSubnet: "{{ .ServiceSubnet }}"
+{{ if .FeatureGateName -}}
+featureGates:
+  {{ .FeatureGateName }}: {{ .FeatureGateValue }}
+{{- end }}
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
@@ -248,6 +255,10 @@ scheduler:
 networking:
   podSubnet: "{{ .PodSubnet }}"
   serviceSubnet: "{{ .ServiceSubnet }}"
+{{ if .FeatureGateName -}}
+featureGates:
+  {{ .FeatureGateName }}: {{ .FeatureGateValue }}
+{{- end }}
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
