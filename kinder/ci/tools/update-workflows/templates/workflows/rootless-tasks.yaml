@@ -47,12 +47,12 @@ tasks:
   - --loglevel=debug
   timeout: 5m
 - name: prepare verify-rootless.sh script
-  cmd: /bin/sh
+  cmd: /bin/bash
   args:
   - -c
   - |
     cat <<EOF >/tmp/verify-rootless.sh
-    #!/usr/bin/env bash
+    #!/bin/bash
     res=0
     users=("kubeadm-kas" "kubeadm-ks" "kubeadm-kcm" "kubeadm-etcd")
     for d in ${users[@]}; do
