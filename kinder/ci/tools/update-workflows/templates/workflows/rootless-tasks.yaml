@@ -178,6 +178,7 @@ tasks:
   - --loglevel=debug
   - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   - --kubeadm-feature-gate="RootlessControlPlane=true"
+  - --copy-certs=auto
   timeout: 5m
 - name: join
   description: |
@@ -189,6 +190,7 @@ tasks:
   - --name={{ .vars.clusterName }}
   - --loglevel=debug
   - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  - --copy-certs=auto
   timeout: 10m
 - name: run verify-rootless.sh on controlplane nodes before upgrades
   cmd: kinder
