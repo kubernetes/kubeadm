@@ -78,70 +78,70 @@ tasks:
     # Here pgrep will return the PID of the process and we will pass the PID using xargs
     # to the ps command as an argument.
     # ps o user:16 --no-headers -p <PID> prints the name of the user that the process with PID is running as.
-    if pgrep kube-apiserver | xargs ps o user:16 --no-headers -p | grep -q kubeadm-kas ; then
+    if pgrep -f "^kube-apiserver" | xargs ps o user:16 --no-headers -p | grep -q kubeadm-kas ; then
         echo "kube-apiserver is running as user kubeadm-kas"
     else
         echo "ERROR: kube-apiserver is not running as user kubeadm-kas"
         res=1
     fi
 
-    if pgrep kube-apiserver | xargs ps o group:16 --no-headers -p | grep -q kubeadm-kas ; then
+    if pgrep -f "^kube-apiserver" | xargs ps o group:16 --no-headers -p | grep -q kubeadm-kas ; then
         echo "kube-apiserver is running as user kubeadm-kas"
     else
         echo "ERROR: kube-apiserver is not running as user kubeadm-kas"
         res=1
     fi
 
-    if pgrep kube-apiserver | xargs ps o supgrp:16 --no-headers -p | grep -q kubeadm-sa-key-readers ; then
+    if pgrep -f "^kube-apiserver" | xargs ps o supgrp:16 --no-headers -p | grep -q kubeadm-sa-key-readers ; then
         echo "kube-apiserver is running as supplemental group kubeadm-sa-key-readers"
     else
         echo "ERROR: kube-apiserver is not running as supplemental group kubeadm-sa-key-readers"
         res=1
     fi
 
-    if pgrep kube-controller-manager | xargs ps o user:16 --no-headers -p | grep -q kubeadm-kcm ; then
+    if pgrep -f "^kube-controller-manager" | xargs ps o user:16 --no-headers -p | grep -q kubeadm-kcm ; then
         echo "kube-controller-manager is running as user kubeadm-kcm"
     else
         echo "ERROR: kube-controller-manager is not running as user kubeadm-kcm"
         res=1
     fi
 
-    if pgrep kube-controller-manager | xargs ps o group:16 --no-headers -p | grep -q kubeadm-kcm ; then
+    if pgrep -f "^kube-controller-manager" | xargs ps o group:16 --no-headers -p | grep -q kubeadm-kcm ; then
         echo "kube-controller-manager is running as user kubeadm-kcm"
     else
         echo "ERROR: kube-controller-manager is not running as user kubeadm-kcm"
         res=1
     fi
 
-    if pgrep kube-controller-manager | xargs ps o supgrp:16 --no-headers -p | grep -q kubeadm-sa-key-readers ; then
+    if pgrep -f "^kube-controller-manager" | xargs ps o supgrp:16 --no-headers -p | grep -q kubeadm-sa-key-readers ; then
         echo "kube-controller-manager is running as supplemental group kubeadm-sa-key-readers"
     else
         echo "ERROR: kube-controller-manager is not running as supplemental group kubeadm-sa-key-readers"
         res=1
     fi
 
-    if pgrep kube-scheduler | xargs ps o user:16 --no-headers -p | grep -q kubeadm-ks ; then
+    if pgrep -f "^kube-scheduler" | xargs ps o user:16 --no-headers -p | grep -q kubeadm-ks ; then
         echo "kube-scheduler is running as user kubeadm-ks"
     else
         echo "ERROR: kube-scheduler is not running as user kubeadm-ks"
         res=1
     fi
 
-    if pgrep kube-scheduler | xargs ps o group:16 --no-headers -p | grep -q kubeadm-ks ; then
+    if pgrep -f "^kube-scheduler" | xargs ps o group:16 --no-headers -p | grep -q kubeadm-ks ; then
         echo "kube-scheduler is running as user kubeadm-ks"
     else
         echo "ERROR: kube-scheduler is not running as user kubeadm-ks"
         res=1
     fi
 
-    if pgrep etcd | xargs ps o user:16 --no-headers -p | grep -q kubeadm-etcd ; then
+    if pgrep -f "^etcd" | xargs ps o user:16 --no-headers -p | grep -q kubeadm-etcd ; then
         echo "etcd is running as user kubeadm-etcd"
     else
         echo "ERROR: etcd is not running as user kubeadm-etcd"
         res=1
     fi
 
-    if pgrep etcd | xargs ps o group:16 --no-headers -p | grep -q kubeadm-etcd ; then
+    if pgrep -f "^etcd" | xargs ps o group:16 --no-headers -p | grep -q kubeadm-etcd ; then
         echo "etcd is running as user kubeadm-etcd"
     else
         echo "ERROR: etcd is not running as user kubeadm-etcd"
