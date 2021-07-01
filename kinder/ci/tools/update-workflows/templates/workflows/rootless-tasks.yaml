@@ -7,6 +7,7 @@ vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
   kubernetesVersion: v1.13.5
+  upgradeVersion: v1.13.5
   controlPlaneNodes: 3
   workerNodes: 2
   baseImage: kindest/base:v20191105-ee880e9b # has containerd
@@ -31,6 +32,7 @@ tasks:
   - --base-image={{ .vars.baseImage }}
   - --image={{ .vars.image }}
   - --with-init-artifacts={{ .vars.kubernetesVersion }}
+  - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
   - --loglevel=debug
   timeout: 15m
 - name: create-cluster

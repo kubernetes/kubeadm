@@ -7,5 +7,6 @@ summary: |
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-rootless.yaml
 vars:
   kubernetesVersion: "{{ resolve `ci/latest` }}"
+  upgradeVersion: "{{ resolve `ci/latest` }}"
 tasks:
 - import: rootless-tasks.yaml
