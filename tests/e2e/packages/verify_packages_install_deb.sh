@@ -44,7 +44,7 @@ CI_DIR=/tmp/k8s-ci
 mkdir -p $CI_DIR
 mkdir -p /opt/cni/bin
 CI_VERSION=$(curl -sSL https://dl.k8s.io/ci/latest.txt)
-CI_URL="gs://kubernetes-release-dev/ci/$CI_VERSION-bazel/bin/linux/amd64"
+CI_URL="gs://k8s-release-dev/ci/$CI_VERSION-bazel/bin/linux/amd64"
 
 echo "* testing CI version $CI_VERSION"
 

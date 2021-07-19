@@ -64,7 +64,7 @@ The table below summarize the current state:
 | ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | **GA release**          | from .deb or .rpm repository                                 | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)           |
 | **alpha/beta release*** | not available. use CI/CD version "near" tag                  | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)        |
-| **CI/CD release***      | from `gs://kubernetes-release-dev/bazel/` GCS bucket (only debs, built every merge) | from `gs://kubernetes-release-dev/ci-cross/` GCS bucket (built every merge) | from `gcr.io/kubernetes-ci-images` container registry (built every few hours, not by PR) |
+| **CI/CD release***      | from `gs://k8s-release-dev/bazel/` GCS bucket (only debs, built every merge) | from `gs://k8s-release-dev/ci-cross/` GCS bucket (built every merge) | from `gcr.io/kubernetes-ci-images` container registry (built every few hours, not by PR) |
 
 [*] for alpha/beta and CI/CD currently it is not possible to have exact version number consistency for all the
 components; however you can select version numbers "near to" the desired version.
@@ -98,19 +98,19 @@ yum install <package name>-<version number>
 
 ### Getting .deb or .rpm packages form a GCS bucket
 
-Pre-compiled CI/CD releases of .deb or .rpm packages are deployed into the `gs://kubernetes-release-dev/bazel/`
+Pre-compiled CI/CD releases of .deb or .rpm packages are deployed into the `gs://k8s-release-dev/bazel/`
 GCS bucket.
 
 To explore versions available in Google Storage buckets use:
 
 ```bash
-gsutil ls gs://kubernetes-release-dev/bazel/{filter}
+gsutil ls gs://k8s-release-dev/bazel/{filter}
 
 # e.g. search all CI/CD v1.10 releases
-gsutil ls -g gs://kubernetes-release-dev/bazel/v1.10*
+gsutil ls -g gs://k8s-release-dev/bazel/v1.10*
 ```
 
-As alternative, you can browse using <https://console.cloud.google.com/storage/browser/kubernetes-release-dev/bazel/> .
+As alternative, you can browse using <https://console.cloud.google.com/storage/browser/k8s-release-dev/bazel/> .
 
 To retrieve a pre-compiled  CI/CD releases of .deb or .rpm version of kubeadm binary use:
 
@@ -121,7 +121,7 @@ gsutil cp gs://{bucket-name}/{release}/bin/linux/amd64 *.deb .
 ### Getting kubeadm binaries from a GCS bucket
 
 Pre-compiled GA, alpha/beta versions of kubeadm binary are deployed into `gs://kubernetes-release/release/` GCS bucket,
-while CI/CD versions are deployed into `gs://kubernetes-release-dev/ci-cross/` bucket.
+while CI/CD versions are deployed into `gs://k8s-release-dev/ci-cross/` bucket.
 
 To explore versions available in Google Storage buckets use:
 
@@ -159,7 +159,7 @@ For CI/CD valid version numbers are:
 
 - prefix `ci/` followed by a semantic version number
 - prefix `ci/` followed by Kubernetes release labels for CI/CD versions like e.g. `ci/latest`, `ci/latest-1`, `latest-1.10`.
-  See <https://console.cloud.google.com/storage/browser/kubernetes-release-dev/ci-cross/> for the full list of labels.
+  See <https://console.cloud.google.com/storage/browser/k8s-release-dev/ci-cross/> for the full list of labels.
 
 If you want to retrieve manually pre-compiled/pre-built GA, alpha/beta versions of control plane images, such
 images are deployed into `k8s.gcr.io` GCR registry, while CI/CD versions are deployed into
@@ -520,7 +520,7 @@ see [https://semver.org/](https://semver.org/) for full explanation. Briefly:
 4. Then open in the browser the corresponding bucket using the address
   <https://console.cloud.google.com/storage/browser/kubernetes-jenkins/shared-results/{pr-build-id};>
 5. This bucket should contains a file named `bazel-build-location.txt`; inside there is the name of the GCS bucket
-  where CI/CD output are stored by jenkins e.g. `gs://kubernetes-release-dev/bazel/v1.9.0-alpha.0.584+0bfca758a870fc`
+  where CI/CD output are stored by jenkins e.g. `gs://k8s-release-dev/bazel/v1.9.0-alpha.0.584+0bfca758a870fc`
 
 ### Change the target version number when building a local release
 
