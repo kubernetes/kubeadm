@@ -52,7 +52,7 @@ docker exec kind-worker1 \
 # override the kubeadm binary on the on the kind-control-plane container
 # with a locally built kubeadm binary
 docker cp \
-      $working_dir/kubernetes/bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm \
+      $working_dir/kubernetes/_output/local/bin/linux/amd64/kubeadm \
       kind-control-plane:/usr/bin/kubeadm
 ```
 
@@ -138,7 +138,7 @@ kinder cp kubeadm.conf @cp1:kind/kubeadm.conf
 
 # override the kubeadm binary on all the nodes with a locally built kubeadm binary
 kinder cp \
-      $working_dir/kubernetes/bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm \
+      $working_dir/kubernetes/_output/local/bin/linux/amd64/kubeadm \
       @all:/usr/bin/kubeadm
 ```
 
@@ -221,7 +221,7 @@ kinder build node-image-variant \
 kinder build node-image-variant \
      --base-image kindest/node:latest \
      --image kindest/node:PR12345 \
-     --with-kubeadm $working_dir/kubernetes/bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm
+     --with-kubeadm $working_dir/kubernetes/_output/local/bin/linux/amd64/kubeadm
 ```
 
 When reading from a local folder, both single file or folder can be used; in case a folder is used, the
