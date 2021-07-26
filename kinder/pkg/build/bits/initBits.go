@@ -168,8 +168,7 @@ func installInitBinaries(c *BuildContext) error {
 	// container as /alter
 	src := filepath.Join(c.ContainerBitsPath(), "init")
 
-	// The destination path for the Kubernetes binaries is /kind/bin, a well known folder where kind adds Kubernetes binaries when
-	// building node-image using --type bazel or --type docker
+	// The destination path for the Kubernetes binaries is /kind/bin, a well known folder where kind adds Kubernetes binaries.
 	dst := filepath.Join("/kind", "bin")
 
 	// create dest folder

@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -99,33 +98,10 @@ func findBinary(kubeRoot string, name string) (string, error) {
 	locations := []string{
 		filepath.Join(kubeRoot, "_output", "bin", name),
 		filepath.Join(kubeRoot, "_output", "dockerized", "bin", name),
+		filepath.Join(kubeRoot, "_output", "dockerized", "go", "bin", name),
 		filepath.Join(kubeRoot, "_output", "local", "bin", name),
+		filepath.Join(kubeRoot, "_output", "local", "bin", "go", name),
 		filepath.Join(kubeRoot, "platforms", runtime.GOOS, runtime.GOARCH, name),
-	}
-
-	bazelBin := filepath.Join(kubeRoot, "bazel-bin")
-	bazelBinExists := true
-	if _, err := os.Stat(bazelBin); os.IsNotExist(err) {
-		bazelBinExists = false
-	}
-
-	if bazelBinExists {
-		err := filepath.Walk(bazelBin, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return errors.Wrapf(err, "error walking %s tree", bazelBin)
-			}
-			if info.Name() != name {
-				return nil
-			}
-			if !strings.Contains(path, runtime.GOOS+"_"+runtime.GOARCH) {
-				return nil
-			}
-			locations = append(locations, path)
-			return nil
-		})
-		if err != nil {
-			return "", err
-		}
 	}
 
 	newestLocation := ""

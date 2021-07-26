@@ -24,12 +24,11 @@ execute tests.
     - [Kubeadm version skew policy](#kubeadm-version-skew-policy)
     - [Availability of pre-compiled release artifacts](#availability-of-pre-compiled-release-artifacts)
         - [Getting .deb or .rpm packages form repository](#getting-deb-or-rpm-packages-form-repository)
-        - [Getting .deb or .rpm packages form a GCS bucket](#getting-deb-or-rpm-packages-form-a-gcs-bucket)
         - [Getting kubeadm binaries from a GCS bucket](#getting-kubeadm-binaries-from-a-gcs-bucket)
         - [Getting docker images from a GCR registry](#getting-docker-images-from-a-gcr-registry)
         - [Getting kubeadm binaries or docker images form github release page](#getting-kubeadm-binaries-or-docker-images-form-github-release-page)
     - [Create a local version](#create-a-local-version)
-        - [Build .debs packages](#build-debs-packages)
+        - [Build .deb and .rpm packages](#build-deb-and-rpm-packages)
         - [Build kubeadm binary](#build-kubeadm-binary)
         - [Build controlplane docker images](#build-controlplane-docker-images)
     - [Creating the Kubernetes cluster with kubeadm](#creating-the-kubernetes-cluster-with-kubeadm)
@@ -44,7 +43,6 @@ execute tests.
         - [Conformance test](#conformance-test)
     - [Tips and Tricks](#tips-and-tricks)
         - [Semantic version ordering](#semantic-version-ordering)
-        - [How to identify exact version/build number for a PR](#how-to-identify-exact-versionbuild-number-for-a-pr)
         - [Change the target version number when building a local release](#change-the-target-version-number-when-building-a-local-release)
 
 <!-- /TOC -->
@@ -63,8 +61,8 @@ The table below summarize the current state:
 |                         | .deb or .rpm                                                 | kubeadm binary                                               | control plane                                                |
 | ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | **GA release**          | from .deb or .rpm repository                                 | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)           |
-| **alpha/beta release*** | not available. use CI/CD version "near" tag                  | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)        |
-| **CI/CD release***      | from `gs://k8s-release-dev/bazel/` GCS bucket (only debs, built every merge) | from `gs://k8s-release-dev/ci-cross/` GCS bucket (built every merge) | from `gcr.io/kubernetes-ci-images` container registry (built every few hours, not by PR) |
+| **alpha/beta release*** | not available.                   | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases)        |
+| **CI/CD release***      | not available.                   | from `gs://k8s-release-dev/ci/` GCS bucket (built every merge) | from `gcr.io/kubernetes-ci-images` container registry (built every few hours, not by PR) |
 
 [*] for alpha/beta and CI/CD currently it is not possible to have exact version number consistency for all the
 components; however you can select version numbers "near to" the desired version.
@@ -96,32 +94,10 @@ apt-get install <package name>=<version number>
 yum install <package name>-<version number>
 ```
 
-### Getting .deb or .rpm packages form a GCS bucket
-
-Pre-compiled CI/CD releases of .deb or .rpm packages are deployed into the `gs://k8s-release-dev/bazel/`
-GCS bucket.
-
-To explore versions available in Google Storage buckets use:
-
-```bash
-gsutil ls gs://k8s-release-dev/bazel/{filter}
-
-# e.g. search all CI/CD v1.10 releases
-gsutil ls -g gs://k8s-release-dev/bazel/v1.10*
-```
-
-As alternative, you can browse using <https://console.cloud.google.com/storage/browser/k8s-release-dev/bazel/> .
-
-To retrieve a pre-compiled  CI/CD releases of .deb or .rpm version of kubeadm binary use:
-
-```bash
-gsutil cp gs://{bucket-name}/{release}/bin/linux/amd64 *.deb .
-```
-
 ### Getting kubeadm binaries from a GCS bucket
 
 Pre-compiled GA, alpha/beta versions of kubeadm binary are deployed into `gs://kubernetes-release/release/` GCS bucket,
-while CI/CD versions are deployed into `gs://k8s-release-dev/ci-cross/` bucket.
+while CI/CD versions are deployed into `gs://k8s-release-dev/ci/` bucket.
 
 To explore versions available in Google Storage buckets use:
 
@@ -138,7 +114,7 @@ As alternative, you can browse GCS buckets using <https://console.cloud.google.c
 To retrieve a pre-compiled version of kubeadm binary use:
 
 ```bash
-gsutil cp gs://{bucket-name}/{release}/bin/linux/arm64/kubeadm .
+gsutil cp gs://{bucket-name}/{release}/bin/linux/amd64/kubeadm .
 
 # or, only for releases in gs://kubernetes-release/release/
 curl -L https://dl.k8s.io/release/{release}/bin/linux/amd64/kubeadm && chown +x kubeadm
@@ -159,7 +135,7 @@ For CI/CD valid version numbers are:
 
 - prefix `ci/` followed by a semantic version number
 - prefix `ci/` followed by Kubernetes release labels for CI/CD versions like e.g. `ci/latest`, `ci/latest-1`, `latest-1.10`.
-  See <https://console.cloud.google.com/storage/browser/k8s-release-dev/ci-cross/> for the full list of labels.
+  See <https://console.cloud.google.com/storage/browser/k8s-release-dev/ci/> for the full list of labels.
 
 If you want to retrieve manually pre-compiled/pre-built GA, alpha/beta versions of control plane images, such
 images are deployed into `k8s.gcr.io` GCR registry, while CI/CD versions are deployed into
@@ -198,59 +174,41 @@ Both Kubeadm binaries and docker images are available in `/server/bin` folder of
 
 ## Create a local version
 
-A local version of all the release artifacts (.debs or .rpm, kubeadm binary, docker images) can be build locally; build
-instructions are provided for bazel only, but other builds methods supported by Kuberentes can be used as well.
+A local version of all the release artifacts (.debs or .rpm, kubeadm binary, docker images) can be build locally.
 
 See also:
 
-- [Build and test with Bazel](https://git.k8s.io/community/contributors/devel/sig-testing/bazel.md)
 - [Change the target version number when building a local release](#change-the-target-version-number-when-building-a-local-release)
 
-### Build .debs packages
+### Build .deb and .rpm packages
 
-```bash
-cd ~/go/src/k8s.io/kubernetes
-
-# build debs
-bazel build //build/debs
-```
-
-build output will be stored in `bazel-bin/build/debs`.
-
-> cross build not supported yet; the unofficial [Planter tool](https://git.k8s.io/test-infra/planter)
-> can be used to overcome the problem
-
-> currently bazel does not provide target for building rpm packages
+See [building .deb and .rpm packages for Kubernetes components](https://github.com/kubernetes/release/blob/master/cmd/kubepkg/README.md).
 
 ### Build kubeadm binary
 
 ```bash
-cd ~/go/src/k8s.io/kubernetes
+cd ${GOPATH}/src/k8s.io/kubernetes
 
-# run all unit tests
-bazel test //cmd/kubeadm/...
+# build kubeadm binary for the target platform used by the machines
+make all WHAT=cmd/kubeadm
 
-# build kubeadm binary for the target platform used by the machines in the playground (linux)
-bazel build //cmd/kubeadm
-
-# To cross build for linux- amd64 from mac
-bazel build //cmd/kubeadm --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64
+# To cross build for linux-amd64 from mac
+make all WHAT=cmd/kubeadm KUBE_BUILD_PLATFORMS=linux/amd64
 ```
 
-build output will be stored in  `bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm`.
+build output will be stored in `_output/local/bin/linux/amd64/kubeadm`.
 
 ### Build controlplane docker images
 
 ```bash
-cd ~/go/src/k8s.io/kubernetes
+cd ${GOPATH}/src/k8s.io/kubernetes
+
+# build docker images only for linux/amd64
+make quick-release-images
 
 # build docker images
-bazel build //build:docker-artifacts
+make release-images
 ```
-
-> cross build not supported yet; the unofficial Planter tool can be used to overcome the problem
-
-build output will be stored in  `bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm`.
 
 ## Creating the Kubernetes cluster with kubeadm
 
@@ -259,7 +217,7 @@ and for [creating a cluster using it](https://kubernetes.io/docs/setup/independe
 
 According to selected versions to be installed (the version of .deb or .rpm packages, the version of the kubeadm binary to be used, the version number of the control plane components) following variants to the standard procedure should be applied:
 
-- if you are going to use .deb or .rpm packages available locally (no matter if retrieved from GCS buckets pre-compiled or built locally), you should not
+- if you are going to use .deb or .rpm packages available locally, you should not
   execute action described in [Installing kubeadm, kubelet and kubectl](https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl). Instead you should e.g.
 
   ```bash
@@ -508,19 +466,6 @@ see [https://semver.org/](https://semver.org/) for full explanation. Briefly:
 - Pre-release versions have a lower precedence than the associated normal version; pre-release versions use
   alphanumerical ordering
 - Build metadata should be ignored when determining version precedence
-
-### How to identify exact version/build number for a PR
-
-1. Open one PR already merged e.g. one well known PR, the last PR merged on master, the last PR merged yesterday or
-  the last PR merged on a specific branch/tag
-2. Scroll down and identify the *"k8s-merge-robot merged"* comment; click `View Details`, and then `details`
-  for the`pull-kubernetes-bazel-build` Job.
-3. In the resulting web page, you can then grab the {pr-build-id} which is a string like e.g.
- `master:dc02dfe5604e17f3b0f1f7cafb03597298ef0e3f,52201:79725246f401d0b8524f4c96bdc09535f3037c68`
-4. Then open in the browser the corresponding bucket using the address
-  <https://console.cloud.google.com/storage/browser/kubernetes-jenkins/shared-results/{pr-build-id};>
-5. This bucket should contains a file named `bazel-build-location.txt`; inside there is the name of the GCS bucket
-  where CI/CD output are stored by jenkins e.g. `gs://k8s-release-dev/bazel/v1.9.0-alpha.0.584+0bfca758a870fc`
 
 ### Change the target version number when building a local release
 

@@ -84,7 +84,7 @@ e.g. if you want to test a kubeadm version already built locally:
 kinder build node-variant \
     --base-image kindest/node:v1.13.4 \
     --image kindest/node:PR1234 \
-    --with-kubeadm $working_dir/kubernetes/bazel-bin/cmd/kubeadm/linux_amd64_pure_stripped/kubeadm
+    --with-kubeadm $working_dir/kubernetes/_output/local/bin/linux/amd64/kubeadm
 ```
 
 see [Prepare for tests](doc/prepare-for-tests.md) for more details.
