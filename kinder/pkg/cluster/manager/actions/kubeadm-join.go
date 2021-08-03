@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 )
@@ -45,9 +43,6 @@ func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCert
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
 		// if patcheDir is defined, copy the patches to the node
 		if patchesDir != "" {
-			if cp2.MustKubeadmVersion().LessThan(constants.V1_19) {
-				return errors.New("--patches can't be used with kubeadm older than v1.19")
-			}
 			if err := copyPatchesToNode(cp2, patchesDir); err != nil {
 				return err
 			}
@@ -106,7 +101,9 @@ func kubeadmJoinControlPlane(cp *status.Node, patchesDir, ignorePreflightErrors 
 		fmt.Sprintf("--v=%d", vLevel),
 	}
 	if patchesDir != "" {
-		joinArgs = append(joinArgs, "--experimental-patches", constants.PatchesDir)
+		if cp.MustKubeadmVersion().LessThan(constants.V1_22) {
+			joinArgs = append(joinArgs, "--experimental-patches", constants.PatchesDir)
+		}
 	}
 
 	if err := cp.Command(
@@ -141,7 +138,9 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePrefli
 	}
 
 	if patchesDir != "" {
-		prepareArgs = append(prepareArgs, "--experimental-patches", constants.PatchesDir)
+		if cp.MustKubeadmVersion().LessThan(constants.V1_22) {
+			prepareArgs = append(prepareArgs, "--experimental-patches", constants.PatchesDir)
+		}
 	}
 
 	if err := cp.Command(
@@ -166,7 +165,9 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePrefli
 		fmt.Sprintf("--v=%d", vLevel),
 	}
 	if patchesDir != "" {
-		controlPlaneArgs = append(controlPlaneArgs, "--experimental-patches", constants.PatchesDir)
+		if cp.MustKubeadmVersion().LessThan(constants.V1_22) {
+			controlPlaneArgs = append(controlPlaneArgs, "--experimental-patches", constants.PatchesDir)
+		}
 	}
 
 	if err := cp.Command(

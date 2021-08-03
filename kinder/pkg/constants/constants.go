@@ -118,8 +118,8 @@ const (
 
 // kubernetes releases, used for branching code according to K8s release or kubeadm release version
 var (
-	// V1.19 minor version
-	V1_19 = K8sVersion.MustParseSemantic("v1.19.0-0")
+	// V1.22 minor version
+	V1_22 = K8sVersion.MustParseSemantic("v1.22.0-0")
 )
 
 // other constants

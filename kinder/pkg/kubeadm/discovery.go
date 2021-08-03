@@ -93,6 +93,30 @@ discovery:
   file:
     kubeConfigPath: %s`
 
+// GetPatchesDirectoryPatch returns the kubeadm config patch that will instruct kubeadm
+// to use patches directory.
+func GetPatchesDirectoryPatch(kubeadmConfigVersion string) (string, error) {
+	// select the patches for the kubeadm config version
+	log.Debugf("Preparing patches directory for kubeadm config %s", kubeadmConfigVersion)
+
+	var patch string
+	switch kubeadmConfigVersion {
+	case "v1beta3":
+		patch = patchesDirectoryPatchv1beta3
+	default:
+		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
+	}
+
+	return fmt.Sprintf(patch, constants.PatchesDir), nil
+}
+
+const patchesDirectoryPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+metadata:
+  name: config
+patches:
+  directory: %s`
+
 // GetTLSBootstrapPatch returns the kubeadm config patch that will instruct kubeadm
 // to use a TLSBootstrap token.
 // NB. for sake of semplicity, we are using the same Token already used for Token discovery
