@@ -1,11 +1,18 @@
-<!-- Thanks for filing an issue! Before hitting the button, please answer these questions.-->
+<!--
+!!! IMPORTANT  !!!
 
-## Is this a request for help?
+Before hitting the submit button, please note that requests for support must be sent
+to the support channels or #kubeadm on k8s Slack and not this issue tracker:
+https://git.k8s.io/SUPPORT.md
 
-If yes, you should use our troubleshooting guide and community support channels, see http://kubernetes.io/docs/troubleshooting/.
+If you are experiencing a problem make sure you check the Kubernetes and kubeadm
+troubleshooting guides:
+https://kubernetes.io/docs/tasks/debug-application-cluster/troubleshooting/
+https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/
 
-If no, delete this section and continue on.
 
+If this is a BUG REPORT or a FEATURE REQUEST please answer the following questions.
+-->
 
 ## What keywords did you search in kubeadm issues before filing this one?
 

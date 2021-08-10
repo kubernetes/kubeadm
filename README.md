@@ -2,7 +2,11 @@
 
 The purpose of this repo is to aggregate issues filed against the [kubeadm component](https://git.k8s.io/kubernetes/cmd/kubeadm).
 
+**NOTE:** This issue tracker is not designated for providing support for kubeadm users.
+Please see the [Support](#support) section below.
+
 ## What is Kubeadm ?
+
 Kubeadm is a tool built to provide best-practice "fast paths" for creating Kubernetes clusters.
 It performs the actions necessary to get a minimum viable, secure cluster up and running in a user friendly way.
 Kubeadm's scope is limited to the local node filesystem and the Kubernetes API, and it is intended to be a composable building block of higher level tools.
@@ -14,12 +18,27 @@ Kubeadm's scope is limited to the local node filesystem and the Kubernetes API, 
 1. **kubeadm upgrade** to upgrade a Kubernetes cluster to a newer version.
 1. **kubeadm reset** to revert any changes made to this host by kubeadm init or kubeadm join.
 
+## Support
+
+Only log issues here if you think there is an actual bug or if you have a feature request.
+
+The Kubernetes and kubeadm troubleshooting guides can be found here:
+- [Kubernetes](https://kubernetes.io/docs/tasks/debug-application-cluster/troubleshooting/)
+- [kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/)
+
+Support requests should be sent to the community support channels or `#kubeadm` on the k8s Slack:
+- https://git.k8s.io/SUPPORT.md
+
 ## Documentation
 
 - [Installing kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 - [Creating a cluster](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 - [Command-line reference](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/)
-- [Configuration API reference](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm) (pick an API version from the [list of packages](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm#section-directories))
+- [Customizing components](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/control-plane-flags/)
+- [Certificate management](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/)
+- [Configuration API reference](https://kubernetes.io/docs/reference/config-api/)
+- [Configuration API reference (godoc)](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm)
+(pick an API version from the [list of packages](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm#section-directories))
 
 ## Community, discussion, contribution, and support
 
