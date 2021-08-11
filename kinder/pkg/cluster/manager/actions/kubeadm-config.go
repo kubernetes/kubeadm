@@ -276,6 +276,13 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		}
 		patches = append(patches, fileDiscoveryPatch)
 
+		// add patches directory to the config
+		patchesDirectoryPatch, err := kubeadm.GetPatchesDirectoryPatch(kubeadmConfigVersion)
+		if err != nil {
+			return "", err
+		}
+		patches = append(patches, patchesDirectoryPatch)
+
 		// if the file discovery does not contains the authorization credentials, add tls discovery token
 		if options.discoveryMode == FileDiscoveryWithoutCredentials {
 			tlsBootstrapPatch, err := kubeadm.GetTLSBootstrapPatch(kubeadmConfigVersion)

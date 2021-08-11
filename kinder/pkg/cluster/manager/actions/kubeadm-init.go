@@ -42,9 +42,6 @@ func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 
 	// if patcheDir is defined, copy the patches to the node
 	if patchesDir != "" {
-		if cp1.MustKubeadmVersion().LessThan(constants.V1_19) {
-			return errors.New("--patches can't be used with kubeadm older than v1.19")
-		}
 		if err := copyPatchesToNode(cp1, patchesDir); err != nil {
 			return err
 		}
@@ -102,7 +99,9 @@ func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, patchesDir, igno
 		)
 	}
 	if patchesDir != "" {
-		initArgs = append(initArgs, "--experimental-patches", constants.PatchesDir)
+		if cp1.MustKubeadmVersion().LessThan(constants.V1_22) {
+			initArgs = append(initArgs, "--experimental-patches", constants.PatchesDir)
+		}
 	}
 
 	if err := cp1.Command(
@@ -144,7 +143,9 @@ func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, patche
 		"init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	}
 	if patchesDir != "" {
-		controlplaneArgs = append(controlplaneArgs, "--experimental-patches", constants.PatchesDir)
+		if cp1.MustKubeadmVersion().LessThan(constants.V1_22) {
+			controlplaneArgs = append(controlplaneArgs, "--experimental-patches", constants.PatchesDir)
+		}
 	}
 	if err := cp1.Command(
 		"kubeadm", controlplaneArgs...,
@@ -156,7 +157,9 @@ func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, patche
 		"init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	}
 	if patchesDir != "" {
-		etcdArgs = append(etcdArgs, "--experimental-patches", constants.PatchesDir)
+		if cp1.MustKubeadmVersion().LessThan(constants.V1_22) {
+			etcdArgs = append(etcdArgs, "--experimental-patches", constants.PatchesDir)
+		}
 	}
 	if err := cp1.Command(
 		"kubeadm", etcdArgs...,
