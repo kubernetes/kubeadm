@@ -253,6 +253,13 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		patches = append(patches, automaticCopyCertsPatches...)
 	}
 
+	// add patches directory to the config
+	patchesDirectoryPatches, err := kubeadm.GetPatchesDirectoryPatches(kubeadmConfigVersion)
+	// skip if kubeadm config version is not v1beta3
+	if err == nil {
+		patches = append(patches, patchesDirectoryPatches...)
+	}
+
 	// if requested to use file discovery and not the first control-plane, add patches for using file discovery
 	if options.discoveryMode != TokenDiscovery && !(n == c.BootstrapControlPlane()) {
 		// remove token from config
@@ -275,13 +282,6 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 			return "", err
 		}
 		patches = append(patches, fileDiscoveryPatch)
-
-		// add patches directory to the config
-		patchesDirectoryPatch, err := kubeadm.GetPatchesDirectoryPatch(kubeadmConfigVersion)
-		if err != nil {
-			return "", err
-		}
-		patches = append(patches, patchesDirectoryPatch)
 
 		// if the file discovery does not contains the authorization credentials, add tls discovery token
 		if options.discoveryMode == FileDiscoveryWithoutCredentials {
