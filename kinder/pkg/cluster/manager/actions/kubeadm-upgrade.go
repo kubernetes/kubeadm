@@ -44,11 +44,8 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, patch
 	nodeList := c.K8sNodes().EligibleForActions()
 
 	for _, n := range nodeList {
-		// if patcheDir is defined, copy the patches to the node
-		if patchesDir != "" {
-			if err := copyPatchesToNode(n, patchesDir); err != nil {
-				return err
-			}
+		if err := copyPatchesToNode(n, patchesDir); err != nil {
+			return err
 		}
 
 		if err := upgradeKubeadmBinary(n, upgradeVersion); err != nil {

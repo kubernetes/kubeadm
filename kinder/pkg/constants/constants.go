@@ -113,7 +113,7 @@ const (
 	DiscoveryFile = "/kinder/discovery.conf"
 
 	// PatchesDir defines the path to patches stored on node
-	PatchesDir = "/tmp/kubeadm-patches"
+	PatchesDir = "/kinder/patches"
 )
 
 // kubernetes releases, used for branching code according to K8s release or kubeadm release version

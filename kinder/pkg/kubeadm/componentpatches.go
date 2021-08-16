@@ -18,7 +18,6 @@ package kubeadm
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -28,12 +27,7 @@ import (
 // GetPatchesDirectoryPatches returns the kubeadm config patches that will instruct kubeadm
 // to use patches directory.
 func GetPatchesDirectoryPatches(kubeadmConfigVersion string) ([]string, error) {
-	// select the patches for the kubeadm config version
 	log.Debugf("Preparing patches directory for kubeadm config %s", kubeadmConfigVersion)
-	if _, err := os.Stat(constants.PatchesDir); os.IsNotExist(err) {
-		return []string{}, nil
-	}
-
 	var patchInit, patchJoin string
 	switch kubeadmConfigVersion {
 	case "v1beta3":
