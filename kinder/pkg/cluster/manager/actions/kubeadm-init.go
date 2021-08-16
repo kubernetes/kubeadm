@@ -40,11 +40,8 @@ import (
 func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode, kubeadmConfigVersion, patchesDir, ignorePreflightErrors, featureGates string, wait time.Duration, vLevel int) (err error) {
 	cp1 := c.BootstrapControlPlane()
 
-	// if patcheDir is defined, copy the patches to the node
-	if patchesDir != "" {
-		if err := copyPatchesToNode(cp1, patchesDir); err != nil {
-			return err
-		}
+	if err := copyPatchesToNode(cp1, patchesDir); err != nil {
+		return err
 	}
 
 	// checks pre-loaded images available on the node (this will report missing images, if any)
@@ -329,15 +326,19 @@ func writeKubeConfig(c *status.Cluster, hostPort int32) error {
 }
 
 func copyPatchesToNode(n *status.Node, dir string) error {
-
-	n.Infof("Importing patches from %s", dir)
-
-	// creates the folder tree for patches
+	// always create the target patch directory on the node since it's always
+	// defined in the kubeadm config.
 	if err := n.Command("mkdir", "-p", constants.PatchesDir).Silent().Run(); err != nil {
 		return errors.Wrapf(err, "failed to create %s folder", constants.PatchesDir)
 	}
 
-	// copies patches
+	// if the source directory is not defined, skip copying patches
+	if len(dir) == 0 {
+		return nil
+	}
+
+	// copy the patches from the host
+	n.Infof("Importing patches from %s", dir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
@@ -350,7 +351,7 @@ func copyPatchesToNode(n *status.Node, dir string) error {
 		nodePath := filepath.Join(constants.PatchesDir, file.Name())
 
 		if err := n.CopyTo(hostPath, nodePath); err != nil {
-			errors.Wrapf(err, "failed to copy from host path %q to node path %q for node %q",
+			return errors.Wrapf(err, "failed to copy from host path %q to node path %q for node %q",
 				hostPath, nodePath, n.Name())
 		}
 	}

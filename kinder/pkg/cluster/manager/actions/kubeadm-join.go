@@ -41,11 +41,8 @@ func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCert
 	cpX := []*status.Node{c.BootstrapControlPlane()}
 
 	for _, cp2 := range c.SecondaryControlPlanes().EligibleForActions() {
-		// if patcheDir is defined, copy the patches to the node
-		if patchesDir != "" {
-			if err := copyPatchesToNode(cp2, patchesDir); err != nil {
-				return err
-			}
+		if err := copyPatchesToNode(cp2, patchesDir); err != nil {
+			return err
 		}
 
 		// if not automatic copy certs, simulate manual copy
