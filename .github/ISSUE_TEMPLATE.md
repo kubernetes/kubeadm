@@ -3,7 +3,7 @@
 
 Before hitting the submit button, please note that requests for support must be sent
 to the support channels or #kubeadm on k8s Slack and not this issue tracker:
-https://git.k8s.io/SUPPORT.md
+https://git.k8s.io/kubernetes/SUPPORT.md
 
 If you are experiencing a problem make sure you check the Kubernetes and kubeadm
 troubleshooting guides:

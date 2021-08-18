@@ -27,7 +27,7 @@ The Kubernetes and kubeadm troubleshooting guides can be found here:
 - [kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/)
 
 Support requests should be sent to the community support channels or `#kubeadm` on the k8s Slack:
-- https://git.k8s.io/SUPPORT.md
+- https://git.k8s.io/kubernetes/SUPPORT.md
 
 ## Documentation
 
