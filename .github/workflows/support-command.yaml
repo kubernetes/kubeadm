@@ -1,0 +1,34 @@
+on: issue_comment
+name: handle the /support command
+jobs:
+  support_comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check for the /support command
+        id: command
+        uses: xt0rted/slash-command-action@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          command: support
+          reaction: "false"
+          allow-edits: "true"
+          permission-level: admin
+      - name: comment with support text
+        uses: ben-z/actions-comment-on-issue@1.0.2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          message: |
+            Hello, @${{ github.event.issue.user.login }} :robot: :wave:
+
+            You seem to have troubles using Kubernetes and kubeadm.
+            Note that our issue trackers **should not** be used for providing support to users.
+            There are special channels for that purpose.
+
+            Please see:
+            - https://github.com/kubernetes/kubeadm#support
+      - name: add support label
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: kind/support
+      - name: close issue
+        uses: peter-evans/close-issue@v1
