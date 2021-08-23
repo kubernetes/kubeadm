@@ -1,0 +1,10 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+reviewers:
+  - dims
+  - neolit123
+  - xinydev
+approvers:
+  - dims
+  - neolit123
+  - xinydev
