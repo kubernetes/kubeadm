@@ -91,7 +91,7 @@ errorExit() {
     exit 1
 }
 
-curl --silent --max-time 2 --insecure https://localhost:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://localhost:${APISERVER_DEST_PORT}/"
+curl --silent --max-time 2 --insecure https://localhost:${APISERVER_SRC_PORT}/ -o /dev/null || errorExit "Error GET https://localhost:${APISERVER_SRC_PORT}/"
 if ip addr | grep -q ${APISERVER_VIP}; then
     curl --silent --max-time 2 --insecure https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/"
 fi
@@ -99,6 +99,7 @@ fi
 
 There are some placeholders in `bash` variable style to fill in:
 - `${APISERVER_VIP}` is the virtual IP address negotiated between the `keepalived` cluster hosts.
+- `${APISERVER_SRC_PORT}` the port through which api-servers will listen to request in each control plane.
 - `${APISERVER_DEST_PORT}` the port through which Kubernetes will talk to the API Server.
 
 ### haproxy configuration
