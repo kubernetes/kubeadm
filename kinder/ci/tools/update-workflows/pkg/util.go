@@ -75,14 +75,14 @@ func ciLabelFor(ver string) string {
 
 func branchFor(ver string) string {
 	if ver == latestVersion {
-		return "master" // TODO; this will update soon?
+		return "master" // TODO: change to main when kubernetes/kubernetes uses main as the default branch
 	}
 	return fmt.Sprintf("release-%s", ver)
 }
 
 func imageVer(ver string) string {
 	if ver == latestVersion {
-		return "master" // TODO; this will update soon?
+		return "master" // TODO: change to main when kubernetes/test-infra uses main as the default branch
 	}
 	return ver
 }
