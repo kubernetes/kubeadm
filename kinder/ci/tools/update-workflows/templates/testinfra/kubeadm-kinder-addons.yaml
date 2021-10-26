@@ -25,7 +25,7 @@
     path_alias: k8s.io/kubeadm
   spec:
     containers:
-    - image: gcr.io/k8s-testimages/kubekins-e2e:{{ .TestInfraImage }}-{{ imageVer .KubernetesVersion }}
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:{{ .TestInfraImage }}-{{ imageVer .KubernetesVersion }}
       command:
       - runner.sh
       - "../kubeadm/kinder/ci/kinder-run.sh"
