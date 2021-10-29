@@ -18,7 +18,7 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"io"
 	"os"
 
 	ktestworkflow "k8s.io/kubeadm/kinder/pkg/test/workflow"
@@ -36,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error: failed to create workflow: %v\n", err)
 	}
-	if err := w.Run(ioutil.Discard, true, false, true, "ARTIFACTS"); err != nil {
+	if err := w.Run(io.Discard, true, false, true, "ARTIFACTS"); err != nil {
 		log.Fatalf("error: failed to run workflow: %v\n", err)
 	}
 	log.Infof("%s OK", file)

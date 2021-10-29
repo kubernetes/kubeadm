@@ -30,7 +30,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -149,7 +148,7 @@ func NewWorkflow(file string) (*Workflow, error) {
 	}
 
 	// Loads and unmarshal it
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading workflow file %s", file)
 	}
@@ -306,7 +305,7 @@ func (w *Workflow) Run(out io.Writer, dryRun, verbose, exitOnError bool, artifac
 				return errors.Wrapf(err, "error getting current directory")
 			}
 
-			artifacts, err = ioutil.TempDir(dir, "kinder-test-workflow")
+			artifacts, err = os.MkdirTemp(dir, "kinder-test-workflow")
 			if err != nil {
 				return errors.Wrapf(err, "error creating artifact folder")
 			}
