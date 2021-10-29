@@ -18,7 +18,6 @@ package alter
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -253,7 +252,7 @@ func fixImageTar(v string) error {
 	f.Close()
 
 	// override the image tar with the fixed version
-	err = ioutil.WriteFile(v, []byte(w.String()), 0644)
+	err = os.WriteFile(v, []byte(w.String()), 0644)
 	if err != nil {
 		return err
 	}
@@ -405,7 +404,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 }
 
 func pullImages(alterHelper *nodes.AlterHelper, bc *bits.BuildContext, images []string, savePath, containerID string) error {
-	tempDir, err := ioutil.TempDir("", "kinder-image-path")
+	tempDir, err := os.MkdirTemp("", "kinder-image-path")
 	if err != nil {
 		return err
 	}

@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -59,7 +58,7 @@ func GetArchiveTags(path string) ([]string, error) {
 		}
 	}
 	// read and parse the tags
-	b, err := ioutil.ReadAll(tr)
+	b, err := io.ReadAll(tr)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +99,7 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositorie
 		} else if err != nil {
 			return err
 		}
-		b, err := ioutil.ReadAll(tarReader)
+		b, err := io.ReadAll(tarReader)
 		if err != nil {
 			return err
 		}
