@@ -17,7 +17,6 @@ limitations under the License.
 package bits
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -226,7 +225,7 @@ func configureKubelet(c *BuildContext) error {
 	csrcFile := filepath.Join(csrc, "kubelet.service")
 	dstFile := filepath.Join(dst, "kubelet.service")
 	log.Infof("Adding %s to the image and enabling the kubelet service", dstFile)
-	if err := ioutil.WriteFile(hsrcFile, kubeletService, 0644); err != nil {
+	if err := os.WriteFile(hsrcFile, kubeletService, 0644); err != nil {
 		log.Errorf("failed to create %s file into the image! %v", dstFile, err)
 		return err
 	}
@@ -261,7 +260,7 @@ func configureKubelet(c *BuildContext) error {
 	csrcFile = filepath.Join(csrc, "10-kubeadm.conf")
 	dstFile = filepath.Join(dst, "10-kubeadm.conf")
 	log.Infof("Adding %s to the image", dstFile)
-	if err := ioutil.WriteFile(hsrcFile, kubeadmDropIn, 0644); err != nil {
+	if err := os.WriteFile(hsrcFile, kubeadmDropIn, 0644); err != nil {
 		log.Errorf("failed to create %s file into the image! %v", dstFile, err)
 		return err
 	}
