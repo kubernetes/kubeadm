@@ -19,7 +19,7 @@ package pkg
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"path"
 	"path/filepath"
 	"strings"
@@ -43,7 +43,7 @@ func processTestInfra(settings *Settings, cfg *jobGroup, oldestVer, minVer *vers
 	if !path.IsAbs(tPath) {
 		tPath = filepath.Join(filepath.Dir(settings.PathConfig), tPath)
 	}
-	tBytes, err := os.ReadFile(tPath)
+	tBytes, err := ioutil.ReadFile(tPath)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func processTestInfra(settings *Settings, cfg *jobGroup, oldestVer, minVer *vers
 	// write testinfra job file
 	outPath := filepath.Join(settings.PathTestInfra, path.Base(cfg.TestInfraJobSpec.TargetFile))
 	log.Infof("writing %q", outPath)
-	if err := os.WriteFile(outPath, []byte(str), 0644); err != nil {
+	if err := ioutil.WriteFile(outPath, []byte(str), 0644); err != nil {
 		return err
 	}
 	return nil

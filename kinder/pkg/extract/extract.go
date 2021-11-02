@@ -27,6 +27,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -461,7 +462,7 @@ func resolveLabel(repository, label string) (version *K8sVersion.Version, err er
 }
 
 func readVersion(r io.Reader) (version *K8sVersion.Version, err error) {
-	buf, err := io.ReadAll(r)
+	buf, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading version")
 	}

@@ -19,6 +19,7 @@ package actions
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -321,7 +322,7 @@ func writeKubeConfig(c *status.Cluster, hostPort int32) error {
 		return errors.Wrap(err, "failed to create kubeconfig output directory")
 	}
 
-	return os.WriteFile(dest, buff.Bytes(), 0600)
+	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
 }
 
 func copyPatchesToNode(n *status.Node, dir string) error {
@@ -338,7 +339,7 @@ func copyPatchesToNode(n *status.Node, dir string) error {
 
 	// copy the patches from the host
 	n.Infof("Importing patches from %s", dir)
-	files, err := os.ReadDir(dir)
+	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}

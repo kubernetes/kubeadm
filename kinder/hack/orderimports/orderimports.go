@@ -30,6 +30,7 @@ import (
 	"go/token"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -388,7 +389,7 @@ func diff(prefix string, b1, b2 []byte) ([]byte, error) {
 }
 
 func writeTempFile(prefix string, data []byte) (string, error) {
-	file, err := os.CreateTemp("", prefix)
+	file, err := ioutil.TempFile("", prefix)
 	if err != nil {
 		return "", err
 	}
