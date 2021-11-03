@@ -18,6 +18,7 @@ package status
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -435,7 +436,7 @@ func (n *Node) CopyTo(source, dest string) error {
 // WriteFile writes a temporary file with the given contents and copies the file to the node container
 func (n *Node) WriteFile(containerPath string, contents []byte) error {
 	// Write the contents as a temporary file
-	tmpfile, err := os.CreateTemp("", fmt.Sprintf("%s-*", n.name))
+	tmpfile, err := ioutil.TempFile("", fmt.Sprintf("%s-*", n.name))
 	if err != nil {
 		errors.Wrap(err, "could not create temporary file")
 	}

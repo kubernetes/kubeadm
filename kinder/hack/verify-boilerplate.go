@@ -19,6 +19,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -145,7 +146,7 @@ func verifyFile(filePath string) error {
 	}
 
 	// read the file
-	b, err := os.ReadFile(filePath)
+	b, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
