@@ -178,3 +178,15 @@ jobGroups:
     - ./templates/workflows/rootless-tasks.yaml
   jobs:
   - kubernetesVersion: latest
+
+- name: unversioned-kubelet-cm
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-unversioned-kubelet-cm.yaml
+    template: ./templates/testinfra/kubeadm-kinder-unversioned-kubelet-cm.yaml
+  kinderWorkflowSpec:
+    targetFile: unversioned-kubelet-cm-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/unversioned-kubelet-cm.yaml
+    additionalFiles:
+    - ./templates/workflows/unversioned-kubelet-cm-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
