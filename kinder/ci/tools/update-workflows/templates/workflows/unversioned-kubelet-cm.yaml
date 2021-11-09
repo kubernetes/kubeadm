@@ -1,0 +1,11 @@
+version: 1
+summary: |
+  This workflow tests the proper functioning of the UnversionedKubeletConfigMap feature gate
+  in kubeadm and Kubernetes version {{ .KubernetesVersion }}.
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-unversioned-kubelet-cm{{ dashVer .KubernetesVersion }}
+  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/{{ .TargetFile }}
+vars:
+  kubernetesVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
+  upgradeVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
+tasks:
+- import: unversioned-kubelet-cm-tasks.yaml
