@@ -255,60 +255,64 @@ With the services up, now the Kubernetes cluster can be bootstrapped using `kube
 
 ## kube-vip
 
-As an alternative to the more "traditional" approach of `keepalived` and `haproxy`, [kube-vip](https://kube-vip.io/) implements both management of a virtual IP and load balancing in one service. Similar to option 2 above, `kube-vip` will be run as a static pod on the control plane nodes.
+As an alternative to the more "traditional" approach of `keepalived` and `haproxy`, [kube-vip](https://kube-vip.io/) implements both management of a virtual IP and load balancing in one service. It can be implemented in bother layer2 (with ARP, and `leaderElection`) or layer3 utilising BGP peering. Similar to option 2 above, `kube-vip` will be run as a static pod on the control plane nodes.
 
 Like with `keepalived`, the hosts negotiating a virtual IP need to be in the same IP subnet. Similarly, like with `haproxy`, stream-based load-balancing allows TLS termination to be handled by the API Server instances behind it.
 
-The configuration file `/etc/kube-vip/config.yaml` looks like this:
-```yaml
-localPeer:
-  id: ${ID}
-  address: ${IPADDR}
-  port: 10000
-remotePeers:
-- id: ${PEER1_ID}
-  address: ${PEER1_IPADDR}
-  port: 10000
-# [...]
-vip: ${APISERVER_VIP}
-gratuitousARP: true
-singleNode: false
-startAsLeader: ${IS_LEADER}
-interface: ${INTERFACE}
-loadBalancers:
-- name: API Server Load Balancer
-  type: tcp
-  port: ${APISERVER_DEST_PORT}
-  bindToVip: false
-  backends:
-  - port: ${APISERVER_SRC_PORT}
-    address: ${HOST1_ADDRESS}
-  # [...]
+**NOTE**
+`kube-vip` requires access to the API server, especially during a cluster initialisation (during the `kubeadm init` phase). At this point the `admin.conf` is the only kubeconfig that is available to `kube-vip` to authenticate and communicate with the API-server. Post cluster stand up it is recommended that a user sign a custom client kubeconfig and rotate it manually on expiration.
+
+### Generating a Manifest
+
+This section details creating a number of manifests for various use cases
+
+#### Set configuration details
+
+```
+export VIP=192.168.0.40`
+export INTERFACE=<interface>
 ```
 
-The `bash` style placeholders to expand are these:
-- `${ID}` the current host's symbolic name
-- `${IPADDR}` the current host's IP address
-- `${PEER1_ID}` a symbolic name for the first vIP peer
-- `${PEER1_IPADDR}` IP address for the first vIP peer
-- entries (`id`, `address`, `port`) for additional vIP peers can follow
-- `${APISERVER_VIP}` is the virtual IP address negotiated between the `kube-vip` cluster hosts.
-- `${IS_LEADER}` is `true` for exactly one leader and `false` for the rest
-- `${INTERFACE}` is the network interface taking part in the negotiation of the virtual IP, e.g. `eth0`.
-- `${APISERVER_DEST_PORT}` the port through which Kubernetes will talk to the API Server.
-- `${APISERVER_SRC_PORT}` the port used by the API Server instances
-- `${HOST1_ADDRESS}` the first load-balanced API Server host's IP address
-- entries (`port`, `address`) for additional load-balanced API Server hosts can follow
+### Configure to use a container runtime
 
-To have the service started with the cluster, now the manifest `kube-vip.yaml` needs to be placed in `/etc/kubernetes/manifests` (create the directory first). It can be generated using the `kube-vip` docker image:
+#### Get latest version
+
+ We can parse the GitHub API to find the latest version (or we can set this manually)
+
+`KVVERSION=$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")`
+
+or manually:
+
+`export KVVERSION=vx.x.x`
+
+The easiest method to generate a manifest is using the container itself, below will create an alias for different container runtimes.
+
+#### containerd
+
+`alias kube-vip="ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:$KVVERSION vip /kube-vip"`
+
+#### Docker
+
+`alias kube-vip="docker run --network host --rm ghcr.io/kube-vip/kube-vip:$KVVERSION"`
+
+### ARP
+
+This configuration will create a manifest that starts `kube-vip` providing **controlplane** and **services** management, using **leaderElection**. When this instance is elected as the leader it will bind the `vip` to the specified `interface`, this is also the same for services of `type:LoadBalancer`.
+
+`export INTERFACE=eth0`
+
 ```
-# docker run -it --rm plndr/kube-vip:0.1.1 /kube-vip sample manifest \
-    | sed "s|plndr/kube-vip:'|plndr/kube-vip:0.1.1'|" \
-    | sudo tee /etc/kubernetes/manifests/kube-vip.yaml
+kube-vip manifest pod \
+    --interface $INTERFACE \
+    --vip $VIP \
+    --controlplane \
+    --arp \
+    --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
 ```
 
-The result, `/etc/kubernetes/manifests/kube-vip.yaml`, will look like this:
-```yaml
+#### Example manifest
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
@@ -317,27 +321,141 @@ metadata:
   namespace: kube-system
 spec:
   containers:
-  - command:
-    - /kube-vip
-    - start
-    - -c
-    - /vip.yaml
-    image: 'plndr/kube-vip:0.1.1'
+  - args:
+    - manager
+    env:
+    - name: vip_arp
+      value: "true"
+    - name: port
+      value: "6443"
+    - name: vip_interface
+      value: ens192
+    - name: vip_cidr
+      value: "32"
+    - name: cp_enable
+      value: "true"
+    - name: cp_namespace
+      value: kube-system
+    - name: vip_ddns
+      value: "false"
+    - name: vip_leaderelection
+      value: "true"
+    - name: vip_leaseduration
+      value: "5"
+    - name: vip_renewdeadline
+      value: "3"
+    - name: vip_retryperiod
+      value: "1"
+    - name: vip_address
+      value: 192.168.0.40
+    image: ghcr.io/kube-vip/kube-vip:v0.4.0
+    imagePullPolicy: Always
     name: kube-vip
     resources: {}
     securityContext:
       capabilities:
         add:
         - NET_ADMIN
+        - NET_RAW
         - SYS_TIME
     volumeMounts:
-    - mountPath: /vip.yaml
-      name: config
+    - mountPath: /etc/kubernetes/admin.conf
+      name: kubeconfig
+  hostAliases:
+  - hostnames:
+    - kubernetes
+    ip: 127.0.0.1
   hostNetwork: true
   volumes:
   - hostPath:
-      path: /etc/kube-vip/config.yaml
-    name: config
+      path: /etc/kubernetes/admin.conf
+    name: kubeconfig
+status: {}
+```
+
+### BGP
+
+This configuration will create a manifest that will start `kube-vip` providing **controlplane** and **services** management. **Unlike** ARP, all nodes in the BGP configuration will advertise virtual IP addresses. 
+
+**Note** we bind the address to `lo` as we don't want multiple devices that have the same address on public interfaces. We can specify all the peers in a comma seperated list in the format of `address:AS:password:multihop`.
+
+`export INTERFACE=lo`
+
+```
+kube-vip manifest pod \
+    --interface $INTERFACE \
+    --vip $VIP \
+    --controlplane \
+    --bgp \
+    --localAS 65000 \
+    --bgpRouterID 192.168.0.2 \
+    --bgppeers 192.168.0.10:65000::false,192.168.0.11:65000::false | tee /etc/kubernetes/manifests/kube-vip.yaml
+```
+
+#### Example Manifest 
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  name: kube-vip
+  namespace: kube-system
+spec:
+  containers:
+  - args:
+    - manager
+    env:
+    - name: vip_arp
+      value: "false"
+    - name: port
+      value: "6443"
+    - name: vip_interface
+      value: ens192
+    - name: vip_cidr
+      value: "32"
+    - name: cp_enable
+      value: "true"
+    - name: cp_namespace
+      value: kube-system
+    - name: vip_ddns
+      value: "false"
+    - name: bgp_enable
+      value: "true"
+    - name: bgp_routerid
+      value: 192.168.0.2
+    - name: bgp_as
+      value: "65000"
+    - name: bgp_peeraddress
+    - name: bgp_peerpass
+    - name: bgp_peeras
+      value: "65000"
+    - name: bgp_peers
+      value: 192.168.0.10:65000::false,192.168.0.11:65000::false
+    - name: vip_address
+      value: 192.168.0.40
+    image: ghcr.io/kube-vip/kube-vip:v0.4.0
+    imagePullPolicy: Always
+    name: kube-vip
+    resources: {}
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+        - SYS_TIME
+    volumeMounts:
+    - mountPath: /etc/kubernetes/admin.conf
+      name: kubeconfig
+  hostAliases:
+  - hostnames:
+    - kubernetes
+    ip: 127.0.0.1
+  hostNetwork: true
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes/admin.conf
+    name: kubeconfig
 status: {}
 ```
 
