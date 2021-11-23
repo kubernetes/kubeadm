@@ -20,10 +20,10 @@ source "$(dirname "$0")/utils.sh"
 cd_root_path
 
 # set kubernetes version
-KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.22.0}"
+KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.23.0}"
 
 # set skew
-KUBERNETES_SKEW="${KUBERNETES_SKEW:-2}"
+KUBERNETES_SKEW="${KUBERNETES_SKEW:-3}"
 
 # path to the config
 PATH_CONFIG="${PATH_CONFIG:-./ci/tools/update-workflows/config.yaml}"
