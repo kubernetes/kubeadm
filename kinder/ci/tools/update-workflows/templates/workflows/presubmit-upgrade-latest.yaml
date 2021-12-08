@@ -8,7 +8,7 @@ vars:
   upgradeVersion: "{{ resolve `ci/latest` }}"
   controlPlaneNodes: 3
   workerNodes: 2
-  baseImage: kindest/base:v20190403-1ebf15f
+  baseImage: kindest/base:v20191105-ee880e9b # has containerd
   image: kindest/node:test
   clusterName: kinder-pull
   kubeadmVerbosity: 6
