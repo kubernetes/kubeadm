@@ -18,8 +18,9 @@ package actions
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	versionutils "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
@@ -66,12 +67,25 @@ func CluterInfo(c *status.Cluster) error {
 			"--",
 		}
 
+		var lines []string
+		var err error
+
 		// Get the version of etcdctl from the etcd binary
+		// Retry the version command for a while to avoid "exec" flakes
 		versionArgs := append(etcdArgs, "etcd", "--version")
-		lines, err := cp1.Command("kubectl", versionArgs...).RunAndCapture()
+		versionArgs = append([]string{"--request-timeout=2"}, versionArgs...) // Ensure shorter timeout
+		for i := 0; i < 10; i++ {
+			lines, err = cp1.Command("kubectl", versionArgs...).RunAndCapture()
+			if err == nil {
+				break
+			}
+			cp1.Infof("Could not execute 'etcd --version' inside %q (attempt %d/%d): %v\n", cp1.Name(), i+1, 10,
+				errors.Wrap(err, strings.Join(lines, "\n")))
+		}
 		if err != nil {
 			return err
 		}
+
 		etcdctlVersion, err := parseEtcdctlVersion(lines)
 		if err != nil {
 			return err

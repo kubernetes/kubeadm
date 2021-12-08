@@ -12,7 +12,7 @@ vars:
   kubernetesVersion: v1.12.8
   controlPlaneNodes: 1
   workerNodes: 2
-  baseImage: kindest/base:v20190403-1ebf15f
+  baseImage: kindest/base:v20191105-ee880e9b # has containerd
   image: kindest/node:test
   clusterName: kinder-xony
   kubeadmVerbosity: 6
