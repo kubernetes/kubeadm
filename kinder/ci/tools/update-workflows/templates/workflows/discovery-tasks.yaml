@@ -7,7 +7,7 @@ vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
   kubernetesVersion: v1.16.0
-  baseImage: kindest/base:v20190403-1ebf15f
+  baseImage: kindest/base:v20191105-ee880e9b # has containerd
   image: kindest/node:test
   clusterName: kinder-discovery
   kubeadmVerbosity: 6
