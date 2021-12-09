@@ -48,6 +48,8 @@ explain why.
 - **Cloud provider or hardware configuration**:
 - **OS** (e.g. from /etc/os-release):
 - **Kernel** (e.g. `uname -a`):
+- **Container runtime (CRI)** (e.g. containerd, cri-o):
+- **Container networking plugin (CNI)** (e.g. Calico, Cilium):
 - **Others**:
 
 
