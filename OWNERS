@@ -5,8 +5,11 @@ approvers:
 - neolit123
 - SataQiu
 reviewers:
-- yagonobre
+- fabriziopandini
+- neolit123
+- SataQiu
 - pacoxu
+- RA489
 emeritus_approvers:
 - luxas
 - timothysc
