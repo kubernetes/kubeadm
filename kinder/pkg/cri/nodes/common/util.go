@@ -101,13 +101,13 @@ func getProxyEnvs() (map[string]string, error) {
 	}
 	// Specifically add the cluster subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
-		noProxy := envs[noProxy]
-		if noProxy != "" {
-			noProxy += ","
+		noProxyVal := envs[noProxy]
+		if noProxyVal != "" {
+			noProxyVal += ","
 		}
 		//TODO: noProxy += cfg.Networking.ServiceSubnet + "," + cfg.Networking.PodSubnet
-		envs[noProxy] = noProxy
-		envs[strings.ToLower(noProxy)] = noProxy
+		envs[noProxy] = noProxyVal
+		envs[strings.ToLower(noProxy)] = noProxyVal
 	}
 
 	// Specifically add the docker network subnets to NO_PROXY if we are using a proxy
