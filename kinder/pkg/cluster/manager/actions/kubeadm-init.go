@@ -30,6 +30,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"k8s.io/apimachinery/pkg/util/version"
+
 	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions/assets"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
@@ -228,8 +230,17 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 	}
 
 	if len(c.Workers()) == 0 {
+		// TODO: Once kubeadm 1.23 is no longer supported remove the <1.24 handling.
+		// TODO: Remove only the "control-plane" taint for kubeadm >= 1.25.
+		// https://github.com/kubernetes/kubeadm/issues/2200
+		taints := []string{"node-role.kubernetes.io/control-plane-", "node-role.kubernetes.io/master-"}
+		if cp1.MustKubeadmVersion().LessThan(version.MustParseSemantic("v1.24.0")) {
+			taints = []string{"node-role.kubernetes.io/master-"}
+		}
+		taintArgs := []string{"--kubeconfig=/etc/kubernetes/admin.conf", "taint", "nodes", "--all"}
+		taintArgs = append(taintArgs, taints...)
 		if err := cp1.Command(
-			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "taint", "nodes", "--all", "node-role.kubernetes.io/master-",
+			"kubectl", taintArgs...,
 		).RunWithEcho(); err != nil {
 			return err
 		}
