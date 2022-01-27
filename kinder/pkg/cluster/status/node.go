@@ -23,13 +23,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	K8sVersion "k8s.io/apimachinery/pkg/util/version"
-	"k8s.io/apimachinery/pkg/util/wait"
+
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri/host"
 	"k8s.io/kubeadm/kinder/pkg/exec"
@@ -233,30 +232,24 @@ func (n *Node) EtcdImage() (string, error) {
 	return n.etcdImage, nil
 }
 
-//const clusterSettingsPath = "/kinder/cluster-settings.yaml"
+const clusterSettingsPath = "/kinder/cluster-settings.yaml"
 
 // WriteClusterSettings stores in the node a set of cluster-wide settings that will be re-used
 // by kinder during the cluster lifecycle (after create)
 func (n *Node) WriteClusterSettings(settings *ClusterSettings) error {
-	/*
-		Temporarily disabled because we are observing flakes related to this operation
-
-			s, err := ksigsyaml.Marshal(*settings)
-			if err != nil {
-				return errors.Wrapf(err, "failed to encode %s", clusterSettingsPath)
-			}
-
-			err = n.Command(
-				"mkdir", "-p", filepath.Dir(clusterSettingsPath),
-			).Silent().Run()
-			if err != nil {
-				return errors.Wrapf(err, "failed to write %s", clusterSettingsPath)
-			}
-
-			if err := n.WriteFile(clusterSettingsPath, s); err != nil {
-				return err
-			}
-	*/
+	s, err := ksigsyaml.Marshal(*settings)
+	if err != nil {
+		return errors.Wrapf(err, "failed to encode %s", clusterSettingsPath)
+	}
+	err = n.Command(
+		"mkdir", "-p", filepath.Dir(clusterSettingsPath),
+	).Silent().Run()
+	if err != nil {
+		return errors.Wrapf(err, "failed to write %s", clusterSettingsPath)
+	}
+	if err := n.WriteFile(clusterSettingsPath, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -296,30 +289,18 @@ func (n *Node) WriteNodeSettings(settings *NodeSettings) error {
 		return errors.Wrapf(err, "failed to encode %s", nodeSettingsPath)
 	}
 
-	var lastError error
 	dir := filepath.Dir(nodeSettingsPath)
-	attempts := 0
-	// Retry the operation to avoid flakes:
-	// https://github.com/kubernetes/kubeadm/issues/1918
-	err = wait.PollImmediate(time.Second*1, time.Second*20, func() (bool, error) {
-		attempts++
-		log.Debugf("Writing node settings at %s (attempt %d)...", nodeSettingsPath, attempts)
-		err = n.Command(
-			"mkdir", "-p", dir,
-		).Silent().Run()
-		if err != nil {
-			lastError = errors.Wrapf(err, "failed to create directory %s", dir)
-			return false, nil
-		}
-		if err := n.WriteFile(nodeSettingsPath, s); err != nil {
-			lastError = errors.Wrapf(err, "failed to write %s", nodeSettingsPath)
-			return false, nil
-		}
-		return true, nil
-	})
+	log.Debugf("Writing node settings at %s...", nodeSettingsPath)
+	err = n.Command(
+		"mkdir", "-p", dir,
+	).Silent().Run()
 	if err != nil {
-		return lastError
+		return errors.Wrapf(err, "failed to create %s", dir)
 	}
+	if err := n.WriteFile(nodeSettingsPath, s); err != nil {
+		return errors.Wrapf(err, "failed to write %s", nodeSettingsPath)
+	}
+
 	return nil
 }
 

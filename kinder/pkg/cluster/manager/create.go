@@ -19,9 +19,12 @@ package manager
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
@@ -222,26 +225,56 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 		}
 	}
 
+	// wait for all node containers to have a Running status
+	log.Info("Waiting for all nodes to start...")
+	timeout := time.Second * 40
+	for _, n := range desiredNodes {
+		var lastErr error
+		log.Infof("Waiting for node %s to start...", n.Name)
+		err = wait.PollImmediate(time.Second*1, timeout, func() (bool, error) {
+			lines, err := exec.NewHostCmd(
+				"docker",
+				"container",
+				"inspect",
+				"-f",
+				"'{{.State.Running}}'",
+				n.Name,
+			).RunAndCapture()
+			if err == nil && len(lines) > 0 && lines[0] == `'true'` {
+				return true, nil
+			}
+			lastErr = errors.Errorf("node state is not Running, error: %v, output lines: %+v, ", err, lines)
+			return false, nil
+		})
+		if err != nil {
+			return errors.Wrapf(lastErr, "node %s did not start in %v", n.Name, timeout)
+		}
+	}
+
 	// get the cluster
 	c, err := status.FromDocker(clusterName)
 	if err != nil {
 		return err
 	}
 
-	// writes to the nodes the cluster settings that will be re-used by kinder during the cluster lifecycle.
 	c.Settings = &status.ClusterSettings{
-		IPFamily: status.IPv4Family, // support for ipv6 is still WIP
-	}
-	if err := c.WriteSettings(); err != nil {
-		return err
+		IPFamily: status.IPv4Family, // only IPv4 is tested with kinder
 	}
 
-	// writes to the nodes the node settings
-	for _, n := range c.K8sNodes() {
-		if err := n.WriteNodeSettings(&status.NodeSettings{}); err != nil {
-			return err
-		}
-	}
+	// TODO: the cluster and node settings are currently unused by kinder
+	// Enable these writes if settings have to stored on the nodes
+	//
+	// // write to the nodes the cluster settings that will be re-used by kinder during the cluster lifecycle.
+	//
+	// if err := c.WriteSettings(); err != nil {
+	// 	return err
+	// }
+	//
+	// for _, n := range c.K8sNodes() {
+	// 	if err := n.WriteNodeSettings(&status.NodeSettings{}); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
