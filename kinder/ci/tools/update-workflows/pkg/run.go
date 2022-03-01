@@ -17,7 +17,7 @@ limitations under the License.
 package pkg
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -31,7 +31,7 @@ func Run(settings *Settings) error {
 
 	// parse config
 	log.Infof("reading config from path: %s", settings.PathConfig)
-	configBytes, err := ioutil.ReadFile(settings.PathConfig)
+	configBytes, err := os.ReadFile(settings.PathConfig)
 	if err != nil {
 		return err
 	}
