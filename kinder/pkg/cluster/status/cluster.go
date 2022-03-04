@@ -78,7 +78,7 @@ func ListClusters() ([]string, error) {
 	)
 	lines, err := cmd.RunAndCapture()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list clusters")
+		return nil, errors.Wrapf(err, "failed to list clusters: %s", lines)
 	}
 	return sets.NewString(lines...).List(), nil
 }
