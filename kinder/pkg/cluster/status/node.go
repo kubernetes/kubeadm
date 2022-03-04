@@ -194,7 +194,7 @@ func (n *Node) KubeadmVersion() (*K8sVersion.Version, error) {
 		return nil, errors.Wrap(err, "failed to get kubeadm version")
 	}
 	if len(lines) != 1 {
-		return nil, errors.Errorf("kubeadm version should only be one line, got %d lines", len(lines))
+		return nil, errors.Errorf("kubeadm version should only be one line, got %d lines: %v", len(lines), lines)
 	}
 	kubeadmVersion, err := K8sVersion.ParseSemantic(lines[0])
 	if err != nil {
@@ -224,7 +224,7 @@ func (n *Node) EtcdImage() (string, error) {
 		return "", errors.Wrap(err, "failed to get the etcd image")
 	}
 	if len(lines) != 1 {
-		return "", errors.Errorf("etcd version should only be one line, got %d lines", len(lines))
+		return "", errors.Errorf("etcd version should only be one line, got %d lines: %v", len(lines), lines)
 	}
 	n.etcdImage = lines[0]
 
@@ -351,7 +351,7 @@ func (n *Node) Ports(containerPort int32) (hostPort int32, err error) {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
-		return -1, errors.Errorf("file should only be one line, got %d lines", len(lines))
+		return -1, errors.Errorf("file should only be one line, got %d lines: %v", len(lines), lines)
 	}
 	parsed, err := strconv.ParseInt(lines[0], 10, 32)
 	if err != nil {
@@ -379,11 +379,11 @@ func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 		return "", "", errors.Wrap(err, "failed to get container details")
 	}
 	if len(lines) != 1 {
-		return "", "", errors.Errorf("file should only be one line, got %d lines", len(lines))
+		return "", "", errors.Errorf("file should only be one line, got %d lines: %v", len(lines), lines)
 	}
 	ips := strings.Split(lines[0], ",")
 	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
+		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %v", len(ips), ips)
 	}
 
 	n.ipv4 = ips[0]
@@ -444,7 +444,7 @@ func (n *Node) KubeVersion() (version string, err error) {
 		return "", errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
-		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
+		return "", errors.Errorf("file should only be one line, got %d lines: %v", len(lines), lines)
 	}
 	return lines[0], nil
 }
