@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -105,6 +106,6 @@ func (c *HostCmd) runInnnerCommand() error {
 	}
 
 	// eventually print the proxy command, and then run the command to be executed
-	log.Debugf("Running: %v", cmd.Args)
+	log.Debugf("Running: %s", strings.Join(cmd.Args, " "))
 	return cmd.Run()
 }

@@ -154,11 +154,11 @@ func (c *NodeCmd) runInnnerCommand() error {
 
 	// if we are dry running, eventually print the proxy command and then exit
 	if c.dryRun {
-		log.Debugf("Dry-running: %v", cmd.Args)
+		log.Debugf("Running: %s", strings.Join(cmd.Args, " "))
 		return nil
 	}
 
 	// eventually print the proxy command, and then run the command to be executed
-	log.Debugf("Running: %v", cmd.Args)
+	log.Debugf("Running: %s", strings.Join(cmd.Args, " "))
 	return cmd.Run()
 }
