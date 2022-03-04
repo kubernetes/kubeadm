@@ -74,7 +74,7 @@ func ListClusters() ([]string, error) {
 		// filter for nodes with the cluster label
 		"--filter", "label="+constants.DeprecatedClusterLabelKey,
 		// format to include the cluster name
-		"--format", fmt.Sprintf(`{{.Label "%s"}}`, constants.DeprecatedClusterLabelKey),
+		"--format", fmt.Sprintf(`{{index .Labels "%s"}}`, constants.DeprecatedClusterLabelKey),
 	)
 	lines, err := cmd.RunAndCapture()
 	if err != nil {
