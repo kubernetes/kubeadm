@@ -34,6 +34,7 @@ import (
 type Cluster struct {
 	name                 string
 	Settings             *ClusterSettings
+	ImageRepository      string
 	allNodes             NodeList
 	k8sNodes             NodeList
 	controlPlanes        NodeList

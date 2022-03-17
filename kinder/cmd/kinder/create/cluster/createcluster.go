@@ -32,6 +32,7 @@ const (
 type flagpole struct {
 	Name                 string
 	ImageName            string
+	ImageRepository      string
 	Workers              int
 	ControlPlanes        int
 	Retain               bool
@@ -73,6 +74,11 @@ func NewCommand() *cobra.Command {
 		"image", "",
 		"node docker image to use for booting the cluster",
 	)
+	cmd.Flags().StringVar(
+		&flags.ImageName,
+		"image-repository", "registry.gcr.io",
+		"set alternate repository for images",
+	)
 	cmd.Flags().BoolVar(
 		&flags.Retain,
 		"retain", false,
@@ -112,6 +118,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		manager.ControlPlanes(flags.ControlPlanes),
 		manager.Workers(flags.Workers),
 		manager.Image(flags.ImageName),
+		manager.ImageRepository(flags.ImageRepository),
 		manager.ExternalLoadBalancer(flags.ExternalLoadBalancer),
 		manager.ExternalEtcd(flags.ExternalEtcd),
 		manager.Retain(flags.Retain),

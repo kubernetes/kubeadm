@@ -109,6 +109,7 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 		ControlPlaneEndpoint: fmt.Sprintf("%s:%d", controlPlaneEndpoint, ControlPlanePort),
 		APIBindPort:          constants.APIServerPort,
 		APIServerAddress:     controlPlaneIP,
+		ImageRepository:      c.ImageRepository,
 		Token:                constants.Token,
 		PodSubnet:            "192.168.0.0/16", // default for kindnet
 		ControlPlane:         true,

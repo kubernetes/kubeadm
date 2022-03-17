@@ -38,6 +38,7 @@ type CreateOptions struct {
 	controlPlanes        int
 	workers              int
 	image                string
+	imageRepository      string
 	externalLoadBalancer bool
 	externalEtcd         bool
 	retain               bool
@@ -65,6 +66,13 @@ func Workers(workers int) CreateOption {
 func Image(image string) CreateOption {
 	return func(c *CreateOptions) {
 		c.image = image
+	}
+}
+
+// ImageRepository sets the alternate repository for loading images from
+func ImageRepository(imageRepository string) CreateOption {
+	return func(c *CreateOptions) {
+		c.imageRepository = imageRepository
 	}
 }
 
@@ -209,6 +217,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 		if err != nil {
 			return err
 		}
+		c.ImageRepository = flags.imageRepository
 
 		etcdImage, err := c.BootstrapControlPlane().EtcdImage()
 		if err != nil {
@@ -256,6 +265,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 	if err != nil {
 		return err
 	}
+	c.ImageRepository = flags.imageRepository
 
 	c.Settings = &status.ClusterSettings{
 		IPFamily: status.IPv4Family, // only IPv4 is tested with kinder
@@ -275,6 +285,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 	// 		return err
 	// 	}
 	// }
+
 
 	return nil
 }

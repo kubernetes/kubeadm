@@ -83,6 +83,8 @@ type ConfigData struct {
 	APIBindPort int
 	// The API server external listen IP (which we will port forward)
 	APIServerAddress string
+	// ImageRepository
+	ImageRepository string
 	// ControlPlane flag specifies the node belongs to the control plane
 	ControlPlane bool
 	// The main IP address of the node
@@ -135,6 +137,9 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
+{{ if .ImageRepository -}}
+imageRepository: {{.ImageRepository}}
+{{- end }}
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
@@ -238,6 +243,9 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
+{{ if .ImageRepository -}}
+imageRepository: {{.ImageRepository}}
+{{- end }}
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
