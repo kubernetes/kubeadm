@@ -222,6 +222,10 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:
   name: config
+conntrack:
+  # Skip setting sysctl value "net.netfilter.nf_conntrack_max"
+  # It is a global variable that affects other namespaces
+  maxPerCore: 0
 `
 
 // configTemplateBetaV3 is the kubeadm config template for API version v1beta3
@@ -325,4 +329,8 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:
   name: config
+conntrack:
+  # Skip setting sysctl value "net.netfilter.nf_conntrack_max"
+  # It is a global variable that affects other namespaces
+  maxPerCore: 0
 `
