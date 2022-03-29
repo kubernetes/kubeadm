@@ -359,7 +359,7 @@ func getImageVersions(ver *version.Version, images map[string]string) error {
 	return nil
 }
 
-// verify an image manifest and it's layers.
+// verify an image manifest and its layers.
 func verifyArchImage(arch, imageName, archImage string) error {
 	// parse the arch image.
 	image := manifestImage{}
@@ -442,7 +442,7 @@ func verifyArchImage(arch, imageName, archImage string) error {
 	return nil
 }
 
-// verify a manifest list and match the require architectures.
+// verify a manifest list and match the required architectures.
 func verifyManifestList(manifest, imageName, tag string) error {
 	ml := manifestList{}
 	if err := json.Unmarshal([]byte(manifest), &ml); err != nil {
@@ -574,7 +574,7 @@ func verifyKubernetesVersion(ver *version.Version) ([]string, error) {
 	return missingImages, nil
 }
 
-// gets tags from github and parses a list of tags.
+// gets the k8s tags from github and parses them.
 func getReleaseVersions() (VersionList, error) {
 	const tagName = `"tag_name": "`
 	tags := []string{}
@@ -618,7 +618,7 @@ func getReleaseVersions() (VersionList, error) {
 	return versions, nil
 }
 
-// this function filters the list of releases so that only has supported releases.
+// this function filters the list of releases so that only supported releases are tested.
 func filterVersions(versions VersionList) (VersionList, error) {
 	if len(versions) == 0 {
 		fmt.Println("* WARNING: no versions to filter; the list is empty")
@@ -669,7 +669,7 @@ func filterVersions(versions VersionList) (VersionList, error) {
 
 func main() {
 	printLineSeparator('#')
-	fmt.Println(messageStart)
+	fmt.Printf(messageStart)
 	fmt.Println("** kubeadm manifest list verification tests **")
 	fmt.Printf("\nrequired architectures:\n%s\n\n", strings.Join(archList, ", "))
 
@@ -717,6 +717,6 @@ func main() {
 	if len(versionsWithErrors) > 0 {
 		exitWithError(fmt.Errorf("the following k8s versions have manifest lists errors: %s", strings.Join(versionsWithErrors, ", ")))
 	} else {
-		fmt.Println(messageSuccess)
+		fmt.Printf(messageSuccess)
 	}
 }
