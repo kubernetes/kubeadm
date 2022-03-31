@@ -5,5 +5,4 @@ approvers:
 - neolit123
 reviewers:
 labels:
-- area/kubeadm
-- sig/cluster-lifecycle
+- area/kinder
