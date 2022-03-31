@@ -15,5 +15,3 @@ emeritus_approvers:
 - timothysc
 - rosti
 - ereslibre
-labels:
-- sig/cluster-lifecycle
