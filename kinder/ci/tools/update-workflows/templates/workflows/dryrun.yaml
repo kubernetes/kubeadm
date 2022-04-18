@@ -1,0 +1,9 @@
+version: 1
+summary: |
+  This workflow tests the dryrun functioning of the {{ .KubernetesVersion }} version of both kubeadm and Kubernetes
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-dryrun-{{ dashVer .KubernetesVersion }}
+  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/{{ .TargetFile }}
+vars:
+  kubernetesVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
+tasks:
+- import: dryrun-tasks.yaml
