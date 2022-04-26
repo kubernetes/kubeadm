@@ -55,6 +55,7 @@ tasks:
   args:
     - -c
     - |
+      docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "until crictl ps &> /dev/null; do echo 'Waiting for the container runtime to be running ...'; sleep 1; done"
       docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm init --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --kubernetes-version={{ .vars.kubernetesVersion }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
       docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm init --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --kubernetes-version={{ .vars.kubernetesVersion }} --upload-certs=true --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
   timeout: 5m
@@ -77,6 +78,7 @@ tasks:
   args:
     - -c
     - |
+      docker exec {{ .vars.clusterName }}-worker-1 bash -c "until crictl ps &> /dev/null; do echo 'Waiting for the container runtime to be running ...'; sleep 1; done"
       docker exec {{ .vars.clusterName }}-worker-1 $(docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm token create --print-join-command) --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
   timeout: 10m
 - name: join
