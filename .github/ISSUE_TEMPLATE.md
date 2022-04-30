@@ -7,7 +7,7 @@ https://git.k8s.io/kubernetes/SUPPORT.md
 
 If you are experiencing a problem make sure you check the Kubernetes and kubeadm
 troubleshooting guides:
-https://kubernetes.io/docs/tasks/debug-application-cluster/troubleshooting/
+https://kubernetes.io/docs/tasks/debug/debug-cluster/
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/
 
 
