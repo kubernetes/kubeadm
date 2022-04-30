@@ -23,7 +23,7 @@ Kubeadm's scope is limited to the local node filesystem and the Kubernetes API, 
 Only log issues here if you think there is an actual bug or if you have a feature request.
 
 The Kubernetes and kubeadm troubleshooting guides can be found here:
-- [Kubernetes](https://kubernetes.io/docs/tasks/debug-application-cluster/troubleshooting/)
+- [Kubernetes](https://kubernetes.io/docs/tasks/debug/debug-cluster/)
 - [kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/)
 
 Support requests should be sent to the community support channels or `#kubeadm` on the k8s Slack:
