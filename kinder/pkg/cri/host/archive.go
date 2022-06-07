@@ -24,6 +24,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/util/version"
 )
 
 // TODO: investigate if we can get rid of this or simplify it.
@@ -75,6 +77,24 @@ func GetArchiveTags(path string) ([]string, error) {
 		}
 	}
 	return res, nil
+}
+
+// Temporary workaround to allow detecting the transition to registry.k8s.io in kubeadm 1.25.
+// TODO: remove KubeadmVer and replaceKubeadm125Repository() once we no longer test the
+// kubeadm 1.25 / k8s 1.24 skew
+
+// KubeadmBinaryVer tracks the version of the kubeadm binary
+var KubeadmBinaryVer string
+
+func replaceKubeadm125Repository(repository string) string {
+	if len(KubeadmBinaryVer) == 0 {
+		return repository
+	}
+	v := version.MustParseSemantic(KubeadmBinaryVer)
+	if v.AtLeast(version.MustParseSemantic("v1.25.0-0")) && strings.HasPrefix(repository, "k8s.gcr.io") {
+		return strings.Replace(repository, "k8s.gcr.io", "registry.k8s.io", -1)
+	}
+	return repository
 }
 
 // EditArchiveRepositories applies edit to reader's image repositories,
@@ -148,6 +168,7 @@ func editRepositoriesFile(raw []byte, editRepositories func(string) string) ([]b
 
 	fixed := make(archiveRepositories)
 	for repository, tagsToRefs := range tags {
+		repository = replaceKubeadm125Repository(repository)
 		fixed[editRepositories(repository)] = tagsToRefs
 	}
 
@@ -176,6 +197,7 @@ func editManifestRepositories(raw []byte, editRepositories func(string) string) 
 				return nil, fmt.Errorf("invalid repotag: %s", entry)
 			}
 			parts[0] = editRepositories(parts[0])
+			parts[0] = replaceKubeadm125Repository(parts[0])
 			fixed[i] = strings.Join(parts, ":")
 		}
 
