@@ -31,7 +31,7 @@ func KubeadmJoin(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 		return err
 	}
 
-	if err := joinWorkers(c, usePhases, discoveryMode, wait, kubeadmConfigVersion, ignorePreflightErrors, vLevel); err != nil {
+	if err := joinWorkers(c, usePhases, discoveryMode, wait, kubeadmConfigVersion, patchesDir, ignorePreflightErrors, vLevel); err != nil {
 		return err
 	}
 	return nil
@@ -176,11 +176,15 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePrefli
 	return nil
 }
 
-func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode, wait time.Duration, kubeadmConfigVersion, ignorePreflightErrors string, vLevel int) (err error) {
+func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode, wait time.Duration, kubeadmConfigVersion, patchesDir, ignorePreflightErrors string, vLevel int) (err error) {
 	for _, w := range c.Workers().EligibleForActions() {
 		// checks pre-loaded images available on the node (this will report missing images, if any)
 		kubeVersion, err := w.KubeVersion()
 		if err != nil {
+			return err
+		}
+
+		if err := copyPatchesToNode(w, patchesDir); err != nil {
 			return err
 		}
 
