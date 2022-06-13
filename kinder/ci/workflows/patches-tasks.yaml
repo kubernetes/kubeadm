@@ -72,6 +72,10 @@ tasks:
         cat <<EOF >/tmp/kubeadm-patches/etcd+json.json
         [{"op":"add","path":"/metadata/annotations/patched","value":"true"}]
         EOF
+
+        cat <<EOF >/tmp/kubeadm-patches/kubeletconfiguration+strategic.yaml
+        shutdownGracePeriod: 1s
+        EOF
   - name: prepare verify-patches.sh script
     cmd: /bin/sh
     args:
@@ -88,6 +92,13 @@ tasks:
               res=1
           fi
         done
+
+        if grep -q "shutdownGracePeriod: 1s" /var/lib/kubelet/config.yaml ; then
+            echo "/var/lib/kubelet/config.yaml is patched!"
+        else
+            echo "ERROR: /var/lib/kubelet/config.yaml is not patched"
+            res=1
+        fi
 
         if [[ "\${res}" = 0 ]]; then
           echo "All verify checks passed, congrats!"
