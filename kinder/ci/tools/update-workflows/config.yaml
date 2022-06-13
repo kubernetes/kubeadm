@@ -60,10 +60,6 @@ jobGroups:
     - ./templates/workflows/patches-tasks.yaml
   jobs:
   - kubernetesVersion: latest
-  - kubernetesVersion: 0
-  - kubernetesVersion: -1
-  - kubernetesVersion: -2
-  - kubernetesVersion: -3
 
 - name: presubmit-upgrade-latest
   kinderWorkflowSpec:
