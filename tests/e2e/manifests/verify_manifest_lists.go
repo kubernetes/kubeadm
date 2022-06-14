@@ -65,7 +65,7 @@ const (
 	// first release that is known to have full support.
 	firstKnownVersion = "v1.12.0-rc.1"
 
-	gcrBucket = "https://k8s.gcr.io/v2"
+	registryBucket = "https://registry.k8s.io/v2"
 
 	typeManifestList = "application/vnd.docker.distribution.manifest.list.v2+json"
 	typeManifest     = "application/vnd.docker.distribution.manifest.v2+json"
@@ -381,7 +381,7 @@ func verifyArchImage(arch, imageName, archImage string) error {
 	if image.Config.Digest == "" {
 		return fmt.Errorf("empty digest for image config: %#v", image.Config)
 	}
-	url := fmt.Sprintf("%s/%s/blobs/%s", gcrBucket, imageName, image.Config.Digest)
+	url := fmt.Sprintf("%s/%s/blobs/%s", registryBucket, imageName, image.Config.Digest)
 	configBlob, _, err := getFromURL(url)
 	if err != nil {
 		return fmt.Errorf("cannot download image blob for digest %q: %v", image.Config.Digest, err)
@@ -426,7 +426,7 @@ func verifyArchImage(arch, imageName, archImage string) error {
 			fmt.Printf("* verifyArchImage(): downloading the header of layer %d; size: %d bytes\n", i+1, layer.Size)
 		}
 
-		url = fmt.Sprintf("%s/%s/blobs/%s", gcrBucket, imageName, layer.Digest)
+		url = fmt.Sprintf("%s/%s/blobs/%s", registryBucket, imageName, layer.Digest)
 		layerBlob, sz, err := getFromURLTimeoutSize(url, defaultHTTPTimeout, !downloadLayers)
 		if err != nil {
 			return fmt.Errorf("cannot download layer blob for digest %q: %v", layer.Digest, err)
@@ -495,7 +495,7 @@ func verifyManifestList(manifest, imageName, tag string) error {
 		}
 
 		// download the arch minifest and verify its size.
-		url := fmt.Sprintf("%s/%s/manifests/%s", gcrBucket, imageName, m.Digest)
+		url := fmt.Sprintf("%s/%s/manifests/%s", registryBucket, imageName, m.Digest)
 		archImageSrc, _, err := getFromURL(url)
 		if err != nil {
 			return fmt.Errorf("cannot download manifest for arch %q: %v", m.Platform.Architecture, err)
@@ -540,7 +540,7 @@ func verifyKubernetesVersion(ver *version.Version) ([]string, error) {
 		imageTag := fmt.Sprintf("%s:%s", k, images[k])
 		fmt.Printf("* verifyManifestList(): %s\n", imageTag)
 
-		url := fmt.Sprintf("%s/%s/manifests/%s", gcrBucket, k, images[k])
+		url := fmt.Sprintf("%s/%s/manifests/%s", registryBucket, k, images[k])
 		manifest, _, err := getFromURL(url)
 
 		if err != nil {
