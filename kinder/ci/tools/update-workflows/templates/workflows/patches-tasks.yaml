@@ -92,7 +92,7 @@ tasks:
           fi
         done
 
-        if grep -q "shutdownGracePeriod: 1s" /var/lib/kubelet/config.yaml ; then
+        if grep -q '"shutdownGracePeriod":"1s"' /var/lib/kubelet/config.yaml ; then
             echo "/var/lib/kubelet/config.yaml is patched!"
         else
             echo "ERROR: /var/lib/kubelet/config.yaml is not patched"
