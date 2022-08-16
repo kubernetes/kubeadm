@@ -31,8 +31,9 @@ import (
 )
 
 // NodeCmd allows to run a command on a kind(er) node
-//  by default the command is printed to stdout before execution; to enable colorized print of the
-//  command text, that can help in debugging, please set the KINDER_COLORS environment variable to ON.
+//
+//	by default the command is printed to stdout before execution; to enable colorized print of the
+//	command text, that can help in debugging, please set the KINDER_COLORS environment variable to ON.
 //
 // By default, when the command is run it does not print any output generated during execution.
 // See Silent, Stdin, RunWithEcho, RunAndCapture, Skip and DryRun for possible variations to the default behavior.

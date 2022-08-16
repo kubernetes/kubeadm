@@ -296,9 +296,12 @@ func getAPIServerPort(c *status.Cluster) (int32, error) {
 }
 
 // matches kubeconfig server entry like:
-//    server: https://172.17.0.2:6443
+//
+//	server: https://172.17.0.2:6443
+//
 // which we rewrite to:
-//    server: https://$ADDRESS:$PORT
+//
+//	server: https://$ADDRESS:$PORT
 var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 
 // writeKubeConfig writes a fixed KUBECONFIG to dest
