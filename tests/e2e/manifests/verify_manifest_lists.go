@@ -69,7 +69,8 @@ const (
 
 	typeManifestList = "application/vnd.docker.distribution.manifest.list.v2+json"
 	typeManifest     = "application/vnd.docker.distribution.manifest.v2+json"
-	typeLayer        = "application/vnd.docker.image.rootfs.diff.tar.gzip"
+	typeLayer        = "application/vnd.docker.image.rootfs.diff.tar"
+	typeLayerGzip    = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 	messageStart = `
              _ ___                      _ ___         _      _ _     _
@@ -406,9 +407,9 @@ func verifyArchImage(arch, imageName, archImage string) error {
 
 	// verify layers.
 	for i, layer := range image.Layers {
-		// only support the type defined in `typeLayer`?
-		if layer.MediaType != typeLayer {
-			return fmt.Errorf("not a layer: %s", layer.MediaType)
+		// only support a couple of layer types
+		if layer.MediaType != typeLayer && layer.MediaType != typeLayerGzip {
+			return fmt.Errorf("unknown layer media type: %s", layer.MediaType)
 		}
 		if layer.Digest == "" {
 			return fmt.Errorf("empty digest for layer: %#v", layer)
