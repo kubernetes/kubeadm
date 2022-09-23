@@ -1,4 +1,5 @@
 - name: ci-kubernetes-e2e-kubeadm-kinder-no-addons-{{ dashVer .KubernetesVersion }}
+  cluster: k8s-infra-prow-build
   interval: 12h
   decorate: true
   labels:
@@ -34,6 +35,9 @@
       securityContext:
         privileged: true
       resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
         requests:
           memory: "9000Mi"
           cpu: 2000m
