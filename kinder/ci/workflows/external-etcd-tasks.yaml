@@ -5,7 +5,7 @@ summary: |
   cluster with an external etcd cluster.
 vars:
   kubernetesVersion: v1.14.1
-  baseImage: kindest/base:v20191105-ee880e9b # has containerd
+  baseImage: kindest/base:v20221102-76f15095 # has containerd
   image: kindest/node:test
   clusterName: kinder-external-etcd
   kubeadmVerbosity: 6
