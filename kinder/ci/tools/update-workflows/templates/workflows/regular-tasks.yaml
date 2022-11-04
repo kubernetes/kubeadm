@@ -9,7 +9,7 @@ vars:
   kubernetesVersion: v1.13.5
   controlPlaneNodes: 3
   workerNodes: 2
-  baseImage: kindest/base:v20191105-ee880e9b # has containerd
+  baseImage: kindest/base:v20221102-76f15095 # has containerd
   image: kindest/node:test
   clusterName: kinder-regular
   kubeadmVerbosity: 6
