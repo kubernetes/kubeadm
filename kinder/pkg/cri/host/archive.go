@@ -79,7 +79,7 @@ func GetArchiveTags(path string) ([]string, error) {
 	return res, nil
 }
 
-// Temporary workaround to allow detecting the transition to registry.k8s.io in kubeadm 1.25.
+// Temporary workaround to allow detecting the transition to registry.k8s.io in kubeadm 1.22~1.25.
 // TODO: remove KubeadmVer and replaceKubeadm125Repository() once we no longer test the
 // kubeadm 1.25 / k8s 1.24 skew
 
@@ -91,7 +91,7 @@ func replaceKubeadm125Repository(repository string) string {
 		return repository
 	}
 	v := version.MustParseSemantic(KubeadmBinaryVer)
-	if v.AtLeast(version.MustParseSemantic("v1.25.0-0")) && strings.HasPrefix(repository, "k8s.gcr.io") {
+	if v.AtLeast(version.MustParseSemantic("v1.22.0-0")) && strings.HasPrefix(repository, "k8s.gcr.io") {
 		return strings.Replace(repository, "k8s.gcr.io", "registry.k8s.io", -1)
 	}
 	return repository
