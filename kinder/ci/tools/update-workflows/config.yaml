@@ -192,3 +192,15 @@ jobGroups:
     upgradeVersion: 0
   - kubernetesVersion: -2
     upgradeVersion: -1
+
+- name: learner-mode
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-learner-mode.yaml
+    template: ./templates/testinfra/kubeadm-kinder-learner-mode.yaml
+  kinderWorkflowSpec:
+    targetFile: learner-mode-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/learner-mode.yaml
+    additionalFiles:
+    - ./templates/workflows/learner-mode-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
