@@ -186,3 +186,9 @@ jobGroups:
     - ./templates/workflows/dryrun-tasks.yaml
   jobs:
   - kubernetesVersion: latest
+  - kubernetesVersion: 0
+    upgradeVersion: latest
+  - kubernetesVersion: -1
+    upgradeVersion: 0
+  - kubernetesVersion: -2
+    upgradeVersion: -1

@@ -78,6 +78,7 @@ func processWorkflows(settings *Settings, cfg *jobGroup, oldestVer, minVer *vers
 			KubeadmVersion:    job.KubeadmVersion,
 			KubeletVersion:    job.KubeletVersion,
 			InitVersion:       job.InitVersion,
+			UpgradeVersion:    job.UpgradeVersion,
 			TargetFile:        cfg.TestInfraJobSpec.TargetFile,
 		}
 

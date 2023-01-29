@@ -11,7 +11,7 @@ vars:
   upgradeVersion: "{{ resolve `ci/latest` }}"
   controlPlaneNodes: 1
   workerNodes: 1
-  baseImage: kindest/base:v20220324-837a3da8
+  baseImage: kindest/base:v20221102-76f15095 # has containerd
   image: kindest/node:test
   clusterName: kinder-dryrun
   kubeadmIgnorePreflightErrors: Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
@@ -34,6 +34,7 @@ tasks:
     - --base-image={{ .vars.baseImage }}
     - --image={{ .vars.image }}
     - --with-init-artifacts={{ .vars.kubernetesVersion }}
+    - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
     - --loglevel=debug
   timeout: 15m
 - name: create-cluster
@@ -100,8 +101,8 @@ tasks:
   args:
     - -c
     - |
-      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
-      docker exec {{ .vars.clusterName }}-worker-1 kubeadm upgrade node --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade apply {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-worker-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade node --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
 - name: reset-dryrun
   description: |
     Exec kubeadm reset in dryrun mode
