@@ -1,6 +1,6 @@
 ### kubeadm's release cycle and quarterly agenda
 
-Kubernetes has a well defined release process that improves with every release.
+Kubernetes has a well-defined release process that improves with every release.
 These notes provide some inspiration for how the Kubernetes developing flow actually can look like.
 
 Most of these tips and tricks are general and not kubeadm specific.
@@ -17,10 +17,10 @@ That said, nothing here is set in stone. See this as inspiration :)
 #### First month of the quarter (coding)
 
 - Create a new housekeeping tracking issue similar to [this one](https://github.com/kubernetes/kubeadm/issues/180).
-- Remove e2e tests for k8s/kubeadm versions outside of the support skew.
+- Remove e2e tests for k8s/kubeadm versions outside the support skew.
 - Manage cherrypicks for the current stable branch
   - Make sure high-priority bug reports are triaged and fixed.
-  - Create bug fixes, ensure they're merged, and cherry pick them to the release branch.
+  - Create bug fixes, ensure they're merged, and cherry-pick them to the release branch.
   - Coordinate with the patch release team.
 - Plan/prioritize features, testing work and bugs
   - At the beginning of each cycle the kubeadm team has a planning session during the kubeadm office hours meeting.

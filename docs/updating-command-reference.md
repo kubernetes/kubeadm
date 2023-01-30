@@ -16,7 +16,7 @@ sending a PR for `kubernetes/kubernetes`.
 Some of them will be for the new command - `*newcommand*`.
 - In your local copy of `kubernetes/website` navigate to this folder:
 `./content/en/docs/reference/setup-tools/kubeadm/generated`
-- Copy the `*newcommand*` files from `kubernetes/docs/admin/` to the this folder.
+- Copy the `*newcommand*` files from `kubernetes/docs/admin/` to the folder.
 - Create a PR for `kubernetes/website` and add these files to your commit.
 - Depending on the parent command of `newcommand` (in this case `config`) import the generated
 sub-command in the parent command MD file like so:

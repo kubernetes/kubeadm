@@ -11,7 +11,7 @@ Kubernetes uses applications such as the web-based [testgrid](https://k8s-testgr
 The following folder contains all the SIG Cluster Lifecycle (the SIG that maintains kubeadm) originated test jobs:
 [sig-cluster-lifecycle](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle)
 
-Please note that this document will only cover details on the `kubeadm*.yaml` files and only on some of the parameters
+Please note that this document will only cover details on the `kubeadm*.yaml` files and only on some parameters
 these files contain.
 
 For example, let's have a look at this file:
@@ -87,7 +87,7 @@ Let's define the size of the Kubernetes support skew as `N`.
 For `N=3`, 3 releases will be in support.
 
 When a new release is about to happen, the kubeadm test workflows and jobs have
-two be updated two times:
+to be updated two times:
 1. When the new `release-x.yy` branch of `kubernetes/kubernetes` is created and the
   `release-x.yy-*` test-grid dashboards are created.
   - Edit `kinder/hack/update-workflows.sh`:
