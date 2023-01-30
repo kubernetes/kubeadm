@@ -212,7 +212,7 @@ make release-images
 
 ## Creating the Kubernetes cluster with kubeadm
 
-The kubernetes web site contains reference documentation for [installing kubeadm](https://kubernetes.io/docs/setup/independent/install-kubeadm/)
+The kubernetes website contains reference documentation for [installing kubeadm](https://kubernetes.io/docs/setup/independent/install-kubeadm/)
 and for [creating a cluster using it](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/).
 
 According to selected versions to be installed (the version of .deb or .rpm packages, the version of the kubeadm binary to be used, the version number of the control plane components) following variants to the standard procedure should be applied:

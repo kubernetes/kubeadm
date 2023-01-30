@@ -28,7 +28,7 @@ ultimately responsible for keeping this in check. For this reason, contributors
 should be encouraged to work with and get the help of maintainers where
 necessary.
 
-## A ecosystem/upstream change happens that breaks current tests
+## An ecosystem/upstream change happens that breaks current tests
 
 If tests fail due to an upstream change to test-infra or a related ecosystem
 project, it is the responsibility of maintainers to correct and recalibrate
