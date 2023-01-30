@@ -151,5 +151,14 @@ func updateJobVersions(ver *versionutil.Version, job *job) error {
 		}
 	}
 
+	if len(job.UpgradeVersion) == 0 {
+		job.UpgradeVersion = job.KubernetesVersion
+	} else {
+		job.UpgradeVersion, err = versionWithSkew(ver, job.UpgradeVersion)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
