@@ -18,7 +18,7 @@ limitations under the License.
 package main
 
 import (
-	kinder "k8s.io/kubeadm/kinder/cmd/kinder"
+	"k8s.io/kubeadm/kinder/cmd/kinder"
 )
 
 func main() {

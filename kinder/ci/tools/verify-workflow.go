@@ -17,9 +17,10 @@ limitations under the License.
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	ktestworkflow "k8s.io/kubeadm/kinder/pkg/test/workflow"
 )
