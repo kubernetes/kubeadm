@@ -83,7 +83,7 @@ func filterFile(f fs.DirEntry) bool {
 }
 
 // If in == nil, the source is the contents of the file with the given filename.
-func processFile(filename string, in io.Reader, out io.Writer, stdin bool) error {
+func processFile(filename string, in io.Reader, out io.Writer) error {
 	fileSet := token.NewFileSet() // per file FileSet
 
 	var perm fs.FileMode = 0644
@@ -298,7 +298,7 @@ func sortDecl(fSet *token.FileSet, f *ast.File, d *ast.GenDecl) []ast.Spec {
 
 func visitFile(path string, f fs.DirEntry, err error) error {
 	if err == nil && !filterFile(f) {
-		err = processFile(path, nil, os.Stdout, false)
+		err = processFile(path, nil, os.Stdout)
 	}
 	// Don't complain if a file was deleted in the meantime (i.e.
 	// the directory changed concurrently while running gofmt).
@@ -330,7 +330,7 @@ func gofmtMain() {
 			exitCode = 2
 			return
 		}
-		if err := processFile("<standard input>", os.Stdin, os.Stdout, true); err != nil {
+		if err := processFile("<standard input>", os.Stdin, os.Stdout); err != nil {
 			report(err)
 		}
 		return
@@ -344,7 +344,7 @@ func gofmtMain() {
 		case dir.IsDir():
 			walkDir(path)
 		default:
-			if err := processFile(path, nil, os.Stdout, false); err != nil {
+			if err := processFile(path, nil, os.Stdout); err != nil {
 				report(err)
 			}
 		}
