@@ -59,7 +59,7 @@ func TestReorder(t *testing.T) {
 func runTest(t *testing.T, lp string, in, out string) {
 	var buf bytes.Buffer
 	localPrefix = &lp
-	err := processFile(in, nil, &buf, false)
+	err := processFile(in, nil, &buf)
 	if err != nil {
 		t.Error(err)
 		return
