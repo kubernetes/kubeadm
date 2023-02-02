@@ -145,7 +145,7 @@ func processFile(filename string, in io.Reader, out io.Writer) error {
 		if *doDiff {
 			data, err := diffWithReplaceTempFile(src, res, filename)
 			if err != nil {
-				return fmt.Errorf("computing diff: %s", err)
+				return fmt.Errorf("computing diff: %w", err)
 			}
 			fmt.Printf("diff -u %s %s\n", filepath.ToSlash(filename+".orig"), filepath.ToSlash(filename))
 			out.Write(data)
