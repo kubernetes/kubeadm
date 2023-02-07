@@ -17,8 +17,9 @@ limitations under the License.
 package workflow
 
 import (
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 
 	"k8s.io/kubeadm/kinder/pkg/test/workflow"
 )
