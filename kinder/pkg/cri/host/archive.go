@@ -49,7 +49,7 @@ func GetArchiveTags(path string) ([]string, error) {
 	var hdr *tar.Header
 	for {
 		hdr, err = tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil, errors.New("could not find image metadata")
 		}
 		if err != nil {
@@ -114,7 +114,7 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositorie
 	for {
 		// read an entry
 		hdr, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return tarWriter.Close()
 		} else if err != nil {
 			return err
