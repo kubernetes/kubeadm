@@ -138,7 +138,7 @@ For CI/CD valid version numbers are:
   See <https://console.cloud.google.com/storage/browser/k8s-release-dev/ci/> for the full list of labels.
 
 If you want to retrieve manually pre-compiled/pre-built GA, alpha/beta versions of control plane images, such
-images are deployed into `k8s.gcr.io` GCR registry, while CI/CD versions are deployed into
+images are deployed into `registry.k8s.io` GCR registry, while CI/CD versions are deployed into
 `gcr.io/kubernetes-ci-images` GCR registry.
 
 To explore versions available in Google Container Registry use
@@ -150,7 +150,7 @@ gcloud container images list-tags gcr.io/{gcr-repository-name}/{image-name}
 Valid image names are `kube-apiserver-amd64`, `pause-amd64`, `etcd-amd64` etc. e.g.
 
 ```bash
-gcloud container images list-tags k8s.gcr.io/kube-apiserver-amd64 --sort-by=~tags --filter=tags:v1.10.2 --limit=50
+gcloud container images list-tags registry.k8s.io/kube-apiserver-amd64 --sort-by=~tags --filter=tags:v1.10.2 --limit=50
 ```
 
 As alternative, you can browse <https://console.cloud.google.com/gcr/images/{gcr-repository-name}/GLOBAL/{image-name}>
