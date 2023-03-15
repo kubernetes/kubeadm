@@ -269,7 +269,7 @@ This section details creating a number of manifests for various use cases
 #### Set configuration details
 
 ```
-export VIP=192.168.0.40`
+export VIP=192.168.0.40
 export INTERFACE=<interface>
 ```
 
