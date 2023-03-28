@@ -100,7 +100,7 @@ tasks:
   args:
     - -c
     - |
-      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply -f {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
       docker exec {{ .vars.clusterName }}-worker-1 kubeadm upgrade node --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
 - name: reset-dryrun
   description: |
