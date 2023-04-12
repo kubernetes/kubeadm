@@ -82,12 +82,18 @@ jobGroups:
   - kubernetesVersion: latest
     kubeletVersion: -1
     skipVersions: [ 0, +1 ]
+  - kubernetesVersion: latest
+    kubeletVersion: -2
+    skipVersions: [ 0, +1, +2 ]
   - kubernetesVersion: 0
     kubeletVersion: -1
     skipVersions: [ 0 ]
   - kubernetesVersion: 0
     kubeletVersion: -2
     skipVersions: [ -1, 0 ]
+  - kubernetesVersion: 0
+    kubeletVersion: -3
+    skipVersions: [ -2, -1, 0 ]
   - kubernetesVersion: -1
     kubeletVersion: -2
     skipVersions: [ -1 ]
