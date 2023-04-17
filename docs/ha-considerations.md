@@ -312,7 +312,7 @@ kube-vip manifest pod \
 
 #### Example manifest
 
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -394,7 +394,7 @@ kube-vip manifest pod \
 
 #### Example Manifest 
 
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
