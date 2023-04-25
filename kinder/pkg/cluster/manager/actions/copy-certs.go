@@ -69,7 +69,7 @@ func copyCAToNode(c *status.Cluster, n *status.Node) error {
 	return nil
 }
 
-// copyCertificatesToNode copies kubeconfig files from the bootstrap node to another node
+// copyKubeconfigFilesToNode copies kubeconfig files from the bootstrap node to another node
 func copyKubeconfigFilesToNode(c *status.Cluster, n *status.Node) error {
 	fileNames := []string{
 		"admin.conf",
