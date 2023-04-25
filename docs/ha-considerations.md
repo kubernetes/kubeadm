@@ -377,7 +377,7 @@ status: {}
 
 This configuration will create a manifest that will start `kube-vip` providing **controlplane** and **services** management. **Unlike** ARP, all nodes in the BGP configuration will advertise virtual IP addresses. 
 
-**Note** we bind the address to `lo` as we don't want multiple devices that have the same address on public interfaces. We can specify all the peers in a comma seperated list in the format of `address:AS:password:multihop`.
+**Note** we bind the address to `lo` as we don't want multiple devices that have the same address on public interfaces. We can specify all the peers in a comma separated list in the format of `address:AS:password:multihop`.
 
 `export INTERFACE=lo`
 
