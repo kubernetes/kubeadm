@@ -223,6 +223,10 @@ func getFromURLTimeoutSize(url string, timeout int, sizeOnly bool) (string, int,
 	t := time.Duration(time.Duration(timeout) * time.Second)
 	client := http.Client{
 		Timeout: t,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Allow redirects
+			return nil
+		},
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -641,7 +645,7 @@ func filterVersions(versions VersionList) (VersionList, error) {
 		minEstimated = version.MustParseGeneric(semVersion)
 		// else get the last version from the previous Major release and apply the skew.
 	} else {
-		url := fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/stable-%d.txt", minEstimated.Major()-1)
+		url := fmt.Sprintf("https://dl.k8s.io/release/stable-%d.txt", minEstimated.Major()-1)
 		verFromURL, _, err := getFromURL(url)
 		if err != nil {
 			return versions, err
