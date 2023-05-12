@@ -106,6 +106,10 @@ var (
 	// status of images is cached here, so that the same image is not
 	// tested by multiple tests.
 	verifiedImageCache = make(map[string]error)
+	// define a map where the keys are the first unseported version and the values are slices of architectures to be removed
+	architecturesToRemove = map[string][]string{
+		"1.27.0-beta.0": []string{"arm"},
+	}
 )
 
 // bellow are some types as per the docker specs.
@@ -444,7 +448,7 @@ func verifyArchImage(arch, imageName, archImage string) error {
 }
 
 // verify a manifest list and match the required architectures.
-func verifyManifestList(manifest, imageName, tag string) error {
+func verifyManifestList(manifest, imageName, tag string, ver *version.Version) error {
 	ml := manifestList{}
 	if err := json.Unmarshal([]byte(manifest), &ml); err != nil {
 		return err
@@ -459,6 +463,30 @@ func verifyManifestList(manifest, imageName, tag string) error {
 	aList := make([]string, len(archList))
 	// copy into a temp slice.
 	copy(aList, archList)
+	// remove arch's from the list if the k8s version no longer supports them
+	for versionToRemove, archs := range architecturesToRemove {
+		compareVersion, err := version.ParseSemantic(versionToRemove)
+		if err != nil {
+			fmt.Printf("could not parse version %q: %v\n", versionToRemove, err)
+		}
+		i, err := ver.Compare(compareVersion.String())
+		if err != nil {
+			fmt.Printf("Unable to compare version %q: %v\n", ver, err)
+		}
+		if i >= 0 {
+			for _, arch := range archs {
+				for i, v := range aList {
+					if v == arch {
+						// remove the architecture from aList
+						aList = append(aList[:i], aList[i+1:]...)
+						// break out of the inner loop since we have found and removed the architecture
+						break
+					}
+				}
+			}
+		}
+	}
+
 	// traverse the manifests in the list.
 	for _, m := range ml.Manifests {
 		// skip unknown arches
@@ -562,7 +590,7 @@ func verifyKubernetesVersion(ver *version.Version) ([]string, error) {
 		}
 
 		// uncached; run tests
-		if err = verifyManifestList(manifest, k, images[k]); err != nil {
+		if err = verifyManifestList(manifest, k, images[k], ver); err != nil {
 			fmt.Printf("\n* ERROR: %s; error: %v\n", imageTag, err)
 			missingImages = append(missingImages, imageTag)
 			verifiedImageCache[imageTag] = err
