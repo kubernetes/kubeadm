@@ -99,7 +99,7 @@ yum install <package name>-<version number>
 Pre-compiled GA, alpha/beta versions of kubeadm binary are deployed into `https://dl.k8s.io/release/` release bucket,
 while CI/CD versions are deployed into `gs://k8s-release-dev/ci/` bucket.
 
-To explore kubernetes versions available to use visit [github release page](https://github.com/kubernetes/kubernetes/releases).
+To explore Kubernetes versions available to use, visit the [github release page](https://github.com/kubernetes/kubernetes/releases).
 
 To retrieve a pre-compiled version of kubeadm binary use:
 
