@@ -60,8 +60,8 @@ The table below summarize the current state:
 
 |                         | .deb or .rpm                 | kubeadm binary                                                                                                                      | control plane                                                                                                         |
 |-------------------------|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| **GA release**          | from .deb or .rpm repository | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases) |
-| **alpha/beta release*** | not available.               | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `gs://kubernetes-release/release/` GCS bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases) |
+| **GA release**          | from .deb or .rpm repository | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `https://dl.k8s.io/` release bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases) |
+| **alpha/beta release*** | not available.               | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `https://dl.k8s.io/` release bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases) |
 | **CI/CD release***      | not available.               | from `gs://k8s-release-dev/ci/` GCS bucket (built every merge)                                                                      | from `gcr.io/k8s-staging-ci-images` container registry (built every few hours, not by PR)                             |
 
 [*] for alpha/beta and CI/CD currently it is not possible to have exact version number consistency for all the
@@ -94,29 +94,16 @@ apt-get install <package name>=<version number>
 yum install <package name>-<version number>
 ```
 
-### Getting kubeadm binaries from a GCS bucket
+### Getting kubeadm binaries from a release bucket
 
-Pre-compiled GA, alpha/beta versions of kubeadm binary are deployed into `gs://kubernetes-release/release/` GCS bucket,
+Pre-compiled GA, alpha/beta versions of kubeadm binary are deployed into `https://dl.k8s.io/release/` release bucket,
 while CI/CD versions are deployed into `gs://k8s-release-dev/ci/` bucket.
 
-To explore versions available in Google Storage buckets use:
-
-```bash
-gsutil ls gs://{bucket-name}{filter}
-
-# e.g. search all GA and alpha/beta v1.10 releases
-gsutil ls -d gs://kubernetes-release/release/v1.10*
-```
-
-As alternative, you can browse GCS buckets using <https://console.cloud.google.com/storage/browser/{bucket-name}> or
-<http://gcsweb.k8s.io/gcs/kubernetes-release/release/> (only for `gs://kubernetes-release/release/`).
+To explore Kubernetes versions available to use, visit the [github release page](https://github.com/kubernetes/kubernetes/releases).
 
 To retrieve a pre-compiled version of kubeadm binary use:
 
 ```bash
-gsutil cp gs://{bucket-name}/{release}/bin/linux/amd64/kubeadm .
-
-# or, only for releases in gs://kubernetes-release/release/
 curl -L https://dl.k8s.io/release/{release}/bin/linux/amd64/kubeadm && chown +x kubeadm
 ```
 
@@ -167,8 +154,8 @@ Run `cluster/get-kube-binaries.sh` to download the tarball with server binaries.
 
 > Inside release notes, usually there is a direct link for getting server binaries directly
 
-> `cluster/get-kube-binaries.sh` retrieves server binaries from `gs://kubernetes-release/release/{release}`
-  GCS bucket; you can use `gsutil` to get server binaries directly.
+> `cluster/get-kube-binaries.sh` retrieves server binaries from `https://dl.k8s.io/release/{release}`
+  Release bucket; you can use `curl` to get server binaries directly.
 
 Both Kubeadm binaries and docker images are available in `/server/bin` folder of  `kubernetes-server-linux-amd64.tar.gz`
 

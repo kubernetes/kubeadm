@@ -45,7 +45,7 @@ import (
 
 const (
 	ciBuildRepository       = "https://storage.googleapis.com/k8s-release-dev/ci"
-	releaseBuildURepository = "https://storage.googleapis.com/kubernetes-release/release"
+	releaseBuildURepository = "https://dl.k8s.io/release"
 
 	kubeadmBinary = "kubeadm"
 	kubeletBinary = "kubelet"
@@ -509,9 +509,18 @@ var httpGetBackoff = wait.Backoff{
 func httpGet(uri string) (int64, io.ReadCloser, error) {
 	var lastError error
 	var resp *http.Response
+
+	// Create a custom http.Client with redirect behavior
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Allow redirects
+			return nil
+		},
+	}
+
 	err := wait.ExponentialBackoff(httpGetBackoff, func() (bool, error) {
 		var err error
-		resp, err = http.Get(uri)
+		resp, err = client.Get(uri)
 		if err != nil {
 			log.Warnf("HTTP GET %s failed. Retry in few seconds", uri)
 			lastError = errors.Wrapf(err, "HTTP GET %s failed", uri)
