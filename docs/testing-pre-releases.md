@@ -144,20 +144,16 @@ As alternative, you can browse <https://console.cloud.google.com/gcr/images/{gcr
 
 To retrieve a pre-compiled version of control plane images `docker pull {image tag}`
 
-### Getting kubeadm binaries or docker images form github release page
+### Getting kubeadm binaries or docker images from GitHub release page
 
-Pre-compiled version of Kubeadm binaries and docker images for GA and alpha/beta versions can be retrieved form the
-[github release page](https://github.com/kubernetes/kubernetes/releases).
+Pre-compiled versions of Kubeadm binaries and docker images for GA and alpha/beta versions can be retrieved from the [GitHub release page](https://github.com/kubernetes/kubernetes/releases).
 
-Server binary and tarball are no longer included in the `kubernetes.tar.gz` package.
-Run `cluster/get-kube-binaries.sh` to download the tarball with server binaries.
+Server binaries and tarballs are no longer included in the `kubernetes.tar.gz` package.
+To download the tarball with server binaries, you can follow the direct link usually provided in the release notes.
 
-> Inside release notes, usually there is a direct link for getting server binaries directly
+Alternatively, you can retrieve the server binaries from the `https://dl.k8s.io/release/{release}` Release bucket. You may use tools like `curl` to obtain the server binaries directly.
 
-> `cluster/get-kube-binaries.sh` retrieves server binaries from `https://dl.k8s.io/release/{release}`
-  Release bucket; you can use `curl` to get server binaries directly.
-
-Both Kubeadm binaries and docker images are available in `/server/bin` folder of  `kubernetes-server-linux-amd64.tar.gz`
+Both Kubeadm binaries and docker images are available in the `/server/bin` folder of the `kubernetes-server-linux-amd64.tar.gz` file.
 
 ## Create a local version
 
