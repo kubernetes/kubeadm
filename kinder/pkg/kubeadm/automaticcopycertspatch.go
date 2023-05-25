@@ -49,26 +49,18 @@ func GetAutomaticCopyCertsPatches(kubeadmConfigVersion string) ([]string, error)
 
 const automaticCopyCertsInitv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
-metadata:
-  name: config
 certificateKey: "%s"`
 
 const automaticCopyCertsJoinv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
 kind: JoinConfiguration
-metadata:
-  name: config
 controlPlane:
   certificateKey: "%s"`
 
 const automaticCopyCertsInitv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
-metadata:
-  name: config
 certificateKey: "%s"`
 
 const automaticCopyCertsJoinv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
-metadata:
-  name: config
 controlPlane:
   certificateKey: "%s"`

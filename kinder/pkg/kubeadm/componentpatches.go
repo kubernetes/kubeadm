@@ -44,14 +44,10 @@ func GetPatchesDirectoryPatches(kubeadmConfigVersion string) ([]string, error) {
 
 const patchesDirectoryPatchInitv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
-metadata:
-  name: config
 patches:
   directory: %s`
 
 const patchesDirectoryPatchJoinv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
-metadata:
-  name: config
 patches:
   directory: %s`
