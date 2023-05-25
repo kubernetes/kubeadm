@@ -44,8 +44,6 @@ func GetExternalEtcdPatch(kubeadmConfigVersion string, etcdIP string) (string, e
 
 const externalEtcdPatchv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
-metadata:
-  name: config
 etcd:
   external:
     endpoints:
@@ -53,8 +51,6 @@ etcd:
 
 const externalEtcdPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
-metadata:
-  name: config
 etcd:
   external:
     endpoints:

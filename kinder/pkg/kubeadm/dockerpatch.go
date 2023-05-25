@@ -49,14 +49,10 @@ func GetDockerPatch(kubeadmConfigVersion string, ControlPlane bool) ([]string, e
 
 const dockerPatchv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
 kind: %s
-metadata:
-  name: config
 nodeRegistration:
   criSocket: /var/run/dockershim.sock`
 
 const dockerPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: %s
-metadata:
-  name: config
 nodeRegistration:
   criSocket: /var/run/dockershim.sock`

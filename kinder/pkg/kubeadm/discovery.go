@@ -79,16 +79,12 @@ func GetFileDiscoveryPatch(kubeadmConfigVersion string) (string, error) {
 
 const fileDiscoveryPatchv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
 kind: JoinConfiguration
-metadata:
-  name: config
 discovery:
   file:
     kubeConfigPath: %s`
 
 const fileDiscoveryPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
-metadata:
-  name: config
 discovery:
   file:
     kubeConfigPath: %s`
@@ -115,14 +111,10 @@ func GetTLSBootstrapPatch(kubeadmConfigVersion string) (string, error) {
 
 const tlsBootstrapPatchv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
 kind: JoinConfiguration
-metadata:
-  name: config
 discovery:
   tlsBootstrapToken: %s`
 
 const tlsBootstrapPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
-metadata:
-  name: config
 discovery:
   tlsBootstrapToken: %s`
