@@ -169,6 +169,19 @@ jobGroups:
   jobs:
   - kubernetesVersion: latest
 
+- name: upgrade-addons-before-controlplane
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-upgrade-addons-before-controlplane.yaml
+    template: ./templates/testinfra/kubeadm-kinder-upgrade-addons-before-controlplane.yaml
+  kinderWorkflowSpec:
+    targetFile: upgrade-addons-before-controlplane-{{ .InitVersion }}-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/upgrade-addons-before-controlplane.yaml
+    additionalFiles:
+    - ./templates/workflows/upgrade-addons-before-controlplane-tasks.yaml
+  jobs:
+  - initVersion: 0
+    kubernetesVersion: latest
+
 - name: rootless
   testInfraJobSpec:
     targetFile: kubeadm-kinder-rootless.yaml
