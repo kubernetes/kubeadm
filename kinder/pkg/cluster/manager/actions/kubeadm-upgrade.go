@@ -35,7 +35,7 @@ import (
 //
 // The implementation assumes that the kubeadm/kubelet/kubectl binaries and all the necessary images
 // for the new kubernetes version are available in the /kinder/upgrade/{version} folder.
-func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, patchesDir string, featureGates string, wait time.Duration, vLevel int) (err error) {
+func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, patchesDir string, featureGate string, wait time.Duration, vLevel int) (err error) {
 	if upgradeVersion == nil {
 		return errors.New("kubeadm-upgrade actions requires the --upgrade-version parameter to be set")
 	}
@@ -53,7 +53,7 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, patch
 		}
 
 		if n.Name() == c.BootstrapControlPlane().Name() {
-			err = kubeadmUpgradeApply(c, n, upgradeVersion, patchesDir, featureGates, wait, vLevel)
+			err = kubeadmUpgradeApply(c, n, upgradeVersion, patchesDir, featureGate, wait, vLevel)
 		} else {
 			err = kubeadmUpgradeNode(c, n, upgradeVersion, patchesDir, wait, vLevel)
 		}
@@ -120,7 +120,7 @@ func upgradeKubeadmBinary(n *status.Node, upgradeVersion *K8sVersion.Version) er
 	return nil
 }
 
-func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, patchesDir string, featureGates string, wait time.Duration, vLevel int) error {
+func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, patchesDir string, featureGate string, wait time.Duration, vLevel int) error {
 	applyArgs := []string{
 		"upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
 	}
@@ -131,8 +131,8 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8
 			applyArgs = append(applyArgs, "--patches", constants.PatchesDir)
 		}
 	}
-	if len(featureGates) > 0 {
-		applyArgs = append(applyArgs, fmt.Sprintf("--feature-gates=%s", featureGates))
+	if len(featureGate) > 0 {
+		applyArgs = append(applyArgs, fmt.Sprintf("--feature-gates=%s", featureGate))
 	}
 	if err := cp1.Command(
 		"kubeadm", applyArgs...,

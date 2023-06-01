@@ -21,6 +21,7 @@ package actions
 
 import (
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -148,7 +149,14 @@ func KubeadmConfigVersion(kubeadmConfigVersion string) Option {
 // FeatureGate option sets a single kubeadm feature-gate for the kubeadm commands
 func FeatureGate(featureGate string) Option {
 	return func(r *RunOptions) {
-		r.featureGate = featureGate
+		// We remove the leading and trailing double or single quotes because the
+		// feature-gate could be set as
+		// --kubeadm-feature-gate="RootlessControlPlane=true" or
+		// --kubeadm-feature-gate='RootlessControlPlane=true', so the value
+		// of featureGate string would be "\"RootlessControlPlane=true"\" or "'RootlessControlPlane=true'" respectively.
+		// Once we trim the value double or single quotes the value will be "RootlessControlPlane=true".
+		trimmedFeatureGate := strings.Trim(featureGate, "\"'")
+		r.featureGate = trimmedFeatureGate
 	}
 }
 
