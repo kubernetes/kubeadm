@@ -86,15 +86,8 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 
 	featureGateName := ""
 	featureGateValue := ""
-	// We remove the leading and trailing double or single quotes because the
-	// feature-gate could be set as
-	// --kubeadm-feature-gate="RootlessControlPlane=true" or
-	// --kubeadm-feature-gate='RootlessControlPlane=true', so the value
-	// of featureGate string would be "\"RootlessControlPlane=true"\" or "RootlessControlPlane=true'" respectively.
-	// Once we trim the value double or single quotes the value will be "RootlessControlPlane=true".
-	trimmedFeatureGate := strings.Trim(featureGate, "\"'")
-	if len(trimmedFeatureGate) > 0 {
-		split := strings.Split(trimmedFeatureGate, "=")
+	if len(featureGate) > 0 {
+		split := strings.Split(featureGate, "=")
 		if len(split) != 2 {
 			return errors.New("feature gate must be formatted as 'key=value'")
 		}
