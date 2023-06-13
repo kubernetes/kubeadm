@@ -20,7 +20,7 @@ jobs:
           permission-level: admin
       - name: comment with support text
         if: steps.command.outputs.command-name
-        uses: ben-z/actions-comment-on-issue@1.0.2
+        uses: pacoxu/actions-comment-on-issue@1.0.3
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           message: |
