@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: check for the /support command
         id: command
-        uses: xt0rted/slash-command-action@v1
+        uses: xt0rted/slash-command-action@v2
         continue-on-error: true
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
