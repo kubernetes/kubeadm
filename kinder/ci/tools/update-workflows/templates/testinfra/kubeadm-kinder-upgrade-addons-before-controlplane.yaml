@@ -1,5 +1,5 @@
 - name: ci-kubernetes-e2e-kubeadm-kinder-upgrade-addons-before-controlplane-{{ dashVer .InitVersion }}-{{ dashVer .KubernetesVersion }}
-  cluster: eks-prow-build-cluster
+  cluster: k8s-infra-prow-build
   interval: {{ .JobInterval }}
   decorate: true
   labels:
