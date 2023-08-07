@@ -68,7 +68,6 @@ const (
 func ListClusters() ([]string, error) {
 	cmd := exec.NewHostCmd("docker",
 		"ps",
-		"-q",         // quiet output for parsing
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
@@ -160,7 +159,6 @@ func (c *Cluster) KubeConfigPath() string {
 func (c *Cluster) listNodes() ([]string, error) {
 	cmd := exec.NewHostCmd("docker",
 		"ps",
-		"-q",         // quiet output for parsing
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
