@@ -53,7 +53,7 @@ https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
 - Watch for new features in core Kubernetes that may affect kubeadm. Discuss what action has to be taken
 by the kubeadm maintainers.
 - Make sure that existing e2e test jobs are green at all times:
-  https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-kubeadm
+  https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm
   Without good signal there is no indication if new PRs are introducing regressions.
 
 #### Third month of the quarter (stabilization)
