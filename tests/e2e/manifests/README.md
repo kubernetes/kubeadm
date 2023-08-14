@@ -4,7 +4,7 @@ The `verify_manifest_lists.sh` script in this folder verifies that the necessary
 manifest lists are pushed to the GCR bucket that kubeadm uses by default.
 The script is just a wrapper for a Go application.
 
-It is run periodically and results are available at https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-all#periodic-e2e-verify-manifest-lists
+It is run periodically and results are available at https://testgrid.k8s.io/sig-cluster-lifecycle-all#periodic-e2e-verify-manifest-lists
 
 ### Running
 

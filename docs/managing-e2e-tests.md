@@ -4,7 +4,7 @@
 
 Kubernetes has a rich end-to-end (e2e) testing infrastructure, which allows detailed testing of clusters and their assets. Most settings and tools for that can be found in the [test-infra](https://git.k8s.io/test-infra) GitHub repository.
 
-Kubernetes uses applications such as the web-based [testgrid](https://k8s-testgrid.appspot.com/) for monitoring the status of e2e tests. test-infra also hosts the configuration on individual test jobs and Docker images that contain tools to invoke the jobs.
+Kubernetes uses applications such as the web-based [testgrid](https://testgrid.k8s.io/) for monitoring the status of e2e tests. test-infra also hosts the configuration on individual test jobs and Docker images that contain tools to invoke the jobs.
 
 ### Prow job configuration
 
@@ -45,8 +45,8 @@ The same document must be updated every time kinder workflows are added/deleted.
 Testgrid contains elements like dashboard groups, dashboards and tabs.
 
 As an overview:
-- SIG Cluster Lifecycle dashboards reside in a dashboard group that can be found [here](https://k8s-testgrid.appspot.com).
-- Inside this dashboard group there is a [dashboard for kubeadm](https://k8s-testgrid.appspot.com/sig-cluster-lifecycle-kubeadm).
+- SIG Cluster Lifecycle dashboards reside in a dashboard group that can be found [here](https://testgrid.k8s.io).
+- Inside this dashboard group there is a [dashboard for kubeadm](https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm).
 - Inside this dashboard there are individual tabs such as `kubeadm-foo` (which is the tab name for the
 job `ci-kubernetes-e2e-kubeadm-foo`).
 
@@ -128,7 +128,7 @@ Jobs that runs against the development kubernetes/kubernetes branch should send 
 ### Release informing and blocking jobs
 
 Certain test jobs maintained by SIG Cluster Lifecycle can be present in release blocking or informing dashboards, such as:
-https://k8s-testgrid.appspot.com/sig-release-master-informing
+https://testgrid.k8s.io/sig-release-master-informing
 
 These test jobs are of higher importance as they can block a Kubernetes release in case they are failing.
 Such dashboards are managed by SIG Release, but SIG Cluster Lifecycle can propose changes by adding or removing
