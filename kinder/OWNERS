@@ -1,8 +1,4 @@
 # See the OWNERS file documentation:
 #  https://git.k8s.io/community/contributors/devel/owners.md
-approvers:
-- fabriziopandini
-- neolit123
-reviewers:
 labels:
 - area/kinder
