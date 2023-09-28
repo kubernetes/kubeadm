@@ -17,8 +17,10 @@ limitations under the License.
 package containerd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +28,7 @@ import (
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
 	"k8s.io/kubeadm/kinder/pkg/cri/nodes/common"
+	"k8s.io/kubeadm/kinder/pkg/cri/nodes/containerd/config"
 )
 
 // GetAlterContainerArgs returns arguments for the alter container for containerd
@@ -48,8 +51,56 @@ func GetAlterContainerArgs() ([]string, []string) {
 
 // SetupRuntime setups the runtime
 func SetupRuntime(bc *bits.BuildContext) error {
-	// This used to hold config.toml modifications for the systemd cgroup driver,
-	// but newer kind base images have it baked in.
+	if err := setupCRISandboxImage(bc); err != nil {
+		return err
+	}
+	return nil
+}
+
+// setupCRISandboxImage rewrites the containerd config file to use the sandbox image recommended by kubeadm.
+func setupCRISandboxImage(bc *bits.BuildContext) error {
+	binaryPath := "/kind/bin/kubeadm"
+	cmd := fmt.Sprintf(
+		`%[1]s config images list --kubernetes-version=$(%[1]s version -o short) 2> /dev/null | grep pause`,
+		binaryPath,
+	)
+	images, err := bc.CombinedOutputLinesInContainer("bash", "-c", cmd)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute command %q, output %v", cmd, images)
+	}
+	if len(images) != 1 {
+		return errors.Errorf("expected the output of command %q to have 1 line, got: %v", cmd, images)
+	}
+	if len(images[0]) > 0 {
+		tmpConfigFileName := "containerd-config.toml"
+		tmpConfigFileInContainer := filepath.Join(bc.ContainerBasePath(), tmpConfigFileName)
+		tmpConfigFileOnHost := filepath.Join(bc.HostBasePath(), tmpConfigFileName)
+		defer os.Remove(tmpConfigFileOnHost)
+
+		cmd := fmt.Sprintf(`if [ -f %[1]s ]; then cp %[1]s %[2]s && chmod 0666 %[2]s; fi`, config.DefaultConfigPath, tmpConfigFileInContainer)
+		out, err := bc.CombinedOutputLinesInContainer("bash", "-c", cmd)
+		if err != nil {
+			return errors.Wrapf(err, "failed to execute command %q, output %v", cmd, out)
+		}
+
+		currentSandboxImage, err := config.GetCRISandboxImage(tmpConfigFileOnHost)
+		if err != nil && os.IsNotExist(err) {
+			log.Warnf("skipping setup of the sandbox image for the containerd runtime as the default config file %s doesn't exist",
+				config.DefaultConfigPath)
+			return nil
+		}
+		if currentSandboxImage != images[0] {
+			log.Infof("updating the config file %s to use the recommended sandbox image %s", tmpConfigFileInContainer, images[0])
+			if err := config.SetCRISandboxImage(tmpConfigFileOnHost, images[0]); err != nil {
+				return errors.Wrapf(err, "failed to setup the sanbox image %s for the containerd runtime", images[0])
+			}
+			if err := bc.RunInContainer("cp", tmpConfigFileInContainer, config.DefaultConfigPath); err != nil {
+				log.Errorf("failed to copy %s into %s, error: %v", tmpConfigFileInContainer, config.DefaultConfigPath, err)
+				return err
+			}
+			log.Infof("configured the containerd runtime to use the sandbox image %s", images[0])
+		}
+	}
 	return nil
 }
 
