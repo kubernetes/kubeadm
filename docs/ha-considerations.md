@@ -83,7 +83,7 @@ There are some placeholders in `bash` variable style to fill in:
 
 The above `keepalived` configuration uses a health check script `/etc/keepalived/check_apiserver.sh` responsible for making sure that on the node holding the virtual IP the API Server is available. This script could look like this:
 
-```
+```bash
 #!/bin/sh
 
 errorExit() {
@@ -91,15 +91,24 @@ errorExit() {
     exit 1
 }
 
-curl --silent --max-time 2 --insecure https://localhost:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://localhost:${APISERVER_DEST_PORT}/"
-if ip addr | grep -q ${APISERVER_VIP}; then
-    curl --silent --max-time 2 --insecure https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/"
+# replace this with the virtual IP address negotiated between the `keepalived` cluster hosts
+APISERVER_VIP=${APISERVER_VIP_VALUE}
+# replace this with the port through which Kubernetes will talk to the API Server
+APISERVER_DEST_PORT=${APISERVER_DEST_PORT_VALUE}
+
+url="https://localhost:$APISERVER_DEST_PORT"
+if ip addr | grep -q $APISERVER_VIP; then
+        url="https://$APISERVER_VIP:$APISERVER_DEST_PORT"
 fi
+http_code=$(curl --output /dev/null --silent --write-out "%{http_code}" --insecure --max-time 2 ${url})
+err_code=$?
+[ $err_code -eq 0 ] || errorExit "Error get $url, error code $err_code"
+[ "$http_code" = "200" ] || [ "$http_code" = "403" ] || errorExit "Error get $url, status code $http_code"
 ```
 
 There are some placeholders in `bash` variable style to fill in:
-- `${APISERVER_VIP}` is the virtual IP address negotiated between the `keepalived` cluster hosts.
-- `${APISERVER_DEST_PORT}` the port through which Kubernetes will talk to the API Server.
+- `${APISERVER_VIP_VALUE}` is the virtual IP address negotiated between the `keepalived` cluster hosts.
+- `${APISERVER_DEST_PORT_VALUE}` the port through which Kubernetes will talk to the API Server.
 
 ### haproxy configuration
 
