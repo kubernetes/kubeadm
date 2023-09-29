@@ -6,6 +6,7 @@ require (
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/google/uuid v1.1.2
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/pelletier/go-toml v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
