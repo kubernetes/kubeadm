@@ -74,12 +74,13 @@ func processWorkflows(settings *Settings, cfg *jobGroup, oldestVer, minVer *vers
 
 		// prepare variables for template replacement
 		vars := templateVars{
-			KubernetesVersion: job.KubernetesVersion,
-			KubeadmVersion:    job.KubeadmVersion,
-			KubeletVersion:    job.KubeletVersion,
-			InitVersion:       job.InitVersion,
-			UpgradeVersion:    job.UpgradeVersion,
-			TargetFile:        cfg.TestInfraJobSpec.TargetFile,
+			KubernetesVersion:     job.KubernetesVersion,
+			KubeadmVersion:        job.KubeadmVersion,
+			KubeletVersion:        job.KubeletVersion,
+			InitVersion:           job.InitVersion,
+			UpgradeVersion:        job.UpgradeVersion,
+			TargetFile:            cfg.TestInfraJobSpec.TargetFile,
+			IgnorePreflightErrors: job.IgnorePreflightErrors,
 		}
 
 		// prepare skip versions

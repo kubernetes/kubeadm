@@ -8,7 +8,7 @@ vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
   kubeletVersion: "{{ resolve `ci/latest-1.26` }}"
   kubernetesVersion: "{{ resolve `ci/latest` }}"
-  ignorePreflightErrors: "KubeletVersion"
+  ignorePreflightErrors: ""
   ginkgoSkip: "\\[MinimumKubeletVersion:(1.28|1.29|1.30)\\]"
   controlPlaneNodes: 3
 tasks:

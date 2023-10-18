@@ -60,12 +60,13 @@ type jobGroupWorkflows struct {
 }
 
 type job struct {
-	InitVersion       string   `json:"initVersion,omitempty"`
-	UpgradeVersion    string   `json:"upgradeVersion,omitempty"`
-	KubernetesVersion string   `json:"kubernetesVersion,omitempty"`
-	KubeadmVersion    string   `json:"kubeadmVersion,omitempty"`
-	KubeletVersion    string   `json:"kubeletVersion,omitempty"`
-	SkipVersions      []string `json:"skipVersions,omitempty"`
+	InitVersion           string   `json:"initVersion,omitempty"`
+	UpgradeVersion        string   `json:"upgradeVersion,omitempty"`
+	KubernetesVersion     string   `json:"kubernetesVersion,omitempty"`
+	KubeadmVersion        string   `json:"kubeadmVersion,omitempty"`
+	KubeletVersion        string   `json:"kubeletVersion,omitempty"`
+	SkipVersions          []string `json:"skipVersions,omitempty"`
+	IgnorePreflightErrors string   `json:"ignorePreflightErrors,omitempty"`
 }
 
 type templateVars struct {
@@ -77,6 +78,8 @@ type templateVars struct {
 
 	TargetFile   string
 	SkipVersions string
+
+	IgnorePreflightErrors string
 
 	TestInfraImage   string
 	JobInterval      string

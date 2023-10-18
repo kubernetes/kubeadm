@@ -8,7 +8,7 @@ vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
   kubeletVersion: "{{ resolve `ci/latest-1.28` }}"
   kubernetesVersion: "{{ resolve `ci/latest-1.28` }}"
-  ignorePreflightErrors: "KubeletVersion"
+  ignorePreflightErrors: ""
   controlPlaneNodes: 3
 tasks:
 - import: skew-x-on-y-tasks.yaml

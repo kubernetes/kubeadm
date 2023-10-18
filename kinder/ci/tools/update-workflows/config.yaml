@@ -88,21 +88,27 @@ jobGroups:
   - kubernetesVersion: 0
     kubeletVersion: -1
     skipVersions: [ 0 ]
+    ignorePreflightErrors: KubeletVersion
   - kubernetesVersion: 0
     kubeletVersion: -2
     skipVersions: [ -1, 0 ]
+    ignorePreflightErrors: KubeletVersion
   - kubernetesVersion: 0
     kubeletVersion: -3
     skipVersions: [ -2, -1, 0 ]
+    ignorePreflightErrors: KubeletVersion
   - kubernetesVersion: -1
     kubeletVersion: -2
     skipVersions: [ -1 ]
+    ignorePreflightErrors: KubeletVersion
   - kubernetesVersion: -1
     kubeletVersion: -3
     skipVersions: [ -2, -1 ]
+    ignorePreflightErrors: KubeletVersion
   - kubernetesVersion: -2
     kubeletVersion: -3
     skipVersions: [ -2 ]
+    ignorePreflightErrors: KubeletVersion
 
 - name: skew-x-on-y
   testInfraJobSpec:
@@ -118,10 +124,13 @@ jobGroups:
     kubeadmVersion: latest
   - kubernetesVersion: -1
     kubeadmVersion: 0
+    ignorePreflightErrors: KubeletVersion
   - kubernetesVersion: -2
     kubeadmVersion: -1
+    ignorePreflightErrors: KubeletVersion
   - kubernetesVersion: -3
     kubeadmVersion: -2
+    ignorePreflightErrors: KubeletVersion
 
 - name: upgrade
   testInfraJobSpec:

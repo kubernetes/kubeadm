@@ -7,7 +7,7 @@ vars:
   kubeadmVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubeadmVersion }}` \}\}"
   kubeletVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubeletVersion }}` \}\}"
   kubernetesVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
-  ignorePreflightErrors: "KubeletVersion"
+  ignorePreflightErrors: "{{.IgnorePreflightErrors}}"
   ginkgoSkip: "\\[MinimumKubeletVersion:({{ .SkipVersions }})\\]"
   controlPlaneNodes: 3
 tasks:
