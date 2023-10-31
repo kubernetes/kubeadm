@@ -225,3 +225,15 @@ jobGroups:
     - ./templates/workflows/learner-mode-tasks.yaml
   jobs:
   - kubernetesVersion: latest
+
+- name: super-admin
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-super-admin.yaml
+    template: ./templates/testinfra/kubeadm-kinder-super-admin.yaml
+  kinderWorkflowSpec:
+    targetFile: super-admin-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/super-admin.yaml
+    additionalFiles:
+    - ./templates/workflows/super-admin-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
