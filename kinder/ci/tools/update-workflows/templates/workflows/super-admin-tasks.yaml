@@ -56,7 +56,7 @@ tasks:
     - -c
     - |
       set -x
-      CMD=docker exec {{ .vars.clusterName }}-control-plane-1
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
 
       # Generate CA, and kubeconfig files
       ${CMD} kubeadm init phase certs ca || exit 1
@@ -109,7 +109,7 @@ tasks:
     - -c
     - |
       set -x
-      CMD=docker exec {{ .vars.clusterName }}-control-plane-1
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
 
       # Both admin.conf and super-admin.conf must exist
       ${CMD} test -f /etc/kubernetes/admin.conf || exit 1
@@ -145,7 +145,7 @@ tasks:
     - -c
     - |
       set -x
-      CMD=docker exec {{ .vars.clusterName }}-control-plane-2
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
 
       # admin.conf must exist
       ${CMD} test -f /etc/kubernetes/admin.conf || exit 1
@@ -182,7 +182,7 @@ tasks:
     - -c
     - |
       set -x
-      CMD=docker exec {{ .vars.clusterName }}-control-plane-1
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
 
       # Both admin.conf and super-admin.conf must exist
       ${CMD} test -f /etc/kubernetes/admin.conf || exit 1
@@ -206,7 +206,7 @@ tasks:
     - -c
     - |
       set -x
-      CMD=docker exec {{ .vars.clusterName }}-control-plane-2
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
 
       # admin.conf must exist
       ${CMD} test -f /etc/kubernetes/admin.conf || exit 1
@@ -278,7 +278,7 @@ tasks:
     - -c
     - |
       set -x
-      CMD=docker exec {{ .vars.clusterName }}-control-plane-1
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
 
       # Both admin.conf and super-admin.conf must not exist after reset
       ${CMD} test -f /etc/kubernetes/admin.conf && exit 1
