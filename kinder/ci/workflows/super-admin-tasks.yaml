@@ -73,13 +73,13 @@ tasks:
       ${CMD} grep 'client-certificate-data' /etc/kubernetes/super-admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = system:masters, CN = kubernetes-super-admin" || exit 1
 
       # Make sure that the check-expiration and renew commands do not return errors
-      ${CMD} sudo kubeadm certs renew admin.conf || exit 1
-      ${CMD} sudo kubeadm certs renew super-admin.conf || exit 1
+      ${CMD} kubeadm certs renew admin.conf || exit 1
+      ${CMD} kubeadm certs renew super-admin.conf || exit 1
       ${CMD} kubeadm certs check-expiration || exit 1
 
       # Delete super-admin.conf and make sure check-expiration and renew do not return errors
       ${CMD} rm -f /etc/kubernetes/super-admin.conf
-      ${CMD} sudo kubeadm certs renew super-admin.conf || exit 1
+      ${CMD} kubeadm certs renew super-admin.conf || exit 1
       ${CMD} kubeadm certs check-expiration || exit 1
 
       # Cleanup
