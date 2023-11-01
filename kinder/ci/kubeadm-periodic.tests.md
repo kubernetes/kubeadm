@@ -71,10 +71,9 @@ Workflow file names: [`skew-[x]-on-[y]`](./workflows)
 Kubelet X on Y tests are meant to verify the proper functioning of a version X kubelet against version Y (X+1 or X+2)
 kubeadm and control plane. The coverage of X == Y is already covered by the `regular-*` tests.
 
-Note that for the time being kubeadm version X does not support skew against a kubelet version X-2,
-similarly to how kubeadm does not support X-2 skew with the control plane. This requires skipping
-the `KubeletVersion` preflight check. In the future if these X-2 tests are no longer possible with kubeadm
-they would have to be adapted on the kinder side or dropped.
+Before kubeadm v1.29, the maximum kubeadm / kubelet skew was X-1. For example, kubeadm v1.28 could deploy a kubelet that
+is v1.28 or v1.27. After v1.29 the maximum skew has become X-3. For example, kubeadm v1.29 can deploy a kubelet that is
+as old as v1.26.
 
 Workflow file names: [`skew-kubelet-[x]-on-[y]`](./workflows)
 
