@@ -84,13 +84,13 @@ tasks:
       ${CMD} kubeadm certs check-expiration || exit 1
 
       # Delete super-admin.conf and make sure check-expiration and renew do not return errors
-      ${CMD} rm -f /etc/kubernetes/super-admin.conf || exit 1
+      ${CMD} rm -f "/etc/kubernetes/super-admin.conf" || exit 1
       ${CMD} kubeadm certs renew super-admin.conf || exit 1
       ${CMD} kubeadm certs check-expiration || exit 1
 
       # Cleanup
-      ${CMD} rm -f /etc/kubernetes/pki/*.* || exit 1
-      ${CMD} rm -f /etc/kubernetes/*.* || exit 1
+      ${CMD} rm -f "/etc/kubernetes/pki/*.*" || exit 1
+      ${CMD} rm -f "/etc/kubernetes/*.*" || exit 1
 
       # Ensure exit status of 0
       exit 0
@@ -130,7 +130,7 @@ tasks:
       ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
 
       # Delete super-admin.conf to make sure this version of kubeadm creates it on upgrade
-      ${CMD} rm -f /etc/kubernetes/super-admin.conf || exit 1
+      ${CMD} rm -f "/etc/kubernetes/super-admin.conf" || exit 1
 
       # Ensure exit status of 0
       exit 0
