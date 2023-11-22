@@ -329,12 +329,6 @@ func staticPodHasVersion(pod, version string) func(c *status.Cluster, n *status.
 func kubeletHasRBAC(major, minor uint) func(c *status.Cluster, n *status.Node) bool {
 	return func(c *status.Cluster, n *status.Node) bool {
 		for i := 0; i < 5; i++ {
-			// Try the new kubelet config naming scheme and fallback to the old one.
-			//
-			// TODO: remove handling of the old CM once kinder no longer
-			// manages clusters with the legacy kubelet ConfigMap -
-			// i.e. when 1.24 is out of support.
-			// https://github.com/kubernetes/kubeadm/issues/1582
 			output1 := kubectlOutput(n,
 				"auth",
 				"can-i",
@@ -343,16 +337,6 @@ func kubeletHasRBAC(major, minor uint) func(c *status.Cluster, n *status.Node) b
 				"--namespace=kube-system",
 				"configmaps/kubelet-config",
 			)
-			if output1 != "yes" {
-				output1 = kubectlOutput(n,
-					"auth",
-					"can-i",
-					"get",
-					"--kubeconfig=/etc/kubernetes/kubelet.conf",
-					"--namespace=kube-system",
-					fmt.Sprintf("configmaps/kubelet-config-%d.%d", major, minor),
-				)
-			}
 			output2 := kubectlOutput(n,
 				"auth",
 				"can-i",

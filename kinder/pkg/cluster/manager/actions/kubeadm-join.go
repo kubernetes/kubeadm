@@ -69,9 +69,9 @@ func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCert
 
 		// executes the kubeadm join control-plane workflow
 		if usePhases {
-			err = kubeadmJoinControlPlaneWithPhases(cp2, patchesDir, ignorePreflightErrors, vLevel)
+			err = kubeadmJoinControlPlaneWithPhases(cp2, ignorePreflightErrors, vLevel)
 		} else {
-			err = kubeadmJoinControlPlane(cp2, patchesDir, ignorePreflightErrors, vLevel)
+			err = kubeadmJoinControlPlane(cp2, ignorePreflightErrors, vLevel)
 		}
 		if err != nil {
 			return err
@@ -90,17 +90,12 @@ func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCert
 	return nil
 }
 
-func kubeadmJoinControlPlane(cp *status.Node, patchesDir, ignorePreflightErrors string, vLevel int) (err error) {
+func kubeadmJoinControlPlane(cp *status.Node, ignorePreflightErrors string, vLevel int) (err error) {
 	joinArgs := []string{
 		"join",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--v=%d", vLevel),
-	}
-	if patchesDir != "" {
-		if cp.MustKubeadmVersion().LessThan(constants.V1_22) {
-			joinArgs = append(joinArgs, "--experimental-patches", constants.PatchesDir)
-		}
 	}
 
 	if err := cp.Command(
@@ -112,7 +107,7 @@ func kubeadmJoinControlPlane(cp *status.Node, patchesDir, ignorePreflightErrors 
 	return nil
 }
 
-func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePreflightErrors string, vLevel int) (err error) {
+func kubeadmJoinControlPlaneWithPhases(cp *status.Node, ignorePreflightErrors string, vLevel int) (err error) {
 	// kubeadm join phase preflight
 	preflightArgs := []string{
 		"join", "phase", "preflight",
@@ -132,12 +127,6 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePrefli
 		"join", "phase", "control-plane-prepare", "all",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
-	}
-
-	if patchesDir != "" {
-		if cp.MustKubeadmVersion().LessThan(constants.V1_22) {
-			prepareArgs = append(prepareArgs, "--experimental-patches", constants.PatchesDir)
-		}
 	}
 
 	if err := cp.Command(
@@ -160,11 +149,6 @@ func kubeadmJoinControlPlaneWithPhases(cp *status.Node, patchesDir, ignorePrefli
 		"join", "phase", "control-plane-join", "all",
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
-	}
-	if patchesDir != "" {
-		if cp.MustKubeadmVersion().LessThan(constants.V1_22) {
-			controlPlaneArgs = append(controlPlaneArgs, "--experimental-patches", constants.PatchesDir)
-		}
 	}
 
 	if err := cp.Command(
