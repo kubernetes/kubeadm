@@ -26,6 +26,11 @@ import (
 	"k8s.io/kubeadm/kinder/pkg/extract"
 )
 
+const (
+	// InitBitsDir is the directory from which to install init bits
+	InitBitsDir = "init"
+)
+
 // initBits defines a bit installer that allows to add Kubernetes binaries & images to the node image;
 // those artifact will be used by the kinder do kubeadm-init script
 type initBits struct {
@@ -44,7 +49,7 @@ func NewInitBits(arg string) Installer {
 // Get implements Installer.Get
 func (b *initBits) Prepare(c *BuildContext) (map[string]string, error) {
 	// ensure the dest path exists on host/inside the HostBitsPath
-	dst := filepath.Join(c.HostBitsPath(), "init")
+	dst := filepath.Join(c.HostBitsPath(), InitBitsDir)
 	if err := os.Mkdir(dst, 0777); err != nil {
 		return nil, errors.Wrap(err, "failed to make bits dir")
 	}
@@ -89,7 +94,7 @@ func (b *initBits) Install(c *BuildContext) error {
 func installInitVersionFile(c *BuildContext) error {
 	// The src path is a subfolder into the alterDir, that is mounted in the
 	// container as /alter
-	src := filepath.Join(c.ContainerBitsPath(), "init")
+	src := filepath.Join(c.ContainerBitsPath(), InitBitsDir)
 
 	// The dest path for Kubernetes version file is /kind, a well known folder where kind(er) will
 	// search for this file when looking for image metadata
@@ -122,8 +127,8 @@ func installInitVersionFile(c *BuildContext) error {
 func installInitImages(c *BuildContext) error {
 	// The src path is a subfolder into the alterDir, that is mounted in the
 	// container as /alter
-	hsrc := filepath.Join(c.HostBitsPath(), "init")
-	csrc := filepath.Join(c.ContainerBitsPath(), "init")
+	hsrc := filepath.Join(c.HostBitsPath(), InitBitsDir)
+	csrc := filepath.Join(c.ContainerBitsPath(), InitBitsDir)
 
 	// The dest path for Kubernetes images is /kind/images, a well known folder where kind(er) will
 	// search for pre-loaded images during `kind(er) create`
@@ -165,7 +170,7 @@ func installInitImages(c *BuildContext) error {
 func installInitBinaries(c *BuildContext) error {
 	// The src path is a subfolder into the alterDir, that is mounted in the
 	// container as /alter
-	src := filepath.Join(c.ContainerBitsPath(), "init")
+	src := filepath.Join(c.ContainerBitsPath(), InitBitsDir)
 
 	// The destination path for the Kubernetes binaries is /kind/bin, a well known folder where kind adds Kubernetes binaries.
 	dst := filepath.Join("/kind", "bin")
