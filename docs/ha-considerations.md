@@ -143,12 +143,12 @@ frontend apiserver
     bind *:${APISERVER_DEST_PORT}
     mode tcp
     option tcplog
-    default_backend apiserver
+    default_backend apiserverbackend
 
 #---------------------------------------------------------------------
 # round robin balancing for apiserver
 #---------------------------------------------------------------------
-backend apiserver
+backend apiserverbackend
     option httpchk GET /healthz
     http-check expect status 200
     mode tcp
