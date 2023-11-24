@@ -26,11 +26,16 @@ import (
 // NewCommand returns a new cobra.Command for building
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
-		// TODO(bentheelder): more detailed usage
+		Args:  cobra.NoArgs,
 		Use:   "build",
 		Short: "Build one of [base-image, node-image-variant]",
-		Long:  "Build the base node image (base-image) or node image variants (node-image-variant)",
+		Long: "The 'build' command is used for creating images necessary for a Kubernetes cluster created with kinder.\n" +
+			"It has two primary subcommands:\n" +
+			"1. 'base-image': This command is used to build the base image for nodes in the cluster.\n" +
+			"The base image includes all the necessary dependencies and configurations required for Kubernetes nodes.\n" +
+			"2. 'node-image-variant': This command is used to build different variants of the node images based\n" +
+			"on the base image. These variants may include different Kubernetes versions, CNI plugins,\n" +
+			"or any other variations as needed for testing different Kubernetes features and behaviors.\n",
 	}
 	// add subcommands
 	cmd.AddCommand(baseimage.NewCommand())
