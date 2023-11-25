@@ -83,12 +83,13 @@ tasks:
 - name: upgrade-control-plane
   description: |
     Upgrades the control-plane node to the same version of the existing control-plane. This verifies
-    that "kubeadm upgrade apply" tolerates missing addon ConfigMaps. Ignoring preflight errors
+    that "kubeadm upgrade apply/plan" tolerate missing addon ConfigMaps. Ignoring preflight errors
     is still required due to CoreDNS checks.
   cmd: /bin/sh
   args:
     - -c
     - |
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade plan --ignore-preflight-errors=CoreDNSMigration,CoreDNSUnsupportedPlugins --v={{ .vars.kubeadmVerbosity }} {{ .vars.initVersion }}
       docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply -f --ignore-preflight-errors=CoreDNSMigration,CoreDNSUnsupportedPlugins --v={{ .vars.kubeadmVerbosity }} {{ .vars.initVersion }}
   timeout: 5m
 - name: delete
