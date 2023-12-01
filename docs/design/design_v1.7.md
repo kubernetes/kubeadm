@@ -185,7 +185,7 @@ kubectl label node ${master_name} node-role.kubernetes.io/master=""
 
 #### cluster-info
 
-This phase creates the `cluster-info` ConfigMap in the `kube-public` namespace as defined in [the Bootstrap Tokens proposal](https://git.k8s.io/community/contributors/design-proposals/cluster-lifecycle/bootstrap-discovery.md)
+This phase creates the `cluster-info` ConfigMap in the `kube-public` namespace as defined in [the Bootstrap Tokens proposal](https://github.com/kubernetes/design-proposals-archive/blob/main/cluster-lifecycle/bootstrap-discovery.md)
  - The `ca.crt` and the address/port of the apiserver is added to the `cluster-info` ConfigMap in the `kubeconfig` key
  - Exposes the `cluster-info` ConfigMap to unauthenticated users (i.e. users in RBAC group `system:unauthenticated`)
 
