@@ -148,7 +148,7 @@ func CreateCluster(clusterName string, options ...CreateOption) error {
 		clusterName,
 		flags,
 	); err != nil {
-		return handleErr(err)
+		return handleErr(errors.Wrap(err, "error creating nodes"))
 	}
 
 	fmt.Println()
@@ -181,25 +181,19 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 		return err
 	}
 
-	// create all of the node containers, concurrently
-	fns := []func() error{}
-	for _, desiredNode := range desiredNodes {
-		desiredNode := desiredNode // capture loop variable
-		fns = append(fns, func() error {
-			switch desiredNode.Role {
-			case constants.ExternalLoadBalancerNodeRoleValue:
-				return createHelper.CreateExternalLoadBalancer(clusterName, desiredNode.Name)
-			case constants.ControlPlaneNodeRoleValue, constants.WorkerNodeRoleValue:
-				return createHelper.CreateNode(clusterName, desiredNode.Name, flags.image, desiredNode.Role, flags.volumes)
-			default:
-				return nil
-			}
-		})
-	}
-
+	// create all of the node containers
 	log.Info("Creating nodes...")
-	if err := untilError(fns); err != nil {
-		return err
+	for _, desiredNode := range desiredNodes {
+		var err error
+		switch desiredNode.Role {
+		case constants.ExternalLoadBalancerNodeRoleValue:
+			err = createHelper.CreateExternalLoadBalancer(clusterName, desiredNode.Name)
+		case constants.ControlPlaneNodeRoleValue, constants.WorkerNodeRoleValue:
+			err = createHelper.CreateNode(clusterName, desiredNode.Name, flags.image, desiredNode.Role, flags.volumes)
+		}
+		if err != nil {
+			return errors.Wrapf(err, "error creating node %v", desiredNode)
+		}
 	}
 
 	// add an external etcd if explicitly requested
@@ -327,24 +321,4 @@ func ensureNodeImage(image string) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = host.PullImage(image, 4)
-}
-
-// UntilError runs all funcs in separate goroutines, returning the
-// first non-nil error returned from funcs, or nil if all funcs return nil
-// Nb. this func was originally imported from "sigs.k8s.io/kind/pkg/concurrent"; it is still available
-// in the kind codebase, but it has been slightly refactored.
-func untilError(funcs []func() error) error {
-	errCh := make(chan error, len(funcs))
-	for _, f := range funcs {
-		f := f // capture f
-		go func() {
-			errCh <- f()
-		}()
-	}
-	for i := 0; i < len(funcs); i++ {
-		if err := <-errCh; err != nil {
-			return err
-		}
-	}
-	return nil
 }
