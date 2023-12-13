@@ -146,6 +146,22 @@ func NewContext(options ...Option) (ctx *Context, err error) {
 
 // Alter alters the cluster node image
 func (c *Context) Alter() (err error) {
+	// create tempdir to alter the image in
+	alterDir, err := kindfs.TempDir("", "kinder-alter-image")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(alterDir)
+
+	// initialize the build context
+	bc := bits.NewBuildContext(alterDir)
+
+	// always create folder for storing bits output
+	bitsDir := bc.HostBitsPath()
+	if err := os.Mkdir(bitsDir, 0777); err != nil {
+		return errors.Wrap(err, "failed to make bits dir")
+	}
+
 	// initialize bits installers
 	var bitsInstallers []bits.Installer
 
@@ -170,29 +186,20 @@ func (c *Context) Alter() (err error) {
 	}
 
 	if c.upgradeArtifactsSrc != "" {
-		bitsInstallers = append(bitsInstallers, bits.NewUpgradeBits(c.upgradeArtifactsSrc))
+		// If the upgrade artifacts source is the same as the init artifacts source,
+		// avoid downloading artifacts again and just copy them.
+		src := c.upgradeArtifactsSrc
+		if src == c.initArtifactsSrc {
+			src = filepath.Join(bc.HostBitsPath(), bits.InitBitsDir)
+		}
+		bitsInstallers = append(bitsInstallers, bits.NewUpgradeBits(src))
 	}
 
 	if len(c.paths) > 0 {
 		bitsInstallers = append(bitsInstallers, bits.NewPathBits(c.paths))
 	}
 
-	// create tempdir to alter the image in
-	alterDir, err := kindfs.TempDir("", "kinder-alter-image")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(alterDir)
 	log.Infof("Altering node image in: %s", alterDir)
-
-	// initialize the build context
-	bc := bits.NewBuildContext(alterDir)
-
-	// always create folder for storing bits output
-	bitsDir := bc.HostBitsPath()
-	if err := os.Mkdir(bitsDir, 0777); err != nil {
-		return errors.Wrap(err, "failed to make bits dir")
-	}
 
 	// populate the kubernetes artifacts first
 	if err := c.prepareBits(bitsInstallers, bc); err != nil {
