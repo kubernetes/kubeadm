@@ -165,16 +165,11 @@ func (c *Context) Alter() (err error) {
 	// initialize bits installers
 	var bitsInstallers []bits.Installer
 
-	// TODO: remove the KubeadmBinaryVer workaround once we no longer test the kubeadm 1.25 / k8s 1.24 skew.
-	// See pkg/cri/host/archive.go.
-
-	host.KubeadmBinaryVer = c.initArtifactsSrc
 	if c.initArtifactsSrc != "" {
 		bitsInstallers = append(bitsInstallers, bits.NewInitBits(c.initArtifactsSrc))
 	}
 
 	if c.kubeadmSrc != "" {
-		host.KubeadmBinaryVer = c.kubeadmSrc
 		bitsInstallers = append(bitsInstallers, bits.NewBinaryBits(c.kubeadmSrc, "kubeadm"))
 	}
 	if c.kubeletSrc != "" {

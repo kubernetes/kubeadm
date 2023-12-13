@@ -125,11 +125,7 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8
 		"upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
 	}
 	if patchesDir != "" {
-		if cp1.MustKubeadmVersion().LessThan(constants.V1_22) {
-			applyArgs = append(applyArgs, "--experimental-patches", constants.PatchesDir)
-		} else {
-			applyArgs = append(applyArgs, "--patches", constants.PatchesDir)
-		}
+		applyArgs = append(applyArgs, "--patches", constants.PatchesDir)
 	}
 	if len(featureGate) > 0 {
 		applyArgs = append(applyArgs, fmt.Sprintf("--feature-gates=%s", featureGate))
@@ -160,11 +156,7 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 		"upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
 	}
 	if patchesDir != "" {
-		if n.MustKubeadmVersion().LessThan(constants.V1_22) {
-			nodeArgs = append(nodeArgs, fmt.Sprintf("--experimental-patches=%s", constants.PatchesDir))
-		} else {
-			nodeArgs = append(nodeArgs, fmt.Sprintf("--patches=%s", constants.PatchesDir))
-		}
+		nodeArgs = append(nodeArgs, fmt.Sprintf("--patches=%s", constants.PatchesDir))
 	}
 	if err := n.Command(
 		"kubeadm", nodeArgs...,

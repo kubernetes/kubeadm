@@ -29,8 +29,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"k8s.io/apimachinery/pkg/util/version"
-
 	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions/assets"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
@@ -67,9 +65,9 @@ func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, copyCertsMode, patchesDir, ignorePreflightErrors, vLevel)
+		err = kubeadmInitWithPhases(cp1, copyCertsMode, ignorePreflightErrors, vLevel)
 	} else {
-		err = kubeadmInit(cp1, copyCertsMode, patchesDir, ignorePreflightErrors, vLevel)
+		err = kubeadmInit(cp1, copyCertsMode, ignorePreflightErrors, vLevel)
 	}
 	if err != nil {
 		return err
@@ -83,7 +81,7 @@ func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, patchesDir, ignorePreflightErrors string, vLevel int) error {
+func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, ignorePreflightErrors string, vLevel int) error {
 	initArgs := []string{
 		"init",
 		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
@@ -96,11 +94,6 @@ func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, patchesDir, igno
 			// NB. certificate key is passed via the config file)
 		)
 	}
-	if patchesDir != "" {
-		if cp1.MustKubeadmVersion().LessThan(constants.V1_22) {
-			initArgs = append(initArgs, "--experimental-patches", constants.PatchesDir)
-		}
-	}
 
 	if err := cp1.Command(
 		"kubeadm", initArgs...,
@@ -111,7 +104,7 @@ func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, patchesDir, igno
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, patchesDir, ignorePreflightErrors string, vLevel int) error {
+func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, ignorePreflightErrors string, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
@@ -140,11 +133,6 @@ func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, patche
 	controlplaneArgs := []string{
 		"init", "phase", "control-plane", "all", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
 	}
-	if patchesDir != "" {
-		if cp1.MustKubeadmVersion().LessThan(constants.V1_22) {
-			controlplaneArgs = append(controlplaneArgs, "--experimental-patches", constants.PatchesDir)
-		}
-	}
 	if err := cp1.Command(
 		"kubeadm", controlplaneArgs...,
 	).RunWithEcho(); err != nil {
@@ -153,11 +141,6 @@ func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, patche
 
 	etcdArgs := []string{
 		"init", "phase", "etcd", "local", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
-	}
-	if patchesDir != "" {
-		if cp1.MustKubeadmVersion().LessThan(constants.V1_22) {
-			etcdArgs = append(etcdArgs, "--experimental-patches", constants.PatchesDir)
-		}
 	}
 	if err := cp1.Command(
 		"kubeadm", etcdArgs...,
@@ -229,15 +212,10 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 	}
 
 	if len(c.Workers()) == 0 {
-		// TODO: Once kubeadm 1.23 is no longer supported remove the <1.24 handling.
-		// TODO: Remove only the "control-plane" taint for kubeadm >= 1.25.
-		// https://github.com/kubernetes/kubeadm/issues/2200
-		taints := []string{"node-role.kubernetes.io/control-plane-", "node-role.kubernetes.io/master-"}
-		if cp1.MustKubeadmVersion().LessThan(version.MustParseSemantic("v1.24.0")) {
-			taints = []string{"node-role.kubernetes.io/master-"}
+		taintArgs := []string{
+			"--kubeconfig=/etc/kubernetes/admin.conf", "taint", "nodes", "--all",
+			"node-role.kubernetes.io/control-plane-",
 		}
-		taintArgs := []string{"--kubeconfig=/etc/kubernetes/admin.conf", "taint", "nodes", "--all"}
-		taintArgs = append(taintArgs, taints...)
 		if err := cp1.Command(
 			"kubectl", taintArgs...,
 		).RunWithEcho(); err != nil {

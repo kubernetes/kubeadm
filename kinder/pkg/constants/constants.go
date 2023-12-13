@@ -16,10 +16,6 @@ limitations under the License.
 
 package constants
 
-import (
-	K8sVersion "k8s.io/apimachinery/pkg/util/version"
-)
-
 // constants inherited from kind.
 // those values are replicated here with the goal to keep under strict control kind dependencies
 const (
@@ -114,12 +110,6 @@ const (
 
 	// PatchesDir defines the path to patches stored on node
 	PatchesDir = "/kinder/patches"
-)
-
-// kubernetes releases, used for branching code according to K8s release or kubeadm release version
-var (
-	// V1.22 minor version
-	V1_22 = K8sVersion.MustParseSemantic("v1.22.0-0")
 )
 
 // other constants
