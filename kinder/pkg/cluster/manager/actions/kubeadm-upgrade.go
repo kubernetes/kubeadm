@@ -53,6 +53,9 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, patch
 		}
 
 		if n.Name() == c.BootstrapControlPlane().Name() {
+			if err := kubeadmUpgradePlan(c, n, upgradeVersion, featureGate, vLevel); err != nil {
+				return err
+			}
 			err = kubeadmUpgradeApply(c, n, upgradeVersion, patchesDir, featureGate, wait, vLevel)
 		} else {
 			err = kubeadmUpgradeNode(c, n, upgradeVersion, patchesDir, wait, vLevel)
@@ -115,6 +118,23 @@ func upgradeKubeadmBinary(n *status.Node, upgradeVersion *K8sVersion.Version) er
 	if err := n.Command(
 		"ln", "-sf", src, dest,
 	).Silent().Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func kubeadmUpgradePlan(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, featureGate string, vLevel int) error {
+	planArgs := []string{
+		"upgrade", "plan", fmt.Sprintf("v%s", upgradeVersion),
+		"--allow-experimental-upgrades", "--allow-release-candidate-upgrades",
+		fmt.Sprintf("--v=%d", vLevel),
+	}
+	if len(featureGate) > 0 {
+		planArgs = append(planArgs, fmt.Sprintf("--feature-gates=%s", featureGate))
+	}
+	if err := cp1.Command(
+		"kubeadm", planArgs...,
+	).RunWithEcho(); err != nil {
 		return err
 	}
 	return nil
