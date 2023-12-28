@@ -6,10 +6,10 @@ summary: |
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-kubelet-x-on-y.yaml
 vars:
   kubeadmVersion: "{{ resolve `ci/latest` }}"
-  kubeletVersion: "{{ resolve `ci/latest-1.29` }}"
+  kubeletVersion: "{{ resolve `ci/latest-1.30` }}"
   kubernetesVersion: "{{ resolve `ci/latest` }}"
   ignorePreflightErrors: "KubeletVersion"
-  ginkgoSkip: "\\[MinimumKubeletVersion:(1.30)\\]"
+  ginkgoSkip: "\\[MinimumKubeletVersion:(1.31)\\]"
   controlPlaneNodes: 3
 tasks:
 - import: skew-x-on-y-tasks.yaml
