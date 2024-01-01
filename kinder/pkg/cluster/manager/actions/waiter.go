@@ -151,7 +151,7 @@ func waitFor(c *status.Cluster, n *status.Node, timeout time.Duration, condition
 
 			for {
 				if x(c, n) {
-					pass <- true
+					<-pass
 					break
 				}
 				// add a little delay + jitter before retry
@@ -164,12 +164,14 @@ func waitFor(c *status.Cluster, n *status.Node, timeout time.Duration, condition
 	passed := 0
 	for {
 		select {
-		case <-pass:
+		case pass <- true:
 			passed++
 			if passed == len(conditions) {
 				return true
 			}
 		case <-timer.C:
+			// close the channel if timeout occurs, this will release all the blocked receives
+			close(pass)
 			return false
 		}
 	}
