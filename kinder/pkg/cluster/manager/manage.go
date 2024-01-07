@@ -73,12 +73,20 @@ func (c *ClusterManager) DryRun() {
 }
 
 // OnlyNode instruct the cluster manager to run only commands on one node
-func (c *ClusterManager) OnlyNode(node string) {
+func (c *ClusterManager) OnlyNode(node string) error {
+	found := false
 	for _, n := range c.Cluster.AllNodes() {
-		if n.Name() != node {
-			n.SkipActions()
+		if n.Name() == node {
+			log.Infof("Found matching node for --only-node: %s", node)
+			found = true
+			continue
 		}
+		n.SkipActions()
 	}
+	if !found {
+		return errors.Errorf("did not find a matching node for --only-node: %s", node)
+	}
+	return nil
 }
 
 // DoAction actions on kind(er) cluster
