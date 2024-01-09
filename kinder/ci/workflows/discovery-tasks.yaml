@@ -65,7 +65,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
-    - --only-node=kinder-discovery-worker
+    - --only-node=kinder-discovery-worker-1
     - --discovery-mode=file
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
@@ -78,7 +78,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
-    - --only-node=kinder-discovery-worker2
+    - --only-node=kinder-discovery-worker-2
     - --discovery-mode=file-with-token
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
@@ -91,7 +91,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
-    - --only-node=kinder-discovery-worker3
+    - --only-node=kinder-discovery-worker-3
     - --discovery-mode=file-with-embedded-client-certificates
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
@@ -104,7 +104,7 @@ tasks:
     - do
     - kubeadm-join
     - --name={{ .vars.clusterName }}
-    - --only-node=kinder-discovery-worker4
+    - --only-node=kinder-discovery-worker-4
     - --discovery-mode=file-with-external-client-certificates
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}

@@ -159,7 +159,9 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 
 	// eventually, instruct the cluster manager to run only commands on one node
 	if flags.OnlyNode != "" {
-		o.OnlyNode(flags.OnlyNode)
+		if err := o.OnlyNode(flags.OnlyNode); err != nil {
+			return err
+		}
 	}
 
 	// eventually, instruct the cluster manager to dry run commands (without actually running them)
