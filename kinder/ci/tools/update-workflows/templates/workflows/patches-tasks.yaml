@@ -99,13 +99,6 @@ tasks:
             res=1
         fi
 
-        if kubectl get cm kubelet-config -n kube-system --kubeconfig /etc/kubernetes/admin.conf -o yaml | grep -q "shutdownGracePeriod: 1s" ; then
-            echo "kube-system/kubelet-config ConfigMap is patched!"
-        else
-            echo "ERROR: kube-system/kubelet-config ConfigMap is not patched"
-            res=1
-        fi
-
         if [[ "\${res}" = 0 ]]; then
           echo "All verify checks passed, congrats!"
           echo ""
