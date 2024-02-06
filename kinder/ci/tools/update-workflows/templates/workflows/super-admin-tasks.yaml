@@ -128,7 +128,7 @@ tasks:
       # Check certificate subject for apiserver-kubelet-client.crt
       ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
 
-      # Delete super-admin.conf to make sure this version of kubeadm creates it on upgrade
+      # Delete super-admin.conf, simulating the user moving the file to a safe location
       ${CMD} rm -f "/etc/kubernetes/super-admin.conf" || exit 1
 
       # Ensure exit status of 0
@@ -196,9 +196,9 @@ tasks:
       set -x
       CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
 
-      # Both admin.conf and super-admin.conf must exist
+      # admin.conf must exist, super-admin.conf must not exist as we deleted it after init
       ${CMD} test -f /etc/kubernetes/admin.conf || exit 1
-      ${CMD} test -f /etc/kubernetes/super-admin.conf || exit 1
+      ${CMD} test -f /etc/kubernetes/super-admin.conf && exit 1
 
       # Check certificate subject for .conf files
       ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
