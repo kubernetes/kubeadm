@@ -201,9 +201,8 @@ tasks:
       ${CMD} test -f /etc/kubernetes/admin.conf || exit 1
       ${CMD} test -f /etc/kubernetes/super-admin.conf && exit 1
 
-      # Check certificate subject for .conf files
+      # Check certificate subject for admin.conf
       ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/super-admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = system:masters, CN = kubernetes-super-admin" || exit 1
 
       # Check certificate subject for apiserver-kubelet-client.crt
       ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
