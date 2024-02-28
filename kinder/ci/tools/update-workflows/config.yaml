@@ -237,3 +237,15 @@ jobGroups:
     - ./templates/workflows/super-admin-tasks.yaml
   jobs:
   - kubernetesVersion: latest
+
+- name: wait-for-all-control-plane-components
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-wait-for-all-control-plane-components.yaml
+    template: ./templates/testinfra/kubeadm-kinder-wait-for-all-control-plane-components.yaml
+  kinderWorkflowSpec:
+    targetFile: wait-for-all-control-plane-components-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/wait-for-all-control-plane-components.yaml
+    additionalFiles:
+    - ./templates/workflows/wait-for-all-control-plane-components-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
