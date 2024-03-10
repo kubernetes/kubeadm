@@ -135,7 +135,6 @@ apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManager:
   extraArgs:
-    enable-hostpath-provisioner: "true"
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
     bind-address: "::"
@@ -232,7 +231,6 @@ apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManager:
   extraArgs:
-    enable-hostpath-provisioner: "true"
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
     bind-address: "::"
