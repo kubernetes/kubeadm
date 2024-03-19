@@ -52,6 +52,7 @@ import (
 	"strings"
 	"time"
 
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"k8s.io/apimachinery/pkg/util/version"
 )
 
@@ -461,7 +462,7 @@ func verifyManifestList(manifest, imageName, tag string, ver *version.Version) e
 	if ml.SchemaVersion != 2 {
 		return errors.New("manifest is not schemaVersion 2")
 	}
-	if ml.MediaType != typeManifestList {
+	if ml.MediaType != typeManifestList && ml.MediaType != ocispec.MediaTypeImageIndex {
 		return fmt.Errorf("not a manifest list: %s", ml.MediaType)
 	}
 	aList := make([]string, len(archList))
