@@ -25,8 +25,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	versionutil "k8s.io/apimachinery/pkg/util/version"
+	"sigs.k8s.io/yaml"
 )
 
 func processTestInfra(settings *Settings, cfg *jobGroup, oldestVer, minVer *versionutil.Version) error {
@@ -114,6 +116,11 @@ func processTestInfra(settings *Settings, cfg *jobGroup, oldestVer, minVer *vers
 			return err
 		}
 		str += "\n" + buf.String()
+	}
+
+	// unmarshal the YAML to validate it
+	if err = yaml.Unmarshal([]byte(str), struct{}{}); err != nil {
+		return errors.Wrapf(err, "\n%s\n", str)
 	}
 
 	// write testinfra job file
