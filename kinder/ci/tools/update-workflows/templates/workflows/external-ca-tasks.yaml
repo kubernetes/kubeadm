@@ -83,9 +83,18 @@ tasks:
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
     timeout: 10m
-  - name: e2e-kubeadm
+  - name: cluster-info-before
     description: |
-      Runs kubeadm e2e tests
+      Runs cluster-info on the cluster before upgrade
+    cmd: kinder
+    args:
+      - do
+      - cluster-info
+      - --name={{ .vars.clusterName }}
+      - --loglevel=debug
+  - name: e2e-kubeadm-before
+    description: |
+      Runs kubeadm e2e test on the cluster before upgrade
     cmd: kinder
     args:
       - test
@@ -94,6 +103,50 @@ tasks:
       - --name={{ .vars.clusterName }}
       - --loglevel=debug
     timeout: 10m
+  - name: upgrade
+    description: |
+      upgrades the cluster to the same version
+    cmd: kinder
+    args:
+      - do
+      - kubeadm-upgrade
+      - --upgrade-version={{ .vars.kubernetesVersion }}
+      - --name={{ .vars.clusterName }}
+      - --loglevel=debug
+      - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+    timeout: 15m
+  - name: cluster-info-after
+    description: |
+      Runs cluster-info on the cluster after upgrade
+    cmd: kinder
+    args:
+      - do
+      - cluster-info
+      - --name={{ .vars.clusterName }}
+      - --loglevel=debug
+  - name: e2e-kubeadm-after
+    description: |
+      Runs kubeadm e2e test on the cluster after upgrade
+    cmd: kinder
+    args:
+      - test
+      - e2e-kubeadm
+      - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
+      - --name={{ .vars.clusterName }}
+      - --loglevel=debug
+    timeout: 10m
+  - name: e2e-after
+    description: |
+      Runs Kubernetes e2e test (conformance) on the cluster with Kubernetes "upgradeVersion"
+    cmd: kinder
+    args:
+      - test
+      - e2e
+      - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e
+      - --parallel
+      - --name={{ .vars.clusterName }}
+      - --loglevel=debug
+    timeout: 35m
   - name: get-logs
     description: |
       Collects all the test logs
