@@ -28,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/kubeadm/kinder/pkg/build/bits"
+	"k8s.io/kubeadm/kinder/pkg/cluster/manager/actions/assets"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/cri/host"
 	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
@@ -362,6 +363,9 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		if err != nil {
 			return err
 		}
+
+		// add the kindnet image
+		images = append(images, assets.KindnetImage054)
 
 		if err := pullImages(alterHelper, bc, images, filepath.Join(initPath, "images"), containerID); err != nil {
 			return err
