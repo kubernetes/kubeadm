@@ -28,7 +28,7 @@ import (
 func PullImage(image string, retries int) (bool, error) {
 	// once we have configurable log levels
 	// if this did not return an error, then the image exists locally
-	if err := exec.NewHostCmd("docker", "inspect", "--type=image", image); err == nil {
+	if err := exec.NewHostCmd("docker", "inspect", "--type=image", image).Run(); err == nil {
 		return false, nil
 	}
 
