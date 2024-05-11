@@ -16,6 +16,9 @@ limitations under the License.
 
 package assets
 
+// KindnetImage054 is the image for kindnet 0.5.4
+const KindnetImage054 = "kindest/kindnetd:0.5.4"
+
 // KindnetManifest054 holds the kindnet manifest for 0.5.4
 const KindnetManifest054 = `
 # kindnetd networking manifest
