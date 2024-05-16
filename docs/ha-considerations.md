@@ -39,7 +39,7 @@ This combination can be run either as services on the operating system or as sta
 
 The `keepalived` configuration consists of two files: the service configuration file and a health check script which will be called periodically to verify that the node holding the virtual IP is still operational.
 
-The files are assumed to reside in a `/etc/keepalived` directory. Note that however some Linux distributions may keep them elsewhere. The following configuration has been successfully used with `keepalived` version 2.0.17:
+The files are assumed to reside in a `/etc/keepalived` directory. Note that however some Linux distributions may keep them elsewhere. The following configuration has been successfully used with `keepalived` version 2.0.20 and 2.2.4:
 
 ```bash
 ! /etc/keepalived/keepalived.conf
@@ -91,19 +91,14 @@ errorExit() {
     exit 1
 }
 
-curl --silent --max-time 2 --insecure https://localhost:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://localhost:${APISERVER_DEST_PORT}/"
-if ip addr | grep -q ${APISERVER_VIP}; then
-    curl --silent --max-time 2 --insecure https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/ -o /dev/null || errorExit "Error GET https://${APISERVER_VIP}:${APISERVER_DEST_PORT}/"
-fi
+curl -sfk --max-time 2 https://localhost:${APISERVER_DEST_PORT}/healthz -o /dev/null || errorExit "Error GET https://localhost:${APISERVER_DEST_PORT}/healthz"
 ```
 
-There are some placeholders in `bash` variable style to fill in:
-- `${APISERVER_VIP}` is the virtual IP address negotiated between the `keepalived` cluster hosts.
-- `${APISERVER_DEST_PORT}` the port through which Kubernetes will talk to the API Server.
+Fill in the placeholder `${APISERVER_DEST_PORT}` with the port through which Kubernetes will talk to the API Server. That is the port haproxy or your load balancer will be listening on.
 
 ### haproxy configuration
 
-The `haproxy` configuration consists of one file: the service configuration file which is assumed to reside in a `/etc/haproxy` directory. Note that however some Linux distributions may keep them elsewhere. The following configuration has been successfully used with `haproxy` version 2.1.4:
+The `haproxy` configuration consists of one file: the service configuration file which is assumed to reside in a `/etc/haproxy` directory. Note that however some Linux distributions may keep them elsewhere. The following configuration has been successfully used with `haproxy` version 2.4 and 2.8:
 
 ```bash
 # /etc/haproxy/haproxy.cfg
@@ -111,8 +106,7 @@ The `haproxy` configuration consists of one file: the service configuration file
 # Global settings
 #---------------------------------------------------------------------
 global
-    log /dev/log local0
-    log /dev/log local1 notice
+    log stdout format raw local0
     daemon
 
 #---------------------------------------------------------------------
@@ -131,8 +125,8 @@ defaults
     timeout http-request    10s
     timeout queue           20s
     timeout connect         5s
-    timeout client          20s
-    timeout server          20s
+    timeout client          35s
+    timeout server          35s
     timeout http-keep-alive 10s
     timeout check           10s
 
@@ -149,13 +143,17 @@ frontend apiserver
 # round robin balancing for apiserver
 #---------------------------------------------------------------------
 backend apiserverbackend
-    option httpchk GET /healthz
+    option httpchk
+
+    http-check connect ssl
+    http-check send meth GET uri /healthz
     http-check expect status 200
+
     mode tcp
-    option ssl-hello-chk
     balance     roundrobin
-        server ${HOST1_ID} ${HOST1_ADDRESS}:${APISERVER_SRC_PORT} check
-        # [...]
+    
+    server ${HOST1_ID} ${HOST1_ADDRESS}:${APISERVER_SRC_PORT} check verify none
+    # [...]
 ```
 Again, there are some placeholders in `bash` variable style to expand:
 - `${APISERVER_DEST_PORT}` the port through which Kubernetes will talk to the API Server.
@@ -191,7 +189,7 @@ metadata:
   namespace: kube-system
 spec:
   containers:
-  - image: osixia/keepalived:2.0.17
+  - image: osixia/keepalived:2.0.20
     name: keepalived
     resources: {}
     securityContext:
@@ -225,7 +223,7 @@ metadata:
   namespace: kube-system
 spec:
   containers:
-  - image: haproxy:2.1.4
+  - image: haproxy:2.8
     name: haproxy
     livenessProbe:
       failureThreshold: 8
