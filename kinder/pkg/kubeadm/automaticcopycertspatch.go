@@ -32,35 +32,35 @@ func GetAutomaticCopyCertsPatches(kubeadmConfigVersion string) ([]string, error)
 	log.Debugf("Preparing automaticCopyCertsPatches for kubeadm config %s", kubeadmConfigVersion)
 
 	switch kubeadmConfigVersion {
-	case "v1beta2":
-		return []string{
-			fmt.Sprintf(automaticCopyCertsInitv1beta2, constants.CertificateKey),
-			fmt.Sprintf(automaticCopyCertsJoinv1beta2, constants.CertificateKey),
-		}, nil
 	case "v1beta3":
 		return []string{
 			fmt.Sprintf(automaticCopyCertsInitv1beta3, constants.CertificateKey),
 			fmt.Sprintf(automaticCopyCertsJoinv1beta3, constants.CertificateKey),
+		}, nil
+	case "v1beta4":
+		return []string{
+			fmt.Sprintf(automaticCopyCertsInitv1beta4, constants.CertificateKey),
+			fmt.Sprintf(automaticCopyCertsJoinv1beta4, constants.CertificateKey),
 		}, nil
 	}
 
 	return nil, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 }
 
-const automaticCopyCertsInitv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
-kind: InitConfiguration
-certificateKey: "%s"`
-
-const automaticCopyCertsJoinv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
-kind: JoinConfiguration
-controlPlane:
-  certificateKey: "%s"`
-
 const automaticCopyCertsInitv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 certificateKey: "%s"`
 
 const automaticCopyCertsJoinv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+controlPlane:
+  certificateKey: "%s"`
+
+const automaticCopyCertsInitv1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+certificateKey: "%s"`
+
+const automaticCopyCertsJoinv1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
 controlPlane:
   certificateKey: "%s"`

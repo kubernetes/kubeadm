@@ -31,10 +31,10 @@ func GetExternalEtcdPatch(kubeadmConfigVersion string, etcdIP string) (string, e
 
 	var externalEtcdPatch string
 	switch kubeadmConfigVersion {
-	case "v1beta2":
-		externalEtcdPatch = externalEtcdPatchv1beta2
 	case "v1beta3":
 		externalEtcdPatch = externalEtcdPatchv1beta3
+	case "v1beta4":
+		externalEtcdPatch = externalEtcdPatchv1beta4
 	default:
 		return "", errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -42,14 +42,14 @@ func GetExternalEtcdPatch(kubeadmConfigVersion string, etcdIP string) (string, e
 	return fmt.Sprintf(externalEtcdPatch, etcdIP), nil
 }
 
-const externalEtcdPatchv1beta2 = `apiVersion: kubeadm.k8s.io/v1beta2
+const externalEtcdPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 etcd:
   external:
     endpoints:
     - http://%s:2379`
 
-const externalEtcdPatchv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
+const externalEtcdPatchv1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 etcd:
   external:
