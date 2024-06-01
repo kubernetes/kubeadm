@@ -24,6 +24,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // TODO: investigate if we can get rid of this or simplify it.
@@ -79,14 +81,17 @@ func GetArchiveTags(path string) ([]string, error) {
 
 // EditArchiveRepositories applies edit to reader's image repositories,
 // IE the repository part of repository:tag in image tags
-// This supports v1 / v1.1 / v1.2 Docker Image Archives
 //
-// editRepositories should be a function that returns the input or an edited
-// form, where the input is the image repository
-//
+// It supports v1 / v1.1 / v1.2 Docker Image Archives:
 // https://github.com/moby/moby/blob/master/image/spec/v1.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.1.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+//
+// and OCI schema v2 with index.json:
+// https://github.com/opencontainers/image-spec/blob/main/spec.md
+//
+// editRepositories should be a function that returns the input or an edited
+// form, where the input is the image repository
 func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositories func(string) string) error {
 	tarReader := tar.NewReader(reader)
 	tarWriter := tar.NewWriter(writer)
@@ -104,15 +109,25 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositorie
 			return err
 		}
 
-		// edit the repostories and manifests files when we find them
+		// A Docker image archive has a 'repositories' and a 'manifest.json' files.
+		// An OCI image archive has the same 'manifests.json' file format, but also an 'index.json' file.
 		if hdr.Name == "repositories" {
+			log.Infof("editing %s", hdr.Name)
 			b, err = editRepositoriesFile(b, editRepositories)
 			if err != nil {
 				return err
 			}
 			hdr.Size = int64(len(b))
 		} else if hdr.Name == "manifest.json" {
+			log.Infof("editing %s", hdr.Name)
 			b, err = editManifestRepositories(b, editRepositories)
+			if err != nil {
+				return err
+			}
+			hdr.Size = int64(len(b))
+		} else if hdr.Name == "index.json" {
+			log.Infof("editing %s", hdr.Name)
+			b, err = editIndexRepositories(b, editRepositories)
 			if err != nil {
 				return err
 			}
@@ -161,7 +176,6 @@ type metadataEntry struct {
 	Layers   []string `json:"Layers"`
 }
 
-// applies
 func editManifestRepositories(raw []byte, editRepositories func(string) string) ([]byte, error) {
 	var entries []metadataEntry
 	if err := json.Unmarshal(raw, &entries); err != nil {
@@ -183,6 +197,44 @@ func editManifestRepositories(raw []byte, editRepositories func(string) string) 
 	}
 
 	return json.Marshal(entries)
+}
+
+// https://github.com/opencontainers/image-spec/blob/main/image-index.md
+type index struct {
+	SchemaVersion int `json:"schemaVersion"`
+	Manifests     []struct {
+		MediaType   string            `json:"mediaType"`
+		Digest      string            `json:"digest"`
+		Size        int               `json:"size"`
+		Annotations map[string]string `json:"annotations"`
+		Platform    struct {
+			Architecture string `json:"architecture"`
+			OS           string `json:"os"`
+		} `json:"platform"`
+	} `json:"manifests"`
+}
+
+func editIndexRepositories(raw []byte, editRepositories func(string) string) ([]byte, error) {
+	var idx index
+	if err := json.Unmarshal(raw, &idx); err != nil {
+		return nil, err
+	}
+
+	for _, m := range idx.Manifests {
+		const containerdImage = "io.containerd.image.name"
+		for k, v := range m.Annotations {
+			if k == containerdImage {
+				parts := strings.Split(v, ":")
+				if len(parts) != 2 {
+					return nil, fmt.Errorf("invalid image %s", v)
+				}
+				parts[0] = editRepositories(parts[0])
+				m.Annotations[k] = strings.Join(parts, ":")
+			}
+		}
+	}
+
+	return json.Marshal(idx)
 }
 
 // returns repository:tag:ref
