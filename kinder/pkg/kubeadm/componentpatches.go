@@ -33,6 +33,9 @@ func GetPatchesDirectoryPatches(kubeadmConfigVersion string) ([]string, error) {
 	case "v1beta3":
 		patchInit = patchesDirectoryPatchInitv1beta3
 		patchJoin = patchesDirectoryPatchJoinv1beta3
+	case "v1beta4":
+		patchInit = patchesDirectoryPatchInitv1beta4
+		patchJoin = patchesDirectoryPatchJoinv1beta4
 	default:
 		return []string{}, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
@@ -48,6 +51,16 @@ patches:
   directory: %s`
 
 const patchesDirectoryPatchJoinv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+patches:
+  directory: %s`
+
+const patchesDirectoryPatchInitv1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+patches:
+  directory: %s`
+
+const patchesDirectoryPatchJoinv1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
 patches:
   directory: %s`
