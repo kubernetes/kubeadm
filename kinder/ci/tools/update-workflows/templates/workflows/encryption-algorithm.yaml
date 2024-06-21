@@ -1,0 +1,11 @@
+version: 1
+summary: |
+  This workflow tests the proper functioning of the {{ .KubernetesVersion }} version of both kubeadm
+  and Kubernetes when using a specified encryption algorithm
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-super-admin-{{ dashVer .KubernetesVersion }}
+  config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/{{ .TargetFile }}
+vars:
+  kubernetesVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
+  upgradeVersion: "\{\{ resolve `ci/{{ ciLabelFor .KubernetesVersion }}` \}\}"
+tasks:
+- import: encryption-algorithm-tasks.yaml

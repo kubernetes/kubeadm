@@ -236,3 +236,15 @@ jobGroups:
     - ./templates/workflows/wait-for-all-control-plane-components-tasks.yaml
   jobs:
   - kubernetesVersion: latest
+
+- name: encryption-algorithm
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-encryption-algorithm.yaml
+    template: ./templates/testinfra/kubeadm-kinder-encryption-algorithm.yaml
+  kinderWorkflowSpec:
+    targetFile: encryption-algorithm-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/encryption-algorithm.yaml
+    additionalFiles:
+    - ./templates/workflows/encryption-algorithm-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
