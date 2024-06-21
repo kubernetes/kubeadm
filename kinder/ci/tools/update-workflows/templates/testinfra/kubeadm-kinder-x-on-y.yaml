@@ -1,5 +1,5 @@
 - name: ci-kubernetes-e2e-kubeadm-kinder-{{ dashVer .KubeadmVersion }}-on-{{ dashVer .KubernetesVersion }}
-  cluster: k8s-infra-prow-build
+  cluster: eks-prow-build-cluster
   interval: {{ .JobInterval }}
   decorate: true
   labels:
