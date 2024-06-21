@@ -44,6 +44,7 @@ type flagpole struct {
 	IgnorePreflightErrors string
 	KubeadmConfigVersion  string
 	FeatureGate           string
+	EncryptionAlgorithm   string
 }
 
 // NewCommand returns a new cobra.Command for exec
@@ -128,6 +129,11 @@ func NewCommand() *cobra.Command {
 		"kubeadm-feature-gate", "",
 		"a single kubeadm feature-gate to be used for init, join and upgrade",
 	)
+	cmd.Flags().StringVar(
+		&flags.EncryptionAlgorithm,
+		"kubeadm-encryption-algorithm", "",
+		"the encryption algorithm used by kubeadm for private keys in the cluster",
+	)
 	return cmd
 }
 
@@ -184,6 +190,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) (err error) {
 		actions.IgnorePreflightErrors(flags.IgnorePreflightErrors),
 		actions.KubeadmConfigVersion(flags.KubeadmConfigVersion),
 		actions.FeatureGate(flags.FeatureGate),
+		actions.EncryptionAlgorithm(flags.EncryptionAlgorithm),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to exec action %s", action)
