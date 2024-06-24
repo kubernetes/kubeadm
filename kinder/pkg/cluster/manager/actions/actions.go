@@ -40,10 +40,10 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
 		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.copyCertsMode, flags.discoveryMode, flags.featureGate, c.K8sNodes().EligibleForActions()...)
+		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.copyCertsMode, flags.discoveryMode, flags.featureGate, flags.encryptionAlgorithm, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmInit(c, flags.usePhases, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.featureGate, flags.wait, flags.vLevel)
+		return KubeadmInit(c, flags.usePhases, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.featureGate, flags.encryptionAlgorithm, flags.wait, flags.vLevel)
 	},
 	"kubeadm-join": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
@@ -160,6 +160,13 @@ func FeatureGate(featureGate string) Option {
 	}
 }
 
+// EncryptionAlgorithm option sets the EncryptionAlgorithm during cluster creation
+func EncryptionAlgorithm(algorithm string) Option {
+	return func(r *RunOptions) {
+		r.encryptionAlgorithm = algorithm
+	}
+}
+
 // RunOptions holds options supplied to actions.Run
 type RunOptions struct {
 	usePhases             bool
@@ -172,6 +179,7 @@ type RunOptions struct {
 	ignorePreflightErrors string
 	kubeadmConfigVersion  string
 	featureGate           string
+	encryptionAlgorithm   string
 }
 
 // DiscoveryMode defines discovery mode supported by kubeadm join

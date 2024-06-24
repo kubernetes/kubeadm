@@ -1,4 +1,4 @@
-- name: ci-kubernetes-e2e-kubeadm-kinder-rootless-{{ dashVer .KubernetesVersion }}
+- name: ci-kubernetes-e2e-kubeadm-kinder-encryption-algorithm-{{ dashVer .KubernetesVersion }}
   cluster: eks-prow-build-cluster
   interval: {{ .JobInterval }}
   decorate: true
@@ -7,9 +7,9 @@
     preset-kind-volume-mounts: "true"
   annotations:
     testgrid-dashboards: sig-cluster-lifecycle-kubeadm
-    testgrid-tab-name: kubeadm-kinder-rootless-{{ dashVer .KubernetesVersion }}
+    testgrid-tab-name: kubeadm-kinder-encryption-algorithm-{{ dashVer .KubernetesVersion }}
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io
-    description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster with rootless control-plane and run kubeadm-e2e and the conformance suite"
+    description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster and test the encryption algorithm functionality"
     testgrid-num-columns-recent: "20"
 {{ .AlertAnnotations }}
   decoration_config:

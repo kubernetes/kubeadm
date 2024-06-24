@@ -98,6 +98,8 @@ type ConfigData struct {
 	// The kubeadm feature-gate
 	FeatureGateName  string
 	FeatureGateValue string
+	// The encryption algorithm
+	EncryptionAlgorithm string
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand

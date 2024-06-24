@@ -40,9 +40,9 @@ type kubeadmConfigOptions struct {
 // KubeadmInitConfig action writes the InitConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, featureGate string, nodes ...*status.Node) error {
+func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, featureGate, encryptionAlgorithm string, nodes ...*status.Node) error {
 	// defaults everything not relevant for the Init Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, featureGate, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, featureGate, encryptionAlgorithm, nodes...)
 }
 
 // KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
@@ -50,13 +50,13 @@ func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCerts
 // to invoke it separately as well.
 func KubeadmJoinConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the join Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, "" /* feature-gates */, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, "" /* feature-gates */, "" /* encryptionAlgorithm */, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, featureGate string, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, featureGate, encryptionAlgorithm string, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -108,6 +108,7 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 		IPv6:                 c.Settings.IPFamily == status.IPv6Family,
 		FeatureGateName:      featureGateName,
 		FeatureGateValue:     featureGateValue,
+		EncryptionAlgorithm:  encryptionAlgorithm,
 	}
 
 	// create configOptions with all the kinder flags that impact on the kubeadm config generation
@@ -305,6 +306,15 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		}
 
 		patches = append(patches, externalEtcdPatch)
+	}
+
+	// encryption algorithm
+	if len(data.EncryptionAlgorithm) > 0 {
+		encryptionAlgorithmPatch, err := kubeadm.GetEncryptionAlgorithmPatch(kubeadmConfigVersion, data.EncryptionAlgorithm)
+		if err != nil {
+			return "", err
+		}
+		patches = append(patches, encryptionAlgorithmPatch)
 	}
 
 	// apply patches
