@@ -8,7 +8,6 @@ reviewers:
 - neolit123
 - SataQiu
 - pacoxu
-- chendave
 - carlory
 emeritus_approvers:
 - fabriziopandini
@@ -16,3 +15,4 @@ emeritus_approvers:
 - timothysc
 - rosti
 - ereslibre
+- chendave
