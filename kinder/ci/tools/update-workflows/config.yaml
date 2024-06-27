@@ -248,3 +248,15 @@ jobGroups:
     - ./templates/workflows/encryption-algorithm-tasks.yaml
   jobs:
   - kubernetesVersion: latest
+
+- name: control-plane-local-kubelet-mode
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-control-plane-local-kubelet-mode.yaml
+    template: ./templates/testinfra/kubeadm-kinder-control-plane-local-kubelet-mode.yaml
+  kinderWorkflowSpec:
+    targetFile: control-plane-local-kubelet-mode-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/control-plane-local-kubelet-mode.yaml
+    additionalFiles:
+    - ./templates/workflows/control-plane-local-kubelet-mode-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
