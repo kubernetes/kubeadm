@@ -2,7 +2,7 @@
 version: 1
 summary: |
   This workflow implements a sequence of tasks used test the proper functioning
-  of kubeadm not in control plane local kubelet mode during joining control plane.
+  of the ControlPlaneKubeletLocalMode feature gate.
 vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
@@ -62,6 +62,24 @@ tasks:
   - --kubeadm-feature-gate="ControlPlaneKubeletLocalMode=true"
   - --copy-certs=auto
   timeout: 5m
+- name: post-init
+  description: |
+    Run commands after kubeadm init is called on a primary CP node to checks if
+    the kubelet's kubeconfig file points to the local apiserver.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-1)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
+
+      # Ensure kubelet.conf points to the local IP.
+      ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
+
+      # Ensure exit status of 0
+      exit 0
+  timeout: 5m
 - name: join
   description: |
     Join the other nodes to the Kubernetes cluster
@@ -74,6 +92,52 @@ tasks:
   - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   - --copy-certs=auto
   timeout: 10m
+- name: post-join
+  description: |
+    Run commands after kubeadm join is called on all joined CP node to checks if
+    the kubelet's kubeconfig file points to the local apiserver.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-2)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
+
+      # Ensure kubelet.conf points to the local IP.
+      ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
+
+      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-3)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane3"
+
+      # Ensure kubelet.conf points to the local IP.
+      ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
+
+      # Ensure exit status of 0
+      exit 0
+  timeout: 5m
+- name: pre-upgrade
+  description: |
+    Run commands before kubeadm upgrade is called on all joined CP node to replace
+    the server in the kubelet's kubeconfig to point to the load balancer.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
+      ${CMD} sed 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
+      ${CMD} sed 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-3"
+      ${CMD} sed 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+
+      # Ensure exit status of 0
+      exit 0
+  timeout: 5m
 - name: upgrade
   description: |
     upgrades the cluster to Kubernetes "upgradeVersion"
@@ -86,6 +150,31 @@ tasks:
   - --loglevel=debug
   - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 15m
+- name: post-upgrade
+  description: |
+    Run commands after kubeadm upgrade is called on all joined CP node to checks if
+    the kubelet's kubeconfig file points to the local apiserver.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-1)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
+      ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
+
+      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-2)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
+      ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
+
+      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-3)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane3"
+      ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
+
+      # Ensure exit status of 0
+      exit 0
+  timeout: 5m
 - name: cluster-info
   description: |
     Runs cluster-info

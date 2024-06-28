@@ -1,4 +1,4 @@
-- name: ci-kubernetes-e2e-kubeadm-kinder-cp-kubelet-local-{{ dashVer .KubernetesVersion }}
+- name: ci-kubernetes-e2e-kubeadm-kinder-control-plane-kubelet-local-{{ dashVer .KubernetesVersion }}
   cluster: eks-prow-build-cluster
   interval: {{ .JobInterval }}
   decorate: true
@@ -7,9 +7,9 @@
     preset-kind-volume-mounts: "true"
   annotations:
     testgrid-dashboards: sig-cluster-lifecycle-kubeadm
-    testgrid-tab-name: kubeadm-kinder-cp-kubelet-local-{{ dashVer .KubernetesVersion }}
+    testgrid-tab-name: kubeadm-kinder-control-plane-kubelet-local-{{ dashVer .KubernetesVersion }}
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io
-    description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster using ControlPlaneKubeletLocalMode to join control-plane and run kubeadm-e2e and the conformance suite"
+    description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster using the ControlPlaneKubeletLocalMode feature gate and run the kubeadm-e2e and the conformance suites"
     testgrid-num-columns-recent: "20"
 {{ .AlertAnnotations }}
   decoration_config:
