@@ -28,21 +28,29 @@ import (
 // to use patches directory.
 func GetPatchesDirectoryPatches(kubeadmConfigVersion string) ([]string, error) {
 	log.Debugf("Preparing patches directory for kubeadm config %s", kubeadmConfigVersion)
-	var patchInit, patchJoin string
+	var patchInit, patchJoin, patchUpgradeApply, patchUpgradeNode string
 	switch kubeadmConfigVersion {
 	case "v1beta3":
 		patchInit = patchesDirectoryPatchInitv1beta3
 		patchJoin = patchesDirectoryPatchJoinv1beta3
+		return []string{
+			fmt.Sprintf(patchInit, constants.PatchesDir),
+			fmt.Sprintf(patchJoin, constants.PatchesDir),
+		}, nil
 	case "v1beta4":
 		patchInit = patchesDirectoryPatchInitv1beta4
 		patchJoin = patchesDirectoryPatchJoinv1beta4
+		patchUpgradeApply = patchesDirectoryPatchUpgradeApplyv1beta4
+		patchUpgradeNode = patchesDirectoryPatchUpgradeNodev1beta4
+		return []string{
+			fmt.Sprintf(patchInit, constants.PatchesDir),
+			fmt.Sprintf(patchJoin, constants.PatchesDir),
+			fmt.Sprintf(patchUpgradeApply, constants.PatchesDir),
+			fmt.Sprintf(patchUpgradeNode, constants.PatchesDir),
+		}, nil
 	default:
 		return []string{}, errors.Errorf("unknown kubeadm config version: %s", kubeadmConfigVersion)
 	}
-	return []string{
-		fmt.Sprintf(patchInit, constants.PatchesDir),
-		fmt.Sprintf(patchJoin, constants.PatchesDir),
-	}, nil
 }
 
 const patchesDirectoryPatchInitv1beta3 = `apiVersion: kubeadm.k8s.io/v1beta3
@@ -64,3 +72,15 @@ const patchesDirectoryPatchJoinv1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
 patches:
   directory: %s`
+
+const patchesDirectoryPatchUpgradeApplyv1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
+kind: UpgradeConfiguration
+apply:
+  patches:
+    directory: %s`
+
+const patchesDirectoryPatchUpgradeNodev1beta4 = `apiVersion: kubeadm.k8s.io/v1beta4
+kind: UpgradeConfiguration
+node:
+  patches:
+    directory: %s`

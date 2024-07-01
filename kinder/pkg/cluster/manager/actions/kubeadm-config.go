@@ -23,7 +23,9 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/tools/clientcmd"
+
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
@@ -42,7 +44,7 @@ type kubeadmConfigOptions struct {
 // to invoke it separately as well.
 func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, featureGate, encryptionAlgorithm string, nodes ...*status.Node) error {
 	// defaults everything not relevant for the Init Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, featureGate, encryptionAlgorithm, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, featureGate, encryptionAlgorithm, nil, nodes...)
 }
 
 // KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
@@ -50,13 +52,23 @@ func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCerts
 // to invoke it separately as well.
 func KubeadmJoinConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
 	// defaults everything not relevant for the join Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, "" /* feature-gates */, "" /* encryptionAlgorithm */, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, "", "", nil, nodes...)
+}
+
+// KubeadmUpgradeConfig action writes the UpgradeConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
+func KubeadmUpgradeConfig(c *status.Cluster, upgradeVersion *version.Version, nodes ...*status.Node) error {
+	return KubeadmConfig(c, "", "", "", "", "", upgradeVersion, nodes...)
+}
+
+// KubeadmResetConfig action writes the UpgradeConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
+func KubeadmResetConfig(c *status.Cluster, nodes ...*status.Node) error {
+	return KubeadmConfig(c, "", "", "", "", "", nil, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, featureGate, encryptionAlgorithm string, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, featureGate, encryptionAlgorithm string, upgradeVersion *version.Version, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -95,6 +107,19 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 		featureGateValue = split[1]
 	}
 
+	if copyCertsMode == "" {
+		copyCertsMode = CopyCertsModeAuto
+	}
+
+	if discoveryMode == "" {
+		discoveryMode = TokenDiscovery
+	}
+
+	// Use a placeholder upgrade version for non-upgrade actions.
+	if upgradeVersion == nil {
+		upgradeVersion = version.MustParseSemantic("v1.0.0")
+	}
+
 	// create configData with all the configurations supported by the kubeadm config template implemented in kind
 	configData := kubeadm.ConfigData{
 		ClusterName:          c.Name(),
@@ -109,6 +134,7 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 		FeatureGateName:      featureGateName,
 		FeatureGateValue:     featureGateValue,
 		EncryptionAlgorithm:  encryptionAlgorithm,
+		UpgradeVersion:       fmt.Sprintf("v%s", upgradeVersion.String()),
 	}
 
 	// create configOptions with all the kinder flags that impact on the kubeadm config generation
@@ -179,7 +205,10 @@ func writeKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigDa
 		return errors.Wrap(err, "failed to generate kubeadm config content")
 	}
 
-	log.Debugf("generated config:\n%s", kubeadmConfig)
+	log.Debug("generating config...")
+	if log.GetLevel() == log.DebugLevel {
+		fmt.Print(kubeadmConfig)
+	}
 
 	// copy the config to the node
 	if err := n.WriteFile(constants.KubeadmConfigPath, []byte(kubeadmConfig)); err != nil {
@@ -329,6 +358,8 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 		return selectYamlFramentByKind(patched,
 			"ClusterConfiguration",
 			"InitConfiguration",
+			"UpgradeConfiguration",
+			"ResetConfiguration",
 			"KubeletConfiguration",
 			"KubeProxyConfiguration"), nil
 	}
@@ -336,6 +367,8 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	// otherwise select only the JoinConfiguration
 	return selectYamlFramentByKind(patched,
 		"JoinConfiguration",
+		"UpgradeCOnfiguration",
+		"ResetConfiguration",
 	), nil
 }
 
