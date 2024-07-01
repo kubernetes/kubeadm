@@ -71,7 +71,7 @@ tasks:
     - -c
     - |
       set -x
-      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-1)"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-1)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
 
       # Ensure kubelet.conf points to the local IP.
@@ -101,14 +101,14 @@ tasks:
     - -c
     - |
       set -x
-      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-2)"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-2)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
 
       # Ensure kubelet.conf points to the local IP.
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
-      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-3)"
-      CMD="docker exec {{ .vars.clusterName }}-control-plane3"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-3)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-3"
 
       # Ensure kubelet.conf points to the local IP.
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
@@ -126,14 +126,16 @@ tasks:
     - |
       set -x
 
+      LOAD_BALANCER_IP_ADDRESS=$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-lb)
+
       CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
-      ${CMD} sed 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
 
       CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
-      ${CMD} sed 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
 
       CMD="docker exec {{ .vars.clusterName }}-control-plane-3"
-      ${CMD} sed 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
 
       # Ensure exit status of 0
       exit 0
@@ -160,16 +162,16 @@ tasks:
     - |
       set -x
 
-      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-1)"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-1)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
-      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-2)"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-2)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
-      IP_ADDRESS="$(docker inspect --format='\{\{ .NetworkSettings.IPAddress \}\}' {{ .vars.clusterName }}-control-plane-3)"
-      CMD="docker exec {{ .vars.clusterName }}-control-plane3"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-3)"
+      CMD="docker exec {{ .vars.clusterName }}-control-plane-3"
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
       # Ensure exit status of 0
