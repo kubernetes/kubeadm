@@ -40,7 +40,7 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 	"kubeadm-config": func(c *status.Cluster, flags *RunOptions) error {
 		// Nb. this action is invoked automatically at kubeadm init/join time, but it is possible
 		// to invoke it separately as well
-		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.copyCertsMode, flags.discoveryMode, flags.featureGate, flags.encryptionAlgorithm, c.K8sNodes().EligibleForActions()...)
+		return KubeadmConfig(c, flags.kubeadmConfigVersion, flags.copyCertsMode, flags.discoveryMode, flags.featureGate, flags.encryptionAlgorithm, flags.upgradeVersion, c.K8sNodes().EligibleForActions()...)
 	},
 	"kubeadm-init": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmInit(c, flags.usePhases, flags.copyCertsMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.featureGate, flags.encryptionAlgorithm, flags.wait, flags.vLevel)
@@ -49,7 +49,7 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmUpgrade(c, flags.upgradeVersion, flags.patchesDir, flags.featureGate, flags.wait, flags.vLevel)
+		return KubeadmUpgrade(c, flags.upgradeVersion, flags.patchesDir, flags.wait, flags.vLevel)
 	},
 	"kubeadm-reset": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmReset(c, flags.vLevel)

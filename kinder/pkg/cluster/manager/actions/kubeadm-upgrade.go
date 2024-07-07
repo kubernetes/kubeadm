@@ -22,11 +22,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
-	K8sVersion "k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/kubeadm/kinder/pkg/cluster/status"
 	"k8s.io/kubeadm/kinder/pkg/constants"
 	"k8s.io/kubeadm/kinder/pkg/cri/nodes"
+	"k8s.io/kubeadm/kinder/pkg/kubeadm"
 )
 
 // KubeadmUpgrade executes the kubeadm upgrade workflow, including also deployment of new
@@ -35,30 +37,68 @@ import (
 //
 // The implementation assumes that the kubeadm/kubelet/kubectl binaries and all the necessary images
 // for the new kubernetes version are available in the /kinder/upgrade/{version} folder.
-func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, patchesDir string, featureGate string, wait time.Duration, vLevel int) (err error) {
+func KubeadmUpgrade(c *status.Cluster, upgradeVersion *version.Version, patchesDir string, wait time.Duration, vLevel int) (err error) {
 	if upgradeVersion == nil {
 		return errors.New("kubeadm-upgrade actions requires the --upgrade-version parameter to be set")
 	}
 
-	preloadUpgradeImages(c, upgradeVersion)
 	nodeList := c.K8sNodes().EligibleForActions()
 
 	for _, n := range nodeList {
+		preloadNodeUpgradeImages(n, upgradeVersion)
+
 		if err := copyPatchesToNode(n, patchesDir); err != nil {
 			return err
+		}
+
+		// Check if the upgrade version provided on the CLI is different from what is on the node image.
+		// If there is a difference print a warning and fallback to what is on the node image.
+		// This is useful in debug scenarios where the ci/latest version label changed during
+		// debugging a particular workflow.
+		versionPath := filepath.Join("/kinder", "upgrade", "version")
+		out, err := n.Command("cat", versionPath).Silent().RunAndCapture()
+		if err != nil {
+			return errors.Wrapf(err, "could not compare %s file before upgrade", versionPath)
+		}
+		if len(out) != 1 {
+			return errors.Errorf("expected %s to have 1 line, got %d", versionPath, len(out))
+		}
+		nodeVersion := version.MustParseSemantic(out[0])
+		cmp, err := nodeVersion.Compare(upgradeVersion.String())
+		if err != nil {
+			return errors.Wrapf(err, "cannot compare %s to provided upgrade version", versionPath)
+		}
+		if cmp != 0 {
+			log.Warnf("provided upgrade version is %s, but the node has %s, using the node version",
+				upgradeVersion, nodeVersion)
+			upgradeVersion = nodeVersion
 		}
 
 		if err := upgradeKubeadmBinary(n, upgradeVersion); err != nil {
 			return err
 		}
 
+		// prepares the kubeadm config on this node
+		if err := KubeadmUpgradeConfig(c, upgradeVersion, n); err != nil {
+			return err
+		}
+
+		v, err := n.KubeadmVersion()
+		if err != nil {
+			errors.Wrap(err, "could not obtain the kubeadm version before calling kubeadm reset")
+		}
+		kubeadmConfigVersion := kubeadm.GetKubeadmConfigVersion(v)
+
 		if n.Name() == c.BootstrapControlPlane().Name() {
-			if err := kubeadmUpgradePlan(c, n, upgradeVersion, featureGate, vLevel); err != nil {
+			if err := kubeadmUpgradePlan(c, n, kubeadmConfigVersion, upgradeVersion, vLevel); err != nil {
 				return err
 			}
-			err = kubeadmUpgradeApply(c, n, upgradeVersion, patchesDir, featureGate, wait, vLevel)
+			if err := kubeadmUpgradeDiff(c, n, kubeadmConfigVersion, upgradeVersion, vLevel); err != nil {
+				return err
+			}
+			err = kubeadmUpgradeApply(c, n, kubeadmConfigVersion, upgradeVersion, patchesDir, wait, vLevel)
 		} else {
-			err = kubeadmUpgradeNode(c, n, upgradeVersion, patchesDir, wait, vLevel)
+			err = kubeadmUpgradeNode(c, n, kubeadmConfigVersion, upgradeVersion, patchesDir, wait, vLevel)
 		}
 		if err != nil {
 			return err
@@ -74,41 +114,39 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *K8sVersion.Version, patch
 	return nil
 }
 
-func preloadUpgradeImages(c *status.Cluster, upgradeVersion *K8sVersion.Version) {
+func preloadNodeUpgradeImages(n *status.Node, upgradeVersion *version.Version) {
 	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", upgradeVersion))
 
 	// load images cached on the node into CRI engine
 	// this should be executed on all nodes before running kubeadm upgrade apply in order to
 	// get everything in place when kubeadm creates pre-pull daemonsets (if not, this might be blocking in case of
 	// images not available on public registry, like e.g. pre-release images)
-	for _, n := range c.K8sNodes() {
-		n.Infof("pre-loading images required for the upgrade")
-		nodeCRI, err := n.CRI()
-		if err != nil {
-			fmt.Printf("error detecting CRI: %v", err)
-			continue
-		}
+	n.Infof("pre-loading images required for the upgrade")
+	nodeCRI, err := n.CRI()
+	if err != nil {
+		fmt.Printf("error detecting CRI: %v", err)
+		return
+	}
 
-		actionHelper, err := nodes.NewActionHelper(nodeCRI)
-		if err != nil {
-			fmt.Printf("error creating the action helper: %v", err)
-			continue
-		}
+	actionHelper, err := nodes.NewActionHelper(nodeCRI)
+	if err != nil {
+		fmt.Printf("error creating the action helper: %v", err)
+		return
+	}
 
-		if err := actionHelper.PreLoadUpgradeImages(n, srcFolder); err != nil {
-			fmt.Printf("error PreLoadUpgradeImages: %v", err)
-			continue
-		}
+	if err := actionHelper.PreLoadUpgradeImages(n, srcFolder); err != nil {
+		fmt.Printf("error PreLoadUpgradeImages: %v", err)
+		return
+	}
 
-		// checks pre-loaded images available on the node (this will report missing images, if any)
-		if err := checkImagesForVersion(n, upgradeVersion.String()); err != nil {
-			fmt.Printf("error ReportImages: %v", err)
-			continue
-		}
+	// checks pre-loaded images available on the node (this will report missing images, if any)
+	if err := checkImagesForVersion(n, upgradeVersion.String()); err != nil {
+		fmt.Printf("error ReportImages: %v", err)
+		return
 	}
 }
 
-func upgradeKubeadmBinary(n *status.Node, upgradeVersion *K8sVersion.Version) error {
+func upgradeKubeadmBinary(n *status.Node, upgradeVersion *version.Version) error {
 	n.Infof("upgrade kubeadm binary")
 
 	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", upgradeVersion))
@@ -123,15 +161,37 @@ func upgradeKubeadmBinary(n *status.Node, upgradeVersion *K8sVersion.Version) er
 	return nil
 }
 
-func kubeadmUpgradePlan(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, featureGate string, vLevel int) error {
+func kubeadmUpgradeDiff(c *status.Cluster, cp1 *status.Node, configVersion string, upgradeVersion *version.Version, vLevel int) error {
+	diffArgs := []string{
+		"upgrade", "diff", fmt.Sprintf("--v=%d", vLevel),
+	}
+
+	if configVersion == "v1beta4" {
+		diffArgs = append(diffArgs, "--config", constants.KubeadmConfigPath)
+	} else {
+		diffArgs = append(diffArgs, fmt.Sprintf("v%s", upgradeVersion))
+	}
+
+	if err := cp1.Command(
+		"kubeadm", diffArgs...,
+	).RunWithEcho(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func kubeadmUpgradePlan(c *status.Cluster, cp1 *status.Node, configVersion string, upgradeVersion *version.Version, vLevel int) error {
 	planArgs := []string{
-		"upgrade", "plan", fmt.Sprintf("v%s", upgradeVersion),
-		"--allow-experimental-upgrades", "--allow-release-candidate-upgrades",
-		fmt.Sprintf("--v=%d", vLevel),
+		"upgrade", "plan", fmt.Sprintf("--v=%d", vLevel),
 	}
-	if len(featureGate) > 0 {
-		planArgs = append(planArgs, fmt.Sprintf("--feature-gates=%s", featureGate))
+
+	if configVersion == "v1beta4" {
+		planArgs = append(planArgs, "--config", constants.KubeadmConfigPath)
+	} else {
+		planArgs = append(planArgs, "--allow-experimental-upgrades", "--allow-release-candidate-upgrades",
+			fmt.Sprintf("v%s", upgradeVersion))
 	}
+
 	if err := cp1.Command(
 		"kubeadm", planArgs...,
 	).RunWithEcho(); err != nil {
@@ -140,16 +200,20 @@ func kubeadmUpgradePlan(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8s
 	return nil
 }
 
-func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8sVersion.Version, patchesDir string, featureGate string, wait time.Duration, vLevel int) error {
+func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, configVersion string, upgradeVersion *version.Version, patchesDir string, wait time.Duration, vLevel int) error {
 	applyArgs := []string{
-		"upgrade", "apply", "-f", fmt.Sprintf("v%s", upgradeVersion), fmt.Sprintf("--v=%d", vLevel),
+		"upgrade", "apply", fmt.Sprintf("--v=%d", vLevel),
 	}
-	if patchesDir != "" {
-		applyArgs = append(applyArgs, "--patches", constants.PatchesDir)
+
+	if configVersion == "v1beta4" {
+		applyArgs = append(applyArgs, "--config", constants.KubeadmConfigPath)
+	} else {
+		if patchesDir != "" {
+			applyArgs = append(applyArgs, fmt.Sprintf("--patches=%s", constants.PatchesDir))
+		}
+		applyArgs = append(applyArgs, "-f", fmt.Sprintf("v%s", upgradeVersion.String()))
 	}
-	if len(featureGate) > 0 {
-		applyArgs = append(applyArgs, fmt.Sprintf("--feature-gates=%s", featureGate))
-	}
+
 	if err := cp1.Command(
 		"kubeadm", applyArgs...,
 	).RunWithEcho(); err != nil {
@@ -163,7 +227,7 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, upgradeVersion *K8
 	return nil
 }
 
-func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, patchesDir string, wait time.Duration, vLevel int) error {
+func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, configVersion string, upgradeVersion *version.Version, patchesDir string, wait time.Duration, vLevel int) error {
 	// waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
 	// please note that this is a temporary workaround for a problem we are observing on upgrades while
 	// executing node upgrades immediately after control-plane upgrade.
@@ -175,9 +239,15 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 	nodeArgs := []string{
 		"upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
 	}
-	if patchesDir != "" {
-		nodeArgs = append(nodeArgs, fmt.Sprintf("--patches=%s", constants.PatchesDir))
+
+	if configVersion == "v1beta4" {
+		nodeArgs = append(nodeArgs, "--config", constants.KubeadmConfigPath)
+	} else {
+		if patchesDir != "" {
+			nodeArgs = append(nodeArgs, fmt.Sprintf("--patches=%s", constants.PatchesDir))
+		}
 	}
+
 	if err := n.Command(
 		"kubeadm", nodeArgs...,
 	).RunWithEcho(); err != nil {
@@ -193,7 +263,7 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, upgradeVersion *K8sVe
 	return nil
 }
 
-func upgradeKubeletKubectl(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
+func upgradeKubeletKubectl(c *status.Cluster, n *status.Node, upgradeVersion *version.Version, wait time.Duration) error {
 	n.Infof("upgrade kubelet and kubectl binaries")
 
 	srcFolder := filepath.Join("/kinder", "upgrade", fmt.Sprintf("v%s", upgradeVersion))

@@ -100,6 +100,8 @@ type ConfigData struct {
 	FeatureGateValue string
 	// The encryption algorithm
 	EncryptionAlgorithm string
+	// UpgradeVersion is the version passed to kubeadm upgrade
+	UpgradeVersion string
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -194,6 +196,29 @@ discovery:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
     token: "{{ .Token }}"
     unsafeSkipCAVerification: true
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: UpgradeConfiguration
+plan:
+  kubernetesVersion: {{.UpgradeVersion}}
+  allowExperimentalUpgrades: true
+  allowRCUpgrades: true
+node:
+  patches:
+    directory: "/kinder/patches"
+diff:
+  kubernetesVersion: {{.UpgradeVersion}}
+apply:
+  kubernetesVersion: {{.UpgradeVersion}}
+  allowExperimentalUpgrades: true
+  allowRCUpgrades: true
+  forceUpgrade: true
+  patches:
+    directory: "/kinder/patches"
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ResetConfiguration
+force: true
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
