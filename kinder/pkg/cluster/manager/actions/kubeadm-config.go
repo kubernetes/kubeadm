@@ -367,7 +367,7 @@ func getKubeadmConfig(c *status.Cluster, n *status.Node, data kubeadm.ConfigData
 	// otherwise select only the JoinConfiguration
 	return selectYamlFramentByKind(patched,
 		"JoinConfiguration",
-		"UpgradeCOnfiguration",
+		"UpgradeConfiguration",
 		"ResetConfiguration",
 	), nil
 }
