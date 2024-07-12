@@ -1,0 +1,42 @@
+- name: ci-kubernetes-e2e-kubeadm-kinder-control-plane-kubelet-local-mode-{{ dashVer .KubernetesVersion }}
+  cluster: eks-prow-build-cluster
+  interval: {{ .JobInterval }}
+  decorate: true
+  labels:
+    preset-dind-enabled: "true"
+    preset-kind-volume-mounts: "true"
+  annotations:
+    testgrid-dashboards: sig-cluster-lifecycle-kubeadm
+    testgrid-tab-name: kubeadm-kinder-control-plane-kubelet-local-mode-{{ dashVer .KubernetesVersion }}
+    testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io
+    description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster using the ControlPlaneKubeletLocalMode feature gate and run the kubeadm-e2e and the conformance suites"
+    testgrid-num-columns-recent: "20"
+{{ .AlertAnnotations }}
+  decoration_config:
+    timeout: 60m
+  extra_refs:
+  - org: kubernetes
+    repo: kubernetes
+    base_ref: {{ branchFor .KubernetesVersion }}
+    path_alias: k8s.io/kubernetes
+  - org: kubernetes
+    repo: kubeadm
+    base_ref: main
+    path_alias: k8s.io/kubeadm
+  spec:
+    containers:
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:{{ .TestInfraImage }}-{{ imageVer .KubernetesVersion }}
+      command:
+      - runner.sh
+      - "../kubeadm/kinder/ci/kinder-run.sh"
+      args:
+      - {{ .WorkflowFile }}
+      securityContext:
+        privileged: true
+      resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
+        requests:
+          memory: "9000Mi"
+          cpu: 2000m
