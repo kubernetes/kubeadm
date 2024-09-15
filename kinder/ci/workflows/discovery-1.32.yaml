@@ -3,9 +3,9 @@ version: 1
 summary: |
   This workflow implements a sequence of tasks used for testing alternative
   discovery methods for kubeadm join.
-  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-discovery-1-28
+  test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-discovery-1-32
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-discovery.yaml
 vars:
-  kubernetesVersion: "{{ resolve `ci/latest-1.28` }}"
+  kubernetesVersion: "{{ resolve `ci/latest-1.32` }}"
 tasks:
 - import: discovery-tasks.yaml
