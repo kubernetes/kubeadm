@@ -6,7 +6,7 @@
     preset-dind-enabled: "true"
     preset-kind-volume-mounts: "true"
   annotations:
-    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-{{ sigReleaseVer .KubeadmVersion }}-informing
+    testgrid-dashboards: sig-release-{{ sigReleaseVer .KubeadmVersion }}-blocking, sig-cluster-lifecycle-kubeadm
     testgrid-tab-name: kubeadm-kinder-{{ dashVer .KubeadmVersion }}-on-{{ dashVer .KubernetesVersion }}
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io, release-team@kubernetes.io
     description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster with version skew and run kubeadm-e2e and the conformance suite"
