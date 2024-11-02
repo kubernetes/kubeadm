@@ -58,7 +58,7 @@ Workflow file names: [`upgrade-*.yaml`](./workflows)
 
 Kubeadm join and upgrade tests that ensure that kubeadm tolerates missing addon "kube-proxy" and "coredns" ConfigMaps.
 
-Workflow file names: [`upgrade-latest-no-addon-config-maps.yaml`](./workflows)
+Workflow file names: [`upgrade-no-addon-config-maps-latest.yaml`](./workflows)
 
 ### X on Y tests
 

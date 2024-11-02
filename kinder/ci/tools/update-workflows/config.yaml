@@ -65,6 +65,7 @@ jobGroups:
   kinderWorkflowSpec:
     additionalFiles:
     - ./templates/workflows/presubmit-upgrade-latest.yaml
+    - ./templates/workflows/presubmit-upgrade-tasks.yaml
 
 - name: skew-kubelet-x-on-y
   testInfraJobSpec:
@@ -158,14 +159,15 @@ jobGroups:
   - kubernetesVersion: -2
   - kubernetesVersion: -3
 
-- name: upgrade-latest-no-addon-config-maps
+- name: upgrade-no-addon-config-maps
   testInfraJobSpec:
     targetFile: kubeadm-kinder-addons.yaml
     template: ./templates/testinfra/kubeadm-kinder-addons.yaml
   kinderWorkflowSpec:
-    targetFile: upgrade-latest-no-addon-config-maps.yaml
+    targetFile: upgrade-no-addon-config-maps-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/upgrade-no-addon-config-maps.yaml
     additionalFiles:
-    - ./templates/workflows/upgrade-latest-no-addon-config-maps.yaml
+    - ./templates/workflows/upgrade-no-addon-config-maps-tasks.yaml
   jobs:
   - kubernetesVersion: latest
 
