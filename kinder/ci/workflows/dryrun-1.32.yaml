@@ -5,7 +5,7 @@ summary: |
   test grid > https://testgrid.k8s.io/sig-cluster-lifecycle-kubeadm#kubeadm-kinder-dryrun-1-28
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-dryrun.yaml
 vars:
-  kubernetesVersion: "{{ resolve `ci/latest-1.28` }}"
-  upgradeVersion: "{{ resolve `ci/latest-1.29` }}"
+  kubernetesVersion: "{{ resolve `ci/latest-1.32` }}"
+  upgradeVersion: "{{ resolve `ci/latest` }}"
 tasks:
 - import: dryrun-tasks.yaml
