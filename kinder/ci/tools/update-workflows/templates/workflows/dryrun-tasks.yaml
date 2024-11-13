@@ -49,16 +49,30 @@ tasks:
     - --worker-nodes={{ .vars.workerNodes }}
     - --loglevel=debug
   timeout: 5m
-- name: init-dryrun
+- name: dryrun-without-cluster
   description: |
-    Initializes the Kubernetes cluster in dryrun mode
+    Run kubeadm commands in dryrun mode without a real cluster
   cmd: /bin/bash
   args:
     - -c
     - |
+      set -x
+      required_version="1.32" # dryrun without cluster is available since v1.32
+      current_version=$(echo "{{ .vars.kubernetesVersion }}" | grep -oP 'v\K\d+\.\d+')
+      if [ "$current_version" \< "$required_version" ]; then
+        echo "Full dryrun support without cluster is not available for Kubernetes version {{ .vars.kubernetesVersion }}, only init-dryrun will be executed for this task."
+        docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "until crictl ps &> /dev/null; do echo 'Waiting for the container runtime to be running ...'; sleep 1; done"
+        docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm init --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --kubernetes-version={{ .vars.kubernetesVersion }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+        exit 0
+      fi
+
       docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "until crictl ps &> /dev/null; do echo 'Waiting for the container runtime to be running ...'; sleep 1; done"
-      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm init --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --kubernetes-version={{ .vars.kubernetesVersion }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
-      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm init --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --kubernetes-version={{ .vars.kubernetesVersion }} --upload-certs=true --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm init --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --kubernetes-version={{ .vars.kubernetesVersion }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm join 192.168.0.101:6443 --control-plane --token abcdef.abcdef0123456789 --discovery-token-ca-cert-hash sha256:3b793efefe27a19f93b0fbe6e637e9c41d0dde8a377d6ab1c0f656bf1136dd8a --certificate-key 2e3c4239bc78c27f40530ddc2df7049a2c5ff146e5a702e9c9b6cdbec70df9f3 --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm join 192.168.0.101:6443 --token abcdef.abcdef0123456789 --discovery-token-ca-cert-hash sha256:3b793efefe27a19f93b0fbe6e637e9c41d0dde8a377d6ab1c0f656bf1136dd8a --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade apply -f {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade node --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm reset --force=true --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
   timeout: 5m
 - name: init
   description: |
@@ -80,7 +94,7 @@ tasks:
     - -c
     - |
       docker exec {{ .vars.clusterName }}-worker-1 bash -c "until crictl ps &> /dev/null; do echo 'Waiting for the container runtime to be running ...'; sleep 1; done"
-      docker exec {{ .vars.clusterName }}-worker-1 $(docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm token create --print-join-command) --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-worker-1 $(docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm token create --print-join-command) --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
   timeout: 10m
 - name: join
   description: |
@@ -100,8 +114,8 @@ tasks:
   args:
     - -c
     - |
-      docker exec {{ .vars.clusterName }}-control-plane-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade apply -f {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
-      docker exec {{ .vars.clusterName }}-worker-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade node --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade apply -f {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-worker-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade node --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
 - name: reset-dryrun
   description: |
     Exec kubeadm reset in dryrun mode
@@ -109,8 +123,8 @@ tasks:
   args:
     - -c
     - |
-      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm reset --force=true --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
-      docker exec {{ .vars.clusterName }}-worker-1 kubeadm reset --force=true --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run=true --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm reset --force=true --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
+      docker exec {{ .vars.clusterName }}-worker-1 kubeadm reset --force=true --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
   force: true
 - name: reset
   description: |
