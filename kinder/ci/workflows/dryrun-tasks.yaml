@@ -74,7 +74,7 @@ tasks:
       docker exec {{ .vars.clusterName }}-control-plane-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade apply -f {{ .vars.upgradeVersion }} --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --allow-release-candidate-upgrades=true --allow-experimental-upgrades=true --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
       docker exec {{ .vars.clusterName }}-control-plane-1 /kinder/upgrade/{{ .vars.upgradeVersion }}/kubeadm upgrade node --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
       docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm reset --force=true --ignore-preflight-errors={{ .vars.kubeadmIgnorePreflightErrors }} --dry-run --v={{ .vars.kubeadmVerbosity }} || exit 1
-  timeout: 5m
+  timeout: 15m
 - name: init
   description: |
     Initializes the Kubernetes cluster with version "initVersion"
