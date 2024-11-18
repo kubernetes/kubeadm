@@ -250,3 +250,15 @@ jobGroups:
     - ./templates/workflows/control-plane-local-kubelet-mode-tasks.yaml
   jobs:
   - kubernetesVersion: latest
+
+- name: instance-config
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-instance-config.yaml
+    template: ./templates/testinfra/kubeadm-kinder-instance-config.yaml
+  kinderWorkflowSpec:
+    targetFile: instance-config-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/instance-config.yaml
+    additionalFiles:
+    - ./templates/workflows/instance-config-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
