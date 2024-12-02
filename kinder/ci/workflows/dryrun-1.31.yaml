@@ -6,6 +6,6 @@ summary: |
   config    > https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle/kubeadm-kinder-dryrun.yaml
 vars:
   kubernetesVersion: "{{ resolve `ci/latest-1.31` }}"
-  upgradeVersion: "{{ resolve `ci/latest` }}"
+  upgradeVersion: "{{ resolve `ci/latest-1.32` }}"
 tasks:
 - import: dryrun-tasks.yaml
