@@ -1,0 +1,318 @@
+# IMPORTANT! this workflow is imported by instance-config-* workflows.
+version: 1
+summary: |
+  This workflow implements a sequence of tasks to test that kubeadm
+  works properly in scenarios using kubelet instance configuration.
+vars:
+  # vars defines default values for variable used by tasks in this workflow;
+  # those values might be overridden when importing this files.
+  kubernetesVersion: latest
+  upgradeVersion: latest
+  controlPlaneNodes: 3
+  workerNodes: 2
+  baseImage: kindest/base:v20221102-76f15095 # has containerd
+  image: kindest/node:test
+  clusterName: kinder-instance-config
+  kubeadmVerbosity: 6
+tasks:
+- name: pull-base-image
+  description: |
+    pulls kindest/base image with docker in docker and all the prerequisites necessary for running kind(er)
+  cmd: docker
+  args:
+  - pull
+  - "{{ .vars.baseImage }}"
+- name: add-kubernetes-versions
+  description: |
+    creates a node-image-variant by adding a Kubernetes version
+  cmd: kinder
+  args:
+  - build
+  - node-image-variant
+  - --base-image={{ .vars.baseImage }}
+  - --image={{ .vars.image }}
+  - --with-init-artifacts={{ .vars.kubernetesVersion }}
+  - --with-upgrade-artifacts={{ .vars.upgradeVersion }}
+  - --loglevel=debug
+  timeout: 15m
+- name: create-cluster
+  description: |
+    create a set of nodes ready for hosting the Kubernetes cluster
+  cmd: kinder
+  args:
+  - create
+  - cluster
+  - --name={{ .vars.clusterName }}
+  - --image={{ .vars.image }}
+  - --control-plane-nodes={{ .vars.controlPlaneNodes }}
+  - --worker-nodes={{ .vars.workerNodes }}
+  - --loglevel=debug
+  timeout: 5m
+- name: init
+  description: |
+    Initializes the Kubernetes cluster with version "initVersion"
+    by starting the boostrap control-plane nodes
+  cmd: kinder
+  args:
+  - do
+  - kubeadm-init
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+  - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  - --kubeadm-feature-gate="NodeLocalCRISocket=true"
+  - --copy-certs=auto
+  timeout: 5m
+- name: join
+  description: |
+    Join the other nodes to the Kubernetes cluster
+  cmd: kinder
+  args:
+  - do
+  - kubeadm-join
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+  - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  - --copy-certs=auto
+  timeout: 10m
+- name: check-annotation
+  description: |
+    Check that the cri-socket annotation does not exist on each node.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      docker exec {{ .vars.clusterName }}-control-plane-1 bash -c '
+        nodes=$(KUBECONFIG=/etc/kubernetes/admin.conf kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+
+        for node in $nodes; do
+          annotation=$(KUBECONFIG=/etc/kubernetes/admin.conf kubectl get node "$node" -o jsonpath="{.metadata.annotations['kubeadm\.alpha\.kubernetes\.io/cri-socket']}")
+
+          if [ -z "$annotation" ]; then
+            echo "Annotation not found on node $node"
+          else
+            echo "Annotation found on node $node: $annotation"
+            exit 1
+          fi
+        done
+      ' || {
+        echo "Command failed for $node. Exiting.";
+        exit 1;
+        }
+
+      exit 0
+  timeout: 5m
+- name: check-config
+  description: |
+    Check if the kubelet instance configuration exists on each node.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      for node in control-plane-{1..3} worker-{1..2}; do
+        CMD="docker exec {{ .vars.clusterName }}-$node"
+
+        ${CMD} bash -c '
+          if [[ -f "/var/lib/kubelet/instance-config.yaml" ]] && grep -q "containerRuntimeEndpoint:" /var/lib/kubelet/instance-config.yaml; then
+            echo "File exists and contains 'containerRuntimeEndpoint:' field."
+          else
+            echo "File does not exist or does not contain 'containerRuntimeEndpoint:' field."
+            exit 1
+          fi
+        ' || {
+        echo "Command failed for $node. Exiting.";
+        exit 1;
+        }
+      done
+
+      exit 0
+  timeout: 5m
+- name: upgrade
+  description: |
+    upgrades the cluster to Kubernetes "upgradeVersion"
+  cmd: kinder
+  args:
+  - do
+  - kubeadm-upgrade
+  - --upgrade-version={{ .vars.upgradeVersion }}
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+  - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 15m
+- name: check-config-after-upgrade
+  description: |
+    Check if the kubelet instance configuration exists on each node.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      for node in control-plane-{1..3} worker-{1..2}; do
+        CMD="docker exec {{ .vars.clusterName }}-$node"
+
+        ${CMD} bash -c '
+          if [[ -f "/var/lib/kubelet/instance-config.yaml" ]] && grep -q "containerRuntimeEndpoint:" /var/lib/kubelet/instance-config.yaml; then
+            echo "File exists and contains 'containerRuntimeEndpoint:' field."
+          else
+            echo "File does not exist or does not contain 'containerRuntimeEndpoint:' field."
+            exit 1
+          fi
+        ' || {
+        echo "Command failed for $node. Exiting.";
+        exit 1;
+        }
+      done
+
+      exit 0
+  timeout: 5m
+- name: remove-config
+  description: |
+    Remove the kubelet instance configuration from work node.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      for node in control-plane-{1..3} worker-{1..2}; do
+        CMD="docker exec {{ .vars.clusterName }}-$node"
+
+        ${CMD} bash -c 'rm -f /var/lib/kubelet/instance-config.yaml'  || {
+        echo "Command failed for $node. Exiting.";
+        exit 1;
+        }
+      done
+
+      exit 0
+  timeout: 5m
+- name: add-cri-socket-annotation
+  description: |
+    Add the cri-socket annotation to each node.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      docker exec {{ .vars.clusterName }}-control-plane-1 bash -c '
+        ANNOTATION_KEY="kubeadm.alpha.kubernetes.io/cri-socket"
+        ANNOTATION_VALUE="unix:///var/run/containerd/containerd.sock"
+
+        nodes=$(KUBECONFIG=/etc/kubernetes/admin.conf kubectl get nodes -o jsonpath='{.items[*].metadata.name}')
+
+        for node in $nodes; do
+          KUBECONFIG=/etc/kubernetes/admin.conf kubectl annotate node "$node" "$ANNOTATION_KEY=$ANNOTATION_VALUE" --overwrite
+          if [ $? -eq 0 ]; then
+            echo "Successfully added annotation to node $node."
+          else
+            echo "Failed to add annotation to node $node."
+            exit 1
+          fi
+        done
+      ' || {
+        echo "Command failed for $node. Exiting.";
+        exit 1;
+        }
+
+      exit 0
+  timeout: 5m
+- name: upgrade-again
+  description: |
+    upgrades the cluster to Kubernetes "upgradeVersion"
+  cmd: kinder
+  args:
+  - do
+  - kubeadm-upgrade
+  - --upgrade-version={{ .vars.upgradeVersion }}
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+  - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  timeout: 15m
+- name: check-config-after-second-upgrade
+  description: |
+    Check if the kubelet instance configuration exists on each node.
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      for node in control-plane-{1..3} worker-{1..2}; do
+        CMD="docker exec {{ .vars.clusterName }}-$node"
+
+        ${CMD} bash -c '
+          if [[ -f "/var/lib/kubelet/instance-config.yaml" ]] && grep -q "containerRuntimeEndpoint:" /var/lib/kubelet/instance-config.yaml; then
+            echo "File exists and contains 'containerRuntimeEndpoint:' field."
+          else
+            echo "File does not exist or does not contain 'containerRuntimeEndpoint:' field."
+            exit 1
+          fi
+        ' || {
+        echo "Command failed for $node. Exiting.";
+        exit 1;
+        }
+      done
+
+      exit 0
+  timeout: 5m
+- name: cluster-info
+  description: |
+    Runs cluster-info
+  cmd: kinder
+  args:
+  - do
+  - cluster-info
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+- name: e2e-kubeadm
+  description: |
+    Runs kubeadm e2e tests
+  cmd: kinder
+  args:
+  - test
+  - e2e-kubeadm
+  - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e-kubeadm
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+  timeout: 10m
+- name: get-logs
+  description: |
+    Collects all the test logs
+  cmd: kinder
+  args:
+  - export
+  - logs
+  - --loglevel=debug
+  - --name={{ .vars.clusterName }}
+  - "{{ .env.ARTIFACTS }}"
+  force: true
+  timeout: 5m
+  # kind export log is know to be flaky, so we are temporary ignoring errors in order
+  # to make the test pass in case everything else passed
+  # see https://github.com/kubernetes-sigs/kind/issues/456
+  ignoreError: true
+- name: reset
+  description: |
+    Exec kubeadm reset
+  cmd: kinder
+  args:
+  - do
+  - kubeadm-reset
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+  - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+  force: true
+- name: delete
+  description: |
+    Deletes the cluster
+  cmd: kinder
+  args:
+  - delete
+  - cluster
+  - --name={{ .vars.clusterName }}
+  - --loglevel=debug
+  force: true
