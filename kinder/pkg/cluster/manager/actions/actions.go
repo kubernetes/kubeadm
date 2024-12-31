@@ -49,7 +49,7 @@ var actionRegistry = map[string]func(*status.Cluster, *RunOptions) error{
 		return KubeadmJoin(c, flags.usePhases, flags.copyCertsMode, flags.discoveryMode, flags.kubeadmConfigVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-upgrade": func(c *status.Cluster, flags *RunOptions) error {
-		return KubeadmUpgrade(c, flags.upgradeVersion, flags.patchesDir, flags.wait, flags.vLevel)
+		return KubeadmUpgrade(c, flags.upgradeVersion, flags.patchesDir, flags.ignorePreflightErrors, flags.wait, flags.vLevel)
 	},
 	"kubeadm-reset": func(c *status.Cluster, flags *RunOptions) error {
 		return KubeadmReset(c, flags.vLevel)

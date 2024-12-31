@@ -114,6 +114,7 @@ tasks:
       - --name={{ .vars.clusterName }}
       - --loglevel=debug
       - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
+      - --ignore-preflight-errors=SystemVerification
     timeout: 15m
   - name: cluster-info-after
     description: |
