@@ -79,7 +79,7 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *version.Version, patchesD
 		}
 
 		// prepares the kubeadm config on this node
-		if err := KubeadmUpgradeConfig(c, upgradeVersion, n); err != nil {
+		if err := KubeadmUpgradeConfig(c, ignorePreflightErrors, upgradeVersion, n); err != nil {
 			return err
 		}
 
@@ -90,15 +90,15 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *version.Version, patchesD
 		kubeadmConfigVersion := kubeadm.GetKubeadmConfigVersion(v)
 
 		if n.Name() == c.BootstrapControlPlane().Name() {
-			if err := kubeadmUpgradePlan(c, n, kubeadmConfigVersion, upgradeVersion, ignorePreflightErrors, vLevel); err != nil {
+			if err := kubeadmUpgradePlan(c, n, kubeadmConfigVersion, upgradeVersion, vLevel); err != nil {
 				return err
 			}
 			if err := kubeadmUpgradeDiff(c, n, kubeadmConfigVersion, upgradeVersion, vLevel); err != nil {
 				return err
 			}
-			err = kubeadmUpgradeApply(c, n, kubeadmConfigVersion, upgradeVersion, patchesDir, ignorePreflightErrors, wait, vLevel)
+			err = kubeadmUpgradeApply(c, n, kubeadmConfigVersion, upgradeVersion, patchesDir, wait, vLevel)
 		} else {
-			err = kubeadmUpgradeNode(c, n, kubeadmConfigVersion, upgradeVersion, patchesDir, ignorePreflightErrors, wait, vLevel)
+			err = kubeadmUpgradeNode(c, n, kubeadmConfigVersion, upgradeVersion, patchesDir, wait, vLevel)
 		}
 		if err != nil {
 			return err
@@ -180,10 +180,9 @@ func kubeadmUpgradeDiff(c *status.Cluster, cp1 *status.Node, configVersion strin
 	return nil
 }
 
-func kubeadmUpgradePlan(c *status.Cluster, cp1 *status.Node, configVersion string, upgradeVersion *version.Version, ignorePreflightErrors, vLevel int) error {
+func kubeadmUpgradePlan(c *status.Cluster, cp1 *status.Node, configVersion string, upgradeVersion *version.Version, vLevel int) error {
 	planArgs := []string{
 		"upgrade", "plan", fmt.Sprintf("--v=%d", vLevel),
-		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 	}
 
 	if configVersion == "v1beta4" {
@@ -201,10 +200,9 @@ func kubeadmUpgradePlan(c *status.Cluster, cp1 *status.Node, configVersion strin
 	return nil
 }
 
-func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, configVersion string, upgradeVersion *version.Version, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) error {
+func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, configVersion string, upgradeVersion *version.Version, patchesDir string, wait time.Duration, vLevel int) error {
 	applyArgs := []string{
 		"upgrade", "apply", fmt.Sprintf("--v=%d", vLevel),
-		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 	}
 
 	if configVersion == "v1beta4" {
@@ -229,7 +227,7 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, configVersion stri
 	return nil
 }
 
-func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, configVersion string, upgradeVersion *version.Version, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) error {
+func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, configVersion string, upgradeVersion *version.Version, patchesDir string, wait time.Duration, vLevel int) error {
 	// waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
 	// please note that this is a temporary workaround for a problem we are observing on upgrades while
 	// executing node upgrades immediately after control-plane upgrade.
@@ -240,7 +238,6 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, configVersion string,
 	// kubeadm upgrade node
 	nodeArgs := []string{
 		"upgrade", "node", fmt.Sprintf("--v=%d", vLevel),
-		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 	}
 
 	if configVersion == "v1beta4" {
