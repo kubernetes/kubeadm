@@ -79,7 +79,7 @@ const (
 	KubeadmConfigPath = "/kind/kubeadm.conf"
 
 	// KubeadmIgnorePreflightErrors holds the default list of preflight errors to skip
-	// on "kubeadm init" and "kubeadm join"
+	// on "kubeadm init", "kubeadm join" and "kubeadm upgrade"
 	KubeadmIgnorePreflightErrors = "Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables"
 
 	// APIServerPort is the expected default APIServerPort on the control plane node(s)
