@@ -42,33 +42,33 @@ type kubeadmConfigOptions struct {
 // KubeadmInitConfig action writes the InitConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, featureGate, encryptionAlgorithm string, nodes ...*status.Node) error {
+func KubeadmInitConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, featureGate, encryptionAlgorithm, ignorePreflightErrors string, nodes ...*status.Node) error {
 	// defaults everything not relevant for the Init Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, featureGate, encryptionAlgorithm, nil, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, TokenDiscovery, featureGate, encryptionAlgorithm, ignorePreflightErrors, nil, nodes...)
 }
 
 // KubeadmJoinConfig action writes the JoinConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmJoinConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, nodes ...*status.Node) error {
+func KubeadmJoinConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, ignorePreflightErrors string, nodes ...*status.Node) error {
 	// defaults everything not relevant for the join Config
-	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, "", "", nil, nodes...)
+	return KubeadmConfig(c, kubeadmConfigVersion, copyCertsMode, discoveryMode, "", "", ignorePreflightErrors, nil, nodes...)
 }
 
 // KubeadmUpgradeConfig action writes the UpgradeConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
-func KubeadmUpgradeConfig(c *status.Cluster, upgradeVersion *version.Version, nodes ...*status.Node) error {
-	return KubeadmConfig(c, "", "", "", "", "", upgradeVersion, nodes...)
+func KubeadmUpgradeConfig(c *status.Cluster, ignorePreflightErrors string, upgradeVersion *version.Version, nodes ...*status.Node) error {
+	return KubeadmConfig(c, "", "", "", "", "", ignorePreflightErrors, upgradeVersion, nodes...)
 }
 
 // KubeadmResetConfig action writes the UpgradeConfiguration into /kind/kubeadm.conf file on all the K8s nodes in the cluster.
-func KubeadmResetConfig(c *status.Cluster, nodes ...*status.Node) error {
-	return KubeadmConfig(c, "", "", "", "", "", nil, nodes...)
+func KubeadmResetConfig(c *status.Cluster, ignorePreflightErrors string, nodes ...*status.Node) error {
+	return KubeadmConfig(c, "", "", "", "", "", ignorePreflightErrors, nil, nodes...)
 }
 
 // KubeadmConfig action writes the /kind/kubeadm.conf file on all the K8s nodes in the cluster.
 // Please note that this action is automatically executed at create time, but it is possible
 // to invoke it separately as well.
-func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, featureGate, encryptionAlgorithm string, upgradeVersion *version.Version, nodes ...*status.Node) error {
+func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode CopyCertsMode, discoveryMode DiscoveryMode, featureGate, encryptionAlgorithm, ignorePreflightErrors string, upgradeVersion *version.Version, nodes ...*status.Node) error {
 	cp1 := c.BootstrapControlPlane()
 
 	// get installed kubernetes version from the node image
@@ -122,19 +122,20 @@ func KubeadmConfig(c *status.Cluster, kubeadmConfigVersion string, copyCertsMode
 
 	// create configData with all the configurations supported by the kubeadm config template implemented in kind
 	configData := kubeadm.ConfigData{
-		ClusterName:          c.Name(),
-		KubernetesVersion:    kubeVersion,
-		ControlPlaneEndpoint: fmt.Sprintf("%s:%d", controlPlaneEndpoint, ControlPlanePort),
-		APIBindPort:          constants.APIServerPort,
-		APIServerAddress:     controlPlaneIP,
-		Token:                constants.Token,
-		PodSubnet:            "192.168.0.0/16", // default for kindnet
-		ControlPlane:         true,
-		IPv6:                 c.Settings.IPFamily == status.IPv6Family,
-		FeatureGateName:      featureGateName,
-		FeatureGateValue:     featureGateValue,
-		EncryptionAlgorithm:  encryptionAlgorithm,
-		UpgradeVersion:       fmt.Sprintf("v%s", upgradeVersion.String()),
+		ClusterName:           c.Name(),
+		KubernetesVersion:     kubeVersion,
+		ControlPlaneEndpoint:  fmt.Sprintf("%s:%d", controlPlaneEndpoint, ControlPlanePort),
+		APIBindPort:           constants.APIServerPort,
+		APIServerAddress:      controlPlaneIP,
+		Token:                 constants.Token,
+		PodSubnet:             "192.168.0.0/16", // default for kindnet
+		ControlPlane:          true,
+		IPv6:                  c.Settings.IPFamily == status.IPv6Family,
+		FeatureGateName:       featureGateName,
+		FeatureGateValue:      featureGateValue,
+		EncryptionAlgorithm:   encryptionAlgorithm,
+		UpgradeVersion:        fmt.Sprintf("v%s", upgradeVersion.String()),
+		IgnorePreflightErrors: strings.Split(ignorePreflightErrors, ","),
 	}
 
 	// create configOptions with all the kinder flags that impact on the kubeadm config generation

@@ -54,7 +54,7 @@ func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 	}
 
 	// prepares the kubeadm config on this node
-	if err := KubeadmInitConfig(c, kubeadmConfigVersion, copyCertsMode, featureGates, encryptionAlgorithm, cp1); err != nil {
+	if err := KubeadmInitConfig(c, kubeadmConfigVersion, copyCertsMode, featureGates, encryptionAlgorithm, ignorePreflightErrors, cp1); err != nil {
 		return err
 	}
 
@@ -65,9 +65,9 @@ func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 
 	// execs the kubeadm init workflow
 	if usePhases {
-		err = kubeadmInitWithPhases(cp1, copyCertsMode, ignorePreflightErrors, vLevel)
+		err = kubeadmInitWithPhases(cp1, copyCertsMode, vLevel)
 	} else {
-		err = kubeadmInit(cp1, copyCertsMode, ignorePreflightErrors, vLevel)
+		err = kubeadmInit(cp1, copyCertsMode, vLevel)
 	}
 	if err != nil {
 		return err
@@ -81,10 +81,9 @@ func KubeadmInit(c *status.Cluster, usePhases bool, copyCertsMode CopyCertsMode,
 	return nil
 }
 
-func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, ignorePreflightErrors string, vLevel int) error {
+func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, vLevel int) error {
 	initArgs := []string{
 		"init",
-		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 		fmt.Sprintf("--config=%s", constants.KubeadmConfigPath),
 		fmt.Sprintf("--v=%d", vLevel),
 	}
@@ -104,10 +103,9 @@ func kubeadmInit(cp1 *status.Node, copyCertsMode CopyCertsMode, ignorePreflightE
 	return nil
 }
 
-func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, ignorePreflightErrors string, vLevel int) error {
+func kubeadmInitWithPhases(cp1 *status.Node, copyCertsMode CopyCertsMode, vLevel int) error {
 	if err := cp1.Command(
 		"kubeadm", "init", "phase", "preflight", fmt.Sprintf("--config=%s", constants.KubeadmConfigPath), fmt.Sprintf("--v=%d", vLevel),
-		fmt.Sprintf("--ignore-preflight-errors=%s", ignorePreflightErrors),
 	).RunWithEcho(); err != nil {
 		return err
 	}

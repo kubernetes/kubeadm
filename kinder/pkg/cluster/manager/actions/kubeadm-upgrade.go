@@ -37,7 +37,7 @@ import (
 //
 // The implementation assumes that the kubeadm/kubelet/kubectl binaries and all the necessary images
 // for the new kubernetes version are available in the /kinder/upgrade/{version} folder.
-func KubeadmUpgrade(c *status.Cluster, upgradeVersion *version.Version, patchesDir string, wait time.Duration, vLevel int) (err error) {
+func KubeadmUpgrade(c *status.Cluster, upgradeVersion *version.Version, patchesDir, ignorePreflightErrors string, wait time.Duration, vLevel int) (err error) {
 	if upgradeVersion == nil {
 		return errors.New("kubeadm-upgrade actions requires the --upgrade-version parameter to be set")
 	}
@@ -79,7 +79,7 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *version.Version, patchesD
 		}
 
 		// prepares the kubeadm config on this node
-		if err := KubeadmUpgradeConfig(c, upgradeVersion, n); err != nil {
+		if err := KubeadmUpgradeConfig(c, ignorePreflightErrors, upgradeVersion, n); err != nil {
 			return err
 		}
 

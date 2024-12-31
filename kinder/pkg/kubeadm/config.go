@@ -106,6 +106,8 @@ type ConfigData struct {
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
 	DerivedConfigData
+	// IgnorePreflightErrors is a list of preflight errors to ignore
+	IgnorePreflightErrors []string
 }
 
 // DerivedConfigData fields are automatically derived by
@@ -176,6 +178,9 @@ nodeRegistration:
   kubeletExtraArgs:
   - name: node-ip
     value: "{{ .NodeAddress }}"
+  ignorePreflightErrors:
+  {{range .IgnorePreflightErrors }}  - {{.}}
+  {{end}}
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta4
@@ -191,6 +196,9 @@ nodeRegistration:
   kubeletExtraArgs:
   - name: node-ip
     value: "{{ .NodeAddress }}"
+  ignorePreflightErrors:
+  {{range .IgnorePreflightErrors }}  - {{.}}
+  {{end}}
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
@@ -203,7 +211,13 @@ plan:
   kubernetesVersion: {{.UpgradeVersion}}
   allowExperimentalUpgrades: true
   allowRCUpgrades: true
+  ignorePreflightErrors:
+  {{range .IgnorePreflightErrors }}  - {{.}}
+  {{end}}
 node:
+  ignorePreflightErrors:
+  {{range .IgnorePreflightErrors }}  - {{.}}
+  {{end}}
   patches:
     directory: "/kinder/patches"
 diff:
@@ -213,6 +227,9 @@ apply:
   allowExperimentalUpgrades: true
   allowRCUpgrades: true
   forceUpgrade: true
+  ignorePreflightErrors:
+  {{range .IgnorePreflightErrors }}  - {{.}}
+  {{end}}
   patches:
     directory: "/kinder/patches"
 ---
@@ -296,6 +313,10 @@ nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
     node-ip: "{{ .NodeAddress }}"
+  ignorePreflightErrors:
+  {{range .IgnorePreflightErrors }}  - {{.}}
+  {{end}}
+
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta3
@@ -310,6 +331,9 @@ nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
     node-ip: "{{ .NodeAddress }}"
+  ignorePreflightErrors:
+  {{range .IgnorePreflightErrors }}  - {{.}}
+  {{end}}
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"

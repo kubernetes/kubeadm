@@ -40,7 +40,7 @@ func KubeadmReset(c *status.Cluster, vLevel int) error {
 			return errors.Wrap(err, "could not obtain the kubeadm version before calling 'kubeadm reset'")
 		}
 		if kubeadm.GetKubeadmConfigVersion(v) == "v1beta4" {
-			if err := KubeadmResetConfig(c, n); err != nil {
+			if err := KubeadmResetConfig(c, "", n); err != nil {
 				return errors.Wrap(err, "could not write kubeadm config before calling 'kubeadm reset'")
 			}
 			flags = append(flags, "--config", constants.KubeadmConfigPath)
