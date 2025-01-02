@@ -82,6 +82,16 @@ tasks:
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 5m
+- name: patch-cluster-configuration
+  description: |
+    Patch ClusterConfiguration to disable the addons.
+  cmd: /bin/sh
+  args:
+    - -c
+    - |
+      docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "kubectl get cm kubeadm-config -n kube-system --kubeconfig /etc/kubernetes/admin.conf -o yaml | sed s/'    proxy: {}/    proxy:\n      disabled: true'/ | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -"
+      docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "kubectl get cm kubeadm-config -n kube-system --kubeconfig /etc/kubernetes/admin.conf -o yaml | sed s/'    dns: {}/    dns:\n      disabled: true'/ | kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -"
+  timeout: 5m
 - name: upgrade-control-plane
   description: |
     Upgrades the control-plane node to the same version of the existing control-plane. This verifies
@@ -93,6 +103,16 @@ tasks:
     - |
       docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade plan --ignore-preflight-errors=CoreDNSMigration,CoreDNSUnsupportedPlugins --v={{ .vars.kubeadmVerbosity }} {{ .vars.initVersion }}
       docker exec {{ .vars.clusterName }}-control-plane-1 kubeadm upgrade apply -f --ignore-preflight-errors=CoreDNSMigration,CoreDNSUnsupportedPlugins --v={{ .vars.kubeadmVerbosity }} {{ .vars.initVersion }}
+  timeout: 5m
+- name: check-addons-after-upgrade
+  description: |
+    Make sure the addon ConfigMaps were not recreated after upgrade.
+  cmd: /bin/sh
+  args:
+    - -c
+    - |
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubectl get cm kube-proxy -n kube-system --kubeconfig /etc/kubernetes/admin.conf && exit 1
+      docker exec {{ .vars.clusterName }}-control-plane-1 kubectl get cm coredns -n kube-system --kubeconfig /etc/kubernetes/admin.conf && exit 1
   timeout: 5m
 - name: delete
   description: |
