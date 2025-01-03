@@ -112,6 +112,8 @@ tasks:
     - |
       docker exec {{ .vars.clusterName }}-control-plane-1 kubectl get cm kube-proxy -n kube-system --kubeconfig /etc/kubernetes/admin.conf && exit 1
       docker exec {{ .vars.clusterName }}-control-plane-1 kubectl get cm coredns -n kube-system --kubeconfig /etc/kubernetes/admin.conf && exit 1
+      # Ensure exit status of 0
+      exit 0
   timeout: 5m
 - name: delete
   description: |
