@@ -62,7 +62,7 @@ The table below summarize the current state:
 |-------------------------|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | **GA release**          | from .deb or .rpm repository | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `https://dl.k8s.io/` release bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases) |
 | **alpha/beta release*** | not available.               | from [github release page](https://github.com/kubernetes/kubernetes/releases) or from `https://dl.k8s.io/` release bucket | from `k8s.gcr.io` container registry or from [github release page](https://github.com/kubernetes/kubernetes/releases) |
-| **CI/CD release***      | not available.               | from `gs://k8s-release-dev/ci/` GCS bucket (built every merge)                                                                      | from `gcr.io/k8s-staging-ci-images` container registry (built every few hours, not by PR)                             |
+| **CI/CD release***      | not available.               | from `https://storage.googleapis.com/k8s-release-dev/ci` GCS bucket (built every merge)                                                                      | from `gcr.io/k8s-staging-ci-images` container registry (built every few hours, not by PR)                             |
 
 [*] for alpha/beta and CI/CD currently it is not possible to have exact version number consistency for all the
 components; however you can select version numbers "near to" the desired version.
@@ -97,7 +97,7 @@ yum install <package name>-<version number>
 ### Getting kubeadm binaries from a release bucket
 
 Pre-compiled GA, alpha/beta versions of kubeadm binary are deployed into `https://dl.k8s.io/release/` release bucket,
-while CI/CD versions are deployed into `gs://k8s-release-dev/ci/` bucket.
+while CI/CD versions are deployed into `https://storage.googleapis.com/k8s-release-dev/ci` bucket.
 
 To explore Kubernetes versions available to use, visit the [github release page](https://github.com/kubernetes/kubernetes/releases).
 
