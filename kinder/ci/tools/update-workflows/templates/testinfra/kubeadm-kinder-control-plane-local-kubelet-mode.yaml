@@ -9,7 +9,7 @@
     testgrid-dashboards: sig-cluster-lifecycle-kubeadm
     testgrid-tab-name: kubeadm-kinder-control-plane-kubelet-local-mode-{{ dashVer .KubernetesVersion }}
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io
-    description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster using the ControlPlaneKubeletLocalMode feature gate and run the kubeadm-e2e and the conformance suites"
+    description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster using the ControlPlaneKubeletLocalMode feature gate disabled and run the kubeadm-e2e and the conformance suites"
     testgrid-num-columns-recent: "20"
 {{ .AlertAnnotations }}
   decoration_config:
