@@ -2,7 +2,7 @@
 version: 1
 summary: |
   This workflow implements a sequence of tasks used test the proper functioning
-  of the ControlPlaneKubeletLocalMode feature gate.
+  of having the ControlPlaneKubeletLocalMode feature gate set to false.
 vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
@@ -59,19 +59,19 @@ tasks:
   - --name={{ .vars.clusterName }}
   - --loglevel=debug
   - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-  - --kubeadm-feature-gate="ControlPlaneKubeletLocalMode=true"
+  - --kubeadm-feature-gate="ControlPlaneKubeletLocalMode=false"
   - --copy-certs=auto
   timeout: 5m
 - name: post-init
   description: |
     Run commands after kubeadm init is called on a primary CP node to checks if
-    the kubelet's kubeconfig file points to the local apiserver.
+    the kubelet's kubeconfig file points to load balanced apiserver.
   cmd: /bin/bash
   args:
     - -c
     - |
       set -x
-      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-1)"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-lb)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
 
       # Ensure kubelet.conf points to the local IP.
@@ -95,22 +95,23 @@ tasks:
 - name: post-join
   description: |
     Run commands after kubeadm join is called on all joined CP node to checks if
-    the kubelet's kubeconfig file points to the local apiserver.
+    the kubelet's kubeconfig file points to the remote apiserver.
   cmd: /bin/bash
   args:
     - -c
     - |
       set -x
-      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-2)"
+
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-lb)"
+
       CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
 
-      # Ensure kubelet.conf points to the local IP.
+      # Ensure kubelet.conf points to the remote IP.
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
-      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-3)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-3"
 
-      # Ensure kubelet.conf points to the local IP.
+      # Ensure kubelet.conf points to the remote IP.
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
       # Ensure exit status of 0
@@ -119,23 +120,24 @@ tasks:
 - name: pre-upgrade
   description: |
     Run commands before kubeadm upgrade is called on all joined CP node to replace
-    the server in the kubelet's kubeconfig to point to the load balancer.
+    the server in the kubelet's kubeconfig to point to the control-plane IP.
   cmd: /bin/bash
   args:
     - -c
     - |
       set -x
 
-      LOAD_BALANCER_IP_ADDRESS=$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-lb)
-
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-1)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
-      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
 
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-2)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
-      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
 
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-3)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-3"
-      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${LOAD_BALANCER_IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
+      ${CMD} sed -i 's@server: https://.*:6443@server: https://'${IP_ADDRESS}':6443@g' /etc/kubernetes/kubelet.conf || exit 1
 
       # Ensure exit status of 0
       exit 0
@@ -155,22 +157,21 @@ tasks:
 - name: post-upgrade
   description: |
     Run commands after kubeadm upgrade is called on all joined CP node to checks if
-    the kubelet's kubeconfig file points to the local apiserver.
+    the kubelet's kubeconfig file points to the remote apiserver.
   cmd: /bin/bash
   args:
     - -c
     - |
       set -x
 
-      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-1)"
+      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-lb)"
+
       CMD="docker exec {{ .vars.clusterName }}-control-plane-1"
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
-      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-2)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-2"
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
-      IP_ADDRESS="$(docker inspect --format='{{ "{{" }} .NetworkSettings.IPAddress {{ "}}" }}' {{ .vars.clusterName }}-control-plane-3)"
       CMD="docker exec {{ .vars.clusterName }}-control-plane-3"
       ${CMD} grep "server: https://${IP_ADDRESS}:6443" /etc/kubernetes/kubelet.conf || exit 1
 
