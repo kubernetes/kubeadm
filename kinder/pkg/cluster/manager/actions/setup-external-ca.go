@@ -72,6 +72,18 @@ func SetupExternalCA(c *status.Cluster, vLevel int) error {
 		return nil
 	}
 
+	generateKubeletConfWorker := func(n *status.Node) error {
+		if err := n.Command(
+			"/bin/sh", "-c",
+			fmt.Sprintf("kubeadm init phase kubeconfig kubelet --control-plane-endpoint=%s --apiserver-advertise-address=%s --v=%d",
+				loadBalancerIP, loadBalancerIP,
+				vLevel),
+		).RunWithEcho(); err != nil {
+			return errors.Wrapf(err, "could not generate a kubelet.conf on node: %s", n.Name())
+		}
+		return nil
+	}
+
 	// iterate secondary CP nodes
 	for _, n := range c.SecondaryControlPlanes() {
 		// copy the shared kubeconfig files
@@ -108,7 +120,7 @@ func SetupExternalCA(c *status.Cluster, vLevel int) error {
 		}
 
 		// generate kubelet.conf
-		if err := generateKubeletConf(n); err != nil {
+		if err := generateKubeletConfWorker(n); err != nil {
 			return err
 		}
 	}
