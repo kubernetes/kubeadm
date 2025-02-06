@@ -1,7 +1,7 @@
 # IMPORTANT! this workflow is imported by wait-for-all-control-plane-components* workflows.
 version: 1
 summary: |
-  This workflow implements a sequence of tasks used to test kubeadm init and join with the WaitForAllControlPlaneComponents feature gate enabled.
+  This workflow implements a sequence of tasks used to test kubeadm init and join with the WaitForAllControlPlaneComponents feature gate disabled.
 vars:
   # vars defines default values for variable used by tasks in this workflow;
   # those values might be overridden when importing this files.
@@ -59,7 +59,7 @@ tasks:
     - --copy-certs=auto
     - --loglevel=debug
     - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
-    - --kubeadm-feature-gate="WaitForAllControlPlaneComponents=true"
+    - --kubeadm-feature-gate="WaitForAllControlPlaneComponents=false"
   timeout: 5m
 - name: join
   description: |
