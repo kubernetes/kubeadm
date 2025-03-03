@@ -27,7 +27,7 @@ fi
 
 # install go if missing
 if ! `go version > /dev/null`; then
-	curl -sSL https://dl.google.com/go/go1.16.linux-amd64.tar.gz -o "/${TMP}/go.tar.gz"
+	curl -sSL https://go.dev/dl/go1.24.0.linux-amd64.tar.gz -o "/${TMP}/go.tar.gz"
 	tar -C /usr/local -xzf "/${TMP}/go.tar.gz"
 	export PATH="$PATH":/usr/local/go/bin
 	rm "/${TMP}/go.tar.gz"
@@ -48,7 +48,10 @@ cd "$LPATH"
 # use go modules. this forces using the latest k8s.io/apimachinery package.
 go mod init verify-manifest-lists
 
-# add module requirements and sums (required in go 1.16)
+# pin the apimachinery version
+printf "\nrequire k8s.io/apimachinery v0.32.2" >> go.mod
+
+# add module requirements and sums (required in go >1.16)
 go mod tidy
 
 # run unit tests
