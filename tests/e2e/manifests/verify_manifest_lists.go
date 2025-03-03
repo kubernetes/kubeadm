@@ -183,7 +183,7 @@ func (s VersionList) print() {
 		if i == len(s)-1 {
 			sep = "\n\n"
 		}
-		fmt.Printf(v.String() + sep)
+		fmt.Printf("%s%s", v.String(), sep)
 	}
 }
 
