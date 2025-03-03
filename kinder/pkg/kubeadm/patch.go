@@ -22,8 +22,8 @@ import (
 	"io"
 	"strings"
 
-	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/pkg/errors"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 	"sigs.k8s.io/yaml"
 )
 
