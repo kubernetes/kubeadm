@@ -31,6 +31,7 @@ if ! `go version > /dev/null`; then
 	tar -C /usr/local -xzf "/${TMP}/go.tar.gz"
 	export PATH="$PATH":/usr/local/go/bin
 	rm "/${TMP}/go.tar.gz"
+	go version
 fi
 
 # api-machinery requires gcc

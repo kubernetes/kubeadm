@@ -39,6 +39,7 @@ WORKFLOW_BUCKET_PATH="${SCRIPT_PATH}/workflows"
 # build kinder
 pushd "${ROOT_PATH}"
 echo "Building kinder..."
+go version
 GO111MODULE=on go build
 popd
 
