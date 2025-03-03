@@ -17,6 +17,7 @@ limitations under the License.
 package manager
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -225,7 +226,7 @@ func createNodes(clusterName string, flags *CreateOptions) error {
 	for _, n := range desiredNodes {
 		var lastErr error
 		log.Infof("Waiting for node %s to start...", n.Name)
-		err = wait.PollImmediate(time.Second*1, timeout, func() (bool, error) {
+		err = wait.PollUntilContextTimeout(context.Background(), time.Second*1, timeout, true, func(ctx context.Context) (bool, error) {
 			lines, err := exec.NewHostCmd(
 				"docker",
 				"container",
