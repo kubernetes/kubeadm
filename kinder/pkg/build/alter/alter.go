@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -209,15 +210,6 @@ func (c *Context) Alter() (err error) {
 func (c *Context) prepareBits(bitsInstallers []bits.Installer, bc *bits.BuildContext) error {
 	log.Info("Preparing bits ...")
 
-	var isAKubernetesImages = func(i string) bool {
-		for _, ki := range extract.AllKubernetesImages {
-			if i == ki {
-				return true
-			}
-		}
-		return false
-	}
-
 	for _, b := range bitsInstallers {
 		// prepare bits
 		bits, err := b.Prepare(bc)
@@ -229,7 +221,7 @@ func (c *Context) prepareBits(bitsInstallers []bits.Installer, bc *bits.BuildCon
 		// NB. this is done here so all the bits gets fixes, no matter of the source
 		for k, v := range bits {
 			// if the bit is one of the kubernetes images, we should ensure the repository/name matches kubeadm expectations
-			if isAKubernetesImages(k) {
+			if slices.Contains(extract.AllKubernetesImages, k) {
 				if err := fixImageTar(v); err != nil {
 					return errors.Wrap(err, "failed to fix bits")
 				}

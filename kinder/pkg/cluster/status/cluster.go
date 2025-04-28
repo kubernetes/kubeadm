@@ -19,6 +19,7 @@ package status
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -89,10 +90,8 @@ func IsKnown(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	for _, cluster := range list {
-		if cluster == name {
-			return true, nil
-		}
+	if slices.Contains(list, name) {
+		return true, nil
 	}
 	return false, nil
 }

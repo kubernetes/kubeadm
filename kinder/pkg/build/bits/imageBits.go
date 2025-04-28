@@ -17,6 +17,7 @@ limitations under the License.
 package bits
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
 
@@ -77,9 +78,7 @@ func (b *imageBits) Prepare(c *BuildContext) (map[string]string, error) {
 		}
 
 		// keeps track of the image tarballs bit extracted from the source
-		for k, v := range images {
-			allImages[k] = v
-		}
+		maps.Copy(allImages, images)
 	}
 
 	return allImages, nil
