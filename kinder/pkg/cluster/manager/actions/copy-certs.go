@@ -19,6 +19,7 @@ package actions
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -108,14 +109,7 @@ func copyBootstrapEtcKubernetesFilesToNode(c *status.Cluster, n *status.Node, ba
 		if err != nil {
 			// assume the file is missing; check if this file should cause a warning
 			// instead of erroring out (e.g. missing ca.key)
-			var isWarnFile bool
-			for _, warnFile := range filesToWarn {
-				if fileName == warnFile {
-					isWarnFile = true
-					break
-				}
-			}
-			if !isWarnFile {
+			if !slices.Contains(filesToWarn, fileName) {
 				return errors.Wrapf(err, "failed to read file %s from %s", fileName, c.BootstrapControlPlane().Name())
 			}
 			fmt.Printf("Missing file %s on node %s\n", fileName, c.BootstrapControlPlane().Name())

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -76,12 +77,7 @@ func isSupportedFileExtension(filePath string) bool {
 
 	// check if the file has a supported extension
 	ext := filePath[idx : idx+len(filePath)-idx]
-	for _, e := range supportedExt {
-		if e == ext {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(supportedExt, ext)
 }
 
 // verifyBoilerplate verifies if a string contains the boilerplate
