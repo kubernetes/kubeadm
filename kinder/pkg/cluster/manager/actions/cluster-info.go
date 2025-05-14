@@ -74,7 +74,7 @@ func CluterInfo(c *status.Cluster) error {
 		// Retry the version command for a while to avoid "exec" flakes
 		versionArgs := append(etcdArgs, "etcd", "--version")
 		versionArgs = append([]string{"--request-timeout=2"}, versionArgs...) // Ensure shorter timeout
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			lines, err = cp1.Command("kubectl", versionArgs...).RunAndCapture()
 			if err == nil {
 				break
