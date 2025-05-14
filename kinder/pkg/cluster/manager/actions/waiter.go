@@ -254,7 +254,7 @@ func podsAreRunning(n *status.Node, label string, replicas int) func(c *status.C
 
 		// check for pods status
 		running := true
-		for j := 0; j < replicas; j++ {
+		for j := range replicas {
 			if statuses[j] != "Running" {
 				running = false
 			}
@@ -330,7 +330,7 @@ func staticPodHasVersion(pod, version string) func(c *status.Cluster, n *status.
 // the restarting of control-plane components after control-plane upgrade like e.g. the node authorizer
 func kubeletHasRBAC(major, minor uint) func(c *status.Cluster, n *status.Node) bool {
 	return func(c *status.Cluster, n *status.Node) bool {
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			output1 := kubectlOutput(n,
 				"auth",
 				"can-i",

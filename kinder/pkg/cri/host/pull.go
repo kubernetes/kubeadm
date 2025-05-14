@@ -35,7 +35,7 @@ func PullImage(image string, retries int) (bool, error) {
 	// otherwise try to pull it
 	var err error
 	if err = exec.NewHostCmd("docker", "pull", image).Run(); err != nil {
-		for i := 0; i < retries; i++ {
+		for i := range retries {
 			time.Sleep(time.Second * time.Duration(i+1))
 			if err = exec.NewHostCmd("docker", "pull", image).Run(); err == nil {
 				break

@@ -286,7 +286,7 @@ func nodesToCreate(clusterName string, flags *CreateOptions) []nodeSpec {
 	var desiredNodes []nodeSpec
 
 	// prepare nodes explicitly
-	for n := 0; n < flags.controlPlanes; n++ {
+	for n := range flags.controlPlanes {
 		role := constants.ControlPlaneNodeRoleValue
 		desiredNode := nodeSpec{
 			Name: fmt.Sprintf("%s-%s-%d", clusterName, role, n+1),
@@ -294,7 +294,7 @@ func nodesToCreate(clusterName string, flags *CreateOptions) []nodeSpec {
 		}
 		desiredNodes = append(desiredNodes, desiredNode)
 	}
-	for n := 0; n < flags.workers; n++ {
+	for n := range flags.workers {
 		role := constants.WorkerNodeRoleValue
 		desiredNode := nodeSpec{
 			Name: fmt.Sprintf("%s-%s-%d", clusterName, role, n+1),

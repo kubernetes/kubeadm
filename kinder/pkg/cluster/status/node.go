@@ -171,7 +171,7 @@ func (n *Node) DryRun() {
 
 // Infof print an information message in the same format of commands on the node;
 // the message is print after the prompt containing the kind (er) node name.
-func (n *Node) Infof(message string, args ...interface{}) {
+func (n *Node) Infof(message string, args ...any) {
 	node := colors.Prompt(fmt.Sprintf("%s:$ ", n.Name()))
 	command := colors.Info(fmt.Sprintf(message, args...))
 	fmt.Printf("\n%s%s\n", node, command)

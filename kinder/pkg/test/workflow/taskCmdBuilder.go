@@ -98,7 +98,7 @@ func (c *taskCmdBuilder) expand(text string) (string, error) {
 	}
 
 	var b bytes.Buffer
-	if err = templ.Execute(&b, map[string]interface{}{
+	if err = templ.Execute(&b, map[string]any{
 		"env":  c.env,
 		"vars": c.vars,
 	}); err != nil {
