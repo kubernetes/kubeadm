@@ -61,7 +61,7 @@ tasks:
   - --loglevel=debug
   - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   - --copy-certs=auto
-  - --kubeadm-encryption-algorithm=ECDSA-P256
+  - --kubeadm-encryption-algorithm=ECDSA-P384
   timeout: 5m
 - name: join
   description: |
