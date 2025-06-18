@@ -21,6 +21,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -138,13 +140,143 @@ func ImportImage(bc *bits.BuildContext, tar string) error {
 	return nil
 }
 
-// PreLoadInitImages preload images required by kubeadm-init into the containerd runtime that exists inside a kind(er) node
+func getImageNamesFromTarInContainer(bc *bits.BuildContext, tarPath string) ([]string, error) {
+	cmd := fmt.Sprintf("tar -xf '%s' manifest.json -O | jq -r '.[].RepoTags[]'", tarPath)
+	imageNames, err := bc.CombinedOutputLinesInContainer("bash", "-c", cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get image names from tar %s: %w", tarPath, err)
+	}
+	return imageNames, nil
+}
+
+// PreLoadInitImages preloads images from .tar files in srcFolder into containerd,
+// renaming images to remove architecture suffixes matching the host architecture.
 func PreLoadInitImages(bc *bits.BuildContext, srcFolder string) error {
-	// NB. this code is an extract from "sigs.k8s.io/kind/pkg/build/node"
-	return bc.RunInContainer(
-		"bash", "-c",
-		`find `+srcFolder+` -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --all-platforms --no-unpack && rm -rf `+srcFolder+`/*.tar`,
-	)
+	arch, err := getHostArch(bc)
+	if err != nil {
+		return err
+	}
+
+	tarFiles, err := listTarFiles(bc, srcFolder)
+	if err != nil {
+		return err
+	}
+	if len(tarFiles) == 0 {
+		log.Infof("No .tar files found in %s", srcFolder)
+		return nil
+	}
+
+	var importErrors []string
+	for _, tarFilePath := range tarFiles {
+		log.Infof("Importing image from: %s", tarFilePath)
+		imageNames, err := getImageNamesFromTarInContainer(bc, tarFilePath)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to read image name from tar %s: %v", tarFilePath, err)
+			log.Errorf("Error: %s", errMsg)
+			importErrors = append(importErrors, errMsg)
+			continue
+		}
+		if len(imageNames) == 0 {
+			errMsg := fmt.Sprintf("no image name found in tar %s", tarFilePath)
+			log.Errorf("Error: %s", errMsg)
+			importErrors = append(importErrors, errMsg)
+			continue
+		}
+
+		importCmd := fmt.Sprintf("ctr --namespace=k8s.io images import --all-platforms '%s'", tarFilePath)
+		_, err = bc.CombinedOutputLinesInContainer("bash", "-c", importCmd)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to import image from %s: %v", tarFilePath, err)
+			log.Errorf("Error: %s", errMsg)
+			importErrors = append(importErrors, errMsg)
+			continue
+		}
+
+		for _, imageName := range imageNames {
+			log.Infof("Successfully imported image: %s", imageName)
+			base, archSuffix, tag := parseImageArchSuffix(imageName)
+			if archSuffix != "" && archSuffix == arch {
+				newImageName := fmt.Sprintf("%s:%s", base, tag)
+				tagCmd := fmt.Sprintf("ctr --namespace=k8s.io images tag '%s' '%s'", imageName, newImageName)
+				_, err := bc.CombinedOutputLinesInContainer("bash", "-c", tagCmd)
+				if err != nil {
+					log.Warnf("Warning: failed to tag image %s to %s: %v", imageName, newImageName, err)
+				} else {
+					log.Infof("Tagged image %s as %s", imageName, newImageName)
+				}
+			}
+		}
+
+		rmCmd := fmt.Sprintf("rm -f '%s'", tarFilePath)
+		_, err = bc.CombinedOutputLinesInContainer("bash", "-c", rmCmd)
+		if err != nil {
+			log.Infof("Warning: failed to remove %s: %v", tarFilePath, err)
+		}
+	}
+
+	if len(importErrors) > 0 {
+		return fmt.Errorf("some images failed to import: %s", strings.Join(importErrors, "; "))
+	}
+	log.Infof("Successfully imported all images from %s", srcFolder)
+	return nil
+}
+
+// getHostArch returns the normalized host architecture string (e.g. amd64, arm64).
+func getHostArch(bc *bits.BuildContext) (string, error) {
+	archLines, err := bc.CombinedOutputLinesInContainer("uname", "-m")
+	if err != nil {
+		return "", fmt.Errorf("failed to get host architecture: %w", err)
+	}
+	if len(archLines) == 0 {
+		return "", fmt.Errorf("failed to get host architecture: empty output")
+	}
+	arch := strings.TrimSpace(archLines[0])
+	if arch == "" {
+		return "", fmt.Errorf("failed to get host architecture: empty architecture string")
+	}
+	archMap := map[string]string{
+		"x86_64":  "amd64",
+		"amd64":   "amd64",
+		"aarch64": "arm64",
+		"arm64":   "arm64",
+	}
+	if stdArch, ok := archMap[arch]; ok {
+		return stdArch, nil
+	}
+	log.Warnf("Warning: unsupported architecture %s, proceeding with original name", arch)
+	return arch, nil
+}
+
+// listTarFiles returns a list of .tar file paths in the given srcFolder inside the container.
+func listTarFiles(bc *bits.BuildContext, srcFolder string) ([]string, error) {
+	tarFilesLines, err := bc.CombinedOutputLinesInContainer("find", srcFolder, "-name", "*.tar")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list .tar files: %w", err)
+	}
+	var validTarFiles []string
+	for _, tarFilePath := range tarFilesLines {
+		tarFilePath = strings.TrimSpace(tarFilePath)
+		if tarFilePath != "" {
+			validTarFiles = append(validTarFiles, tarFilePath)
+		}
+	}
+	return validTarFiles, nil
+}
+
+// parseImageArchSuffix parses image name and returns base, archSuffix, tag.
+// e.g. kube-apiserver-arm64:v1.34 => (kube-apiserver, arm64, v1.34)
+func parseImageArchSuffix(imageName string) (base, archSuffix, tag string) {
+	re := regexp.MustCompile(`^(.+)-(amd64|arm64):(.+)$`)
+	matches := re.FindStringSubmatch(imageName)
+	if len(matches) == 4 {
+		return matches[1], matches[2], matches[3]
+	}
+
+	parts := strings.SplitN(imageName, ":", 2)
+	if len(parts) == 2 {
+		return parts[0], "", parts[1]
+	}
+	return imageName, "", ""
 }
 
 // Commit a kind(er) node image that uses the containerd runtime internally
