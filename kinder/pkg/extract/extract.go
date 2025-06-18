@@ -32,6 +32,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -313,7 +314,7 @@ func extractFromHTTP(src string, files []string, dst string, m fileNameMutator, 
 
 	// in case the source is a Kubernetes build, add bin/OS/ARCH to the src uri
 	if strings.HasPrefix(src, releaseBuildURepository) || strings.HasPrefix(src, ciBuildRepository) {
-		src = fmt.Sprintf("%s/bin/linux/amd64", src)
+		src = fmt.Sprintf("%s/bin/linux/%s", src, runtime.GOARCH)
 	}
 
 	// Download the files.
