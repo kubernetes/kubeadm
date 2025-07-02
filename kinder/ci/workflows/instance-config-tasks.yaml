@@ -170,6 +170,41 @@ tasks:
   - --loglevel=debug
   - --kubeadm-verbosity={{ .vars.kubeadmVerbosity }}
   timeout: 15m
+- name: wait-upgrade-complete
+  description: |
+    Wait for the cluster upgrade to complete
+  cmd: /bin/bash
+  args:
+    - -c
+    - |
+      set -x
+
+      while true; do
+        all_ready=true
+        nodes=$(docker exec {{ .vars.clusterName }}-control-plane-1 bash -c 'KUBECONFIG=/etc/kubernetes/admin.conf kubectl get nodes -o jsonpath="{.items[*].metadata.name}"')
+
+        for node in $nodes; do
+          status=$(docker exec {{ .vars.clusterName }}-control-plane-1 bash -c "KUBECONFIG=/etc/kubernetes/admin.conf kubectl get node $node -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'")
+
+          if [ "$status" != "True" ]; then
+            echo "Node $node is not Ready (Status: $status)"
+            all_ready=false
+          else
+            echo "Node $node is Ready"
+          fi
+        done
+
+        if [ "$all_ready" = true ]; then
+          echo "All nodes are Ready. Exiting."
+          exit 0
+        fi
+
+        echo "Waiting 1 second before next check..."
+        sleep 1
+      done
+
+      exit 0
+  timeout: 2m
 - name: check-config-after-upgrade
   description: |
     Check if the kubelet instance configuration exists on each node.
