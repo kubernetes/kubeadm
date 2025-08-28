@@ -20,7 +20,7 @@ source "$(dirname "$0")/utils.sh"
 cd_root_path
 
 # set kubernetes version
-KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.33.0}"
+KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.34.0}"
 
 # set skew
 KUBERNETES_SKEW="${KUBERNETES_SKEW:-3}"
