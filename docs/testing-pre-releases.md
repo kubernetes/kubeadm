@@ -23,10 +23,10 @@ execute tests.
     - [Overview](#overview)
     - [Kubeadm version skew policy](#kubeadm-version-skew-policy)
     - [Availability of pre-compiled release artifacts](#availability-of-pre-compiled-release-artifacts)
-        - [Getting .deb or .rpm packages form repository](#getting-deb-or-rpm-packages-form-repository)
+        - [Getting .deb or .rpm packages from repository](#getting-deb-or-rpm-packages-from-repository)
         - [Getting kubeadm binaries from a GCS bucket](#getting-kubeadm-binaries-from-a-gcs-bucket)
         - [Getting docker images from a GCR registry](#getting-docker-images-from-a-gcr-registry)
-        - [Getting kubeadm binaries or docker images form github release page](#getting-kubeadm-binaries-or-docker-images-form-github-release-page)
+        - [Getting kubeadm binaries or docker images from github release page](#getting-kubeadm-binaries-or-docker-images-from-github-release-page)
     - [Create a local version](#create-a-local-version)
         - [Build .deb and .rpm packages](#build-deb-and-rpm-packages)
         - [Build kubeadm binary](#build-kubeadm-binary)
@@ -69,7 +69,7 @@ components; however you can select version numbers "near to" the desired version
 
 To access GCS buckets from the command-line, install the [gsutil](https://cloud.google.com/storage/docs/gsutil_install) tool.
 
-### Getting .deb or .rpm packages form repository
+### Getting .deb or .rpm packages from repository
 
 Pre-compiled GA version of .deb or .rpm packages are deployed into official Kubernetes repositories. See [installing kubeadm](https://kubernetes.io/docs/setup/independent/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl)
 for instruction about how add the necessary repository and repository key.
