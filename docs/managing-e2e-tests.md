@@ -8,7 +8,7 @@ Kubernetes uses applications such as the web-based [testgrid](https://testgrid.k
 
 ### Prow job configuration
 
-The following folder contains all the SIG Cluster Lifecycle (the SIG that maintains kubeadm) originated test jobs:
+The following folder contains all the SIG Cluster Lifecycle (the SIG that maintains kubeadm) originating test jobs:
 [sig-cluster-lifecycle](https://git.k8s.io/test-infra/config/jobs/kubernetes/sig-cluster-lifecycle)
 
 Please note that this document will only cover details on the `kubeadm*.yaml` files and only on some parameters
