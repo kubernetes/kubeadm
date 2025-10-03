@@ -79,7 +79,7 @@ func (b *upgradeBits) Install(c *BuildContext) error {
 	}
 
 	// copy artifacts in
-	if err := c.RunInContainer("rsync", "-r", src, dest); err != nil {
+	if err := c.RunInContainer("cp", "-r", src, dest); err != nil {
 		log.Errorf("Image alter failed! %v", err)
 		return err
 	}

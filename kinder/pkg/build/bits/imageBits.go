@@ -96,7 +96,7 @@ func (b *imageBits) Install(c *BuildContext) error {
 	dest := filepath.Join("/kind")
 
 	// copy artifacts in
-	if err := c.RunInContainer("rsync", "-r", src, dest); err != nil {
+	if err := c.RunInContainer("cp", "-r", src, dest); err != nil {
 		log.Errorf("Image alter failed! %v", err)
 		return err
 	}
