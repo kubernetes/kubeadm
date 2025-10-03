@@ -246,9 +246,11 @@ func configureKubelet(c *BuildContext) error {
 		return err
 	}
 
-	// enable the kubelet service
-	if err := c.RunInContainer("systemctl", "enable", dstFile); err != nil {
-		return errors.Wrap(err, "failed to enable kubelet service")
+	// enable the kubelet service if needed
+	if err := c.RunInContainer("systemctl", "is-enabled", "kubelet"); err != nil {
+		if err := c.RunInContainer("systemctl", "enable", dstFile); err != nil {
+			return errors.Wrap(err, "failed to enable kubelet service")
+		}
 	}
 
 	// The destination path for the kubeadm dropin file is /etc/systemd/system/kubelet.service.d/
