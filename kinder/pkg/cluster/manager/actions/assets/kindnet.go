@@ -16,13 +16,11 @@ limitations under the License.
 
 package assets
 
-// KindnetImage054 is the image for kindnet 0.5.4
-const KindnetImage054 = "kindest/kindnetd:0.5.4"
+// KindnetImage185 is a image for kindnet
+const KindnetImage185 = "ghcr.io/aojea/kindnetd:v1.8.5"
 
-// KindnetManifest054 holds the kindnet manifest for 0.5.4
-const KindnetManifest054 = `
-# kindnetd networking manifest
-# would you kindly template this file
+// KindnetManifest185 holds a kindnet manifest
+const KindnetManifest185 = `
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -30,17 +28,38 @@ metadata:
   name: kindnet
 rules:
   - apiGroups:
-      - policy
-    resources:
-      - podsecuritypolicies
-    verbs:
-      - use
-    resourceNames:
-      - kindnet
-  - apiGroups:
       - ""
     resources:
       - nodes
+    verbs:
+      - list
+      - watch
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/proxy
+      - nodes/configz
+    verbs:
+      - get
+  - apiGroups:
+     - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - namespaces
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+     - "networking.k8s.io"
+    resources:
+      - networkpolicies
     verbs:
       - list
       - watch
@@ -54,9 +73,9 @@ roleRef:
   kind: ClusterRole
   name: kindnet
 subjects:
-  - kind: ServiceAccount
-    name: kindnet
-    namespace: kube-system
+- kind: ServiceAccount
+  name: kindnet
+  namespace: kube-system
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -86,52 +105,68 @@ spec:
     spec:
       hostNetwork: true
       tolerations:
-        - operator: Exists
-          effect: NoSchedule
+      - operator: Exists
+        effect: NoSchedule
       serviceAccountName: kindnet
+      initContainers:
+      - name: install-cni-bin
+        image: ghcr.io/aojea/kindnetd:v1.8.5
+        command: ['sh', '-c', 'cat /opt/cni/bin/cni-kindnet > /cni/cni-kindnet ; chmod +x /cni/cni-kindnet']
+        volumeMounts:
+        - name: cni-bin
+          mountPath: /cni
       containers:
-        - name: kindnet-cni
-          image: kindest/kindnetd:0.5.4
-          env:
-            - name: HOST_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: POD_SUBNET
-              value: "192.168.0.0/16"
-          volumeMounts:
-            - name: cni-cfg
-              mountPath: /etc/cni/net.d
-            - name: xtables-lock
-              mountPath: /run/xtables.lock
-              readOnly: false
-            - name: lib-modules
-              mountPath: /lib/modules
-              readOnly: true
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "50Mi"
-            limits:
-              cpu: "100m"
-              memory: "50Mi"
-          securityContext:
-            privileged: false
-            capabilities:
-              add: ["NET_RAW", "NET_ADMIN"]
-      volumes:
+      - name: kindnet-cni
+        image: ghcr.io/aojea/kindnetd:v1.8.5
+        command:
+        - /bin/kindnetd
+        - --hostname-override=$(NODE_NAME)
+        - --network-policy=true
+        - --admin-network-policy=false
+        - --baseline-admin-network-policy=false
+        - --masquerading=true
+        - --dns-caching=true
+        - --disable-cni=false
+        - --fastpath-threshold=20
+        - --ipsec-overlay=false
+        - --nat64=true
+        - --v=2
+        env:
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
         - name: cni-cfg
-          hostPath:
-            path: /etc/cni/net.d
-        - name: xtables-lock
-          hostPath:
-            path: /run/xtables.lock
-            type: FileOrCreate
-        - name: lib-modules
-          hostPath:
-            path: /lib/modules
+          mountPath: /etc/cni/net.d
+        - name: var-lib-kindnet
+          mountPath: /var/lib/cni-kindnet
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "50Mi"
+        securityContext:
+          privileged: true
+      volumes:
+      - name: cni-bin
+        hostPath:
+          path: /opt/cni/bin
+          type: DirectoryOrCreate
+      - name: cni-cfg
+        hostPath:
+          path: /etc/cni/net.d
+          type: DirectoryOrCreate
+      - name: var-lib-kindnet
+        hostPath:
+          path: /var/lib/cni-kindnet
+          type: DirectoryOrCreate
+---
 `
