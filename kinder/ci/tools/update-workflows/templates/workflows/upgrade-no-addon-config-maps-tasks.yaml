@@ -7,7 +7,7 @@ vars:
   initVersion: v1.13.5
   controlPlaneNodes: 1
   workerNodes: 1
-  baseImage: kindest/base:v20221102-76f15095 # has containerd
+  baseImage: kindest/base:v20250521-31a79fd4 # has containerd
   image: kindest/node:test
   clusterName: kinder-upgrade
   kubeadmVerbosity: 6

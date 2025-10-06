@@ -357,7 +357,7 @@ func (c *Context) alterImage(bitsInstallers []bits.Installer, bc *bits.BuildCont
 		}
 
 		// add the kindnet image
-		images = append(images, assets.KindnetImage054)
+		images = append(images, assets.KindnetImage185)
 
 		if err := pullImages(alterHelper, bc, images, filepath.Join(initPath, "images"), containerID); err != nil {
 			return err
