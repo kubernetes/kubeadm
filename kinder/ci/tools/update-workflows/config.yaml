@@ -171,6 +171,18 @@ jobGroups:
   jobs:
   - kubernetesVersion: latest
 
+- name: rootless
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-rootless.yaml
+    template: ./templates/testinfra/kubeadm-kinder-rootless.yaml
+  kinderWorkflowSpec:
+    targetFile: rootless-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/rootless.yaml
+    additionalFiles:
+    - ./templates/workflows/rootless-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+
 - name: dryrun
   testInfraJobSpec:
     targetFile: kubeadm-kinder-dryrun.yaml
