@@ -94,6 +94,9 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Improve readability of the output file by disabling color output.
+	ginkgoFlags["no-color"] = "true"
+
 	// if --conformance is set, adds well know flag/values for instructing ginkgo to skip tests labeled with [multi-node]
 	if flags.SingleNode {
 		ginkgoFlags.AddSkipRegex(regexp.QuoteMeta("[multi-node]"))
