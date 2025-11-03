@@ -123,7 +123,7 @@ tasks:
     - test
     - e2e
     - --test-flags=--report-dir={{ .env.ARTIFACTS }} --report-prefix=e2e
-    - --parallel
+    - --ginkgo-flags=--nodes=16 --no-color
     - --name={{ .vars.clusterName }}
     - --loglevel=debug
   timeout: 35m
