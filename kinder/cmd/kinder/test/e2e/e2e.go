@@ -91,6 +91,9 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Improve readability of the output file by disabling color output.
+	ginkgoFlags["no-color"] = "true"
+
 	// if --conformance is set, adds well know flag/values for instructing ginkgo for running only tests required for conformance in testgrid
 	if flags.TestGridConformance {
 		// instruct ginkgo to run only Conformance test as defined in [Display Conformance Tests with Testgrid]
@@ -104,10 +107,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 
 	// if --parallel is set, adds well know flag/values for instructing ginkgo for running tests in parallel
 	if flags.Parallel {
-		// please note that this spin-up a default number of test runners (runtime.NumCPU() if runtime.NumCPU() <= 4, otherwise it is runtime.NumCPU() - 1);
-		// if you want to control the level of parallelism, you can use --ginkgo-flags "--nodes=25"
-		// see https://onsi.github.io/ginkgo/#parallel-specs for more info
-		ginkgoFlags["p"] = "true"
+		// since Ginkgo now considers cgroup limits when the `-p` flag is used, it will lead some tests to incomplete within
+		// expected time (35m) due to a lower parallelism (2) than before (about 15). Setting the nodes to a fixed value
+		// of 16 to avoid this.
+		// see https: //onsi.github.io/ginkgo/#spec-parallelization for more info.
+		ginkgoFlags["nodes"] = "16"
 		ginkgoFlags.AddSkipRegex(regexp.QuoteMeta("[Serial]"))
 	}
 
