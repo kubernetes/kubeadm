@@ -13,7 +13,7 @@ vars:
   baseImage: kindest/base:v20250521-31a79fd4 # has containerd
   image: kindest/node:test
   clusterName: kinder-dryrun
-  kubeadmIgnorePreflightErrors: Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
+  kubeadmIgnorePreflightErrors: Swap,SystemVerification,FileContent--proc-sys-net-bridge-bridge-nf-call-iptables,ContainerRuntimeVersion
   kubeadmVerbosity: 6
 tasks:
 - name: pull-base-image
