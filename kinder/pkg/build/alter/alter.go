@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -148,6 +149,11 @@ func NewContext(options ...Option) (ctx *Context, err error) {
 
 // Alter alters the cluster node image
 func (c *Context) Alter() (err error) {
+	// Setup the host container runtime
+	if err := c.setupHostDocker(); err != nil {
+		return errors.Wrap(err, "failed to setup the host container runtime")
+	}
+
 	// create tempdir to alter the image in
 	alterDir, err := kindfs.TempDir("", "kinder-alter-image")
 	if err != nil {
@@ -465,4 +471,75 @@ func (c *Context) createAlterContainer(bc *bits.BuildContext, runArgs, container
 		return id, errors.Wrap(err, "failed to create alter container")
 	}
 	return id, nil
+}
+
+// The import of some images in the node container can fail with 'content digest...not found'.
+// The potential cause for that is the Docker storage driver on the host, where some layers
+// are incorrectly skipped during 'pull' and 'save'.
+// Modify the docker daemon.json on the host to use overlay2 driver and disable the containerd
+// snapshotter.
+// https://github.com/kubernetes/kubeadm/issues/3265
+// https://github.com/moby/moby/issues/49473
+// https://github.com/containerd/containerd/issues/8973
+func (c *Context) setupHostDocker() error {
+	if err := exec.NewHostCmd("docker", "info").RunWithEcho(); err != nil {
+		return err
+	}
+
+	// Detect if running in kubekins
+	if err := exec.NewHostCmd("cat", "/usr/local/bin/runner.sh").Run(); err != nil {
+		log.Info("Not running in kubekins (the Kubernetes CI image). Skipping modifications")
+		return nil
+	}
+
+	log.Info("Modifying the Docker config...")
+
+	if err := exec.NewHostCmd("cat", "/etc/docker/daemon.json").RunWithEcho(); err != nil {
+		log.Info(err)
+	}
+
+	if err := exec.NewHostCmd("mkdir", "-p", "/etc/docker/").Run(); err != nil {
+		return err
+	}
+
+	if err := exec.NewHostCmd("bash", "-c",
+		"printf '{\"storage-driver\": \"overlay2\", \"features\": {\"containerd-snapshotter\": false}}\n' > /etc/docker/daemon.json",
+	).Run(); err != nil {
+		return errors.Wrap(err, "could not overwrite /etc/docker/daemon.json")
+	}
+
+	if err := exec.NewHostCmd("cat", "/etc/docker/daemon.json").RunWithEcho(); err != nil {
+		log.Info(err)
+	}
+
+	// kubekins doesn't use systemd, but attempt 'systectl restart'
+	if err := exec.NewHostCmd("systemctl", "restart", "docker").RunWithEcho(); err != nil {
+		// Calling 'service docker stop/restart' doesn't work:
+		//   Stopping Docker: dockerProgram process in pidfile '/var/run/docker-ssd.pid', 1 process(es"), refused to die.
+		//
+		// pkill the process instead and call 'service docker start'.
+		exec.NewHostCmd("ps", "aux").RunWithEcho()
+		if err := exec.NewHostCmd("pkill", "-f", "dockerd").RunWithEcho(); err != nil {
+			return err
+		}
+		time.Sleep(5 * time.Second)
+		if err := exec.NewHostCmd("service", "docker", "start").RunWithEcho(); err != nil {
+			return err
+		}
+
+		log.Info("Waiting for Docker to restart...")
+		psq := exec.NewHostCmd("docker", "ps", "-q")
+		for i := 0; i < 60; i++ {
+			if err := psq.RunWithEcho(); err == nil {
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+
+	if err := exec.NewHostCmd("docker", "info").RunWithEcho(); err != nil {
+		return err
+	}
+
+	return nil
 }
