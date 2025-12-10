@@ -17,8 +17,8 @@ limitations under the License.
 /*
 verify_manifest_lists.go
 
-This program contains tests for Docker schema 2, multi-arch manifest lists
-that kubeadm requires for every release.
+This program contains tests for Docker schema v2 and OCI schema v1
+for the multi-arch manifest lists that kubeadm requires for every release.
 
 First, it tries to get the latest Kubernetes release tags from GitHub.
 The list of release tags is filter so that it doesn't contain versions
@@ -29,7 +29,7 @@ at the constants defined in the kubeadm source code for a release
 branch estimated from a release tag.
 
 Once the images and image tags are defined, the program starts downloading
-the manifest lists from GCR, but also the actual images and layers,
+the manifest lists from registry.k8s.io, but also the actual images and layers,
 while verifying their contents and sizes. The layer download can be
 skipped by toggling `downloadLayers` to false.
 
@@ -47,6 +47,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -66,11 +67,6 @@ const (
 	firstKnownVersion = "v1.12.0-rc.1"
 
 	gcrBucket = "https://registry.k8s.io/v2"
-
-	typeManifestList = "application/vnd.docker.distribution.manifest.list.v2+json"
-	typeManifest     = "application/vnd.docker.distribution.manifest.v2+json"
-	typeLayer        = "application/vnd.docker.image.rootfs.diff.tar"
-	typeLayerGzip    = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 	messageStart = `
              _ ___                      _ ___         _      _ _     _
@@ -106,9 +102,24 @@ var (
 	// status of images is cached here, so that the same image is not
 	// tested by multiple tests.
 	verifiedImageCache = make(map[string]error)
-	// define a map where the keys are the first unseported version and the values are slices of architectures to be removed
+	// define a map where the keys are the first unsupported version and the values are slices of architectures to be removed
 	architecturesToRemove = map[string][]string{
 		"1.27.0-beta.0": []string{"arm"},
+	}
+	// loosely support both the Docker and OCI spec
+	typeManifestList = []string{
+		"application/vnd.docker.distribution.manifest.list.v2+json",
+		"application/vnd.oci.image.index.v1+json",
+	}
+	typeManifest = []string{
+		"application/vnd.docker.distribution.manifest.v2+json",
+		"application/vnd.oci.image.manifest.v1+json",
+	}
+	typeLayer = []string{
+		"application/vnd.docker.image.rootfs.diff.tar",
+		"application/vnd.docker.image.rootfs.diff.tar.gzip",
+		"application/vnd.oci.image.layer.v1.tar",
+		"application/vnd.oci.image.layer.v1.tar+gzip",
 	}
 )
 
@@ -376,7 +387,7 @@ func verifyArchImage(arch, imageName, archImage string) error {
 		return fmt.Errorf("could not unmarshal arch image: %v", err)
 	}
 
-	if image.MediaType != typeManifest {
+	if !slices.Contains(typeManifest, image.MediaType) {
 		return fmt.Errorf("unknown media type: %s, manifest: %#v", image.MediaType, image)
 	}
 	if image.SchemaVersion != 2 {
@@ -416,7 +427,7 @@ func verifyArchImage(arch, imageName, archImage string) error {
 	// verify layers.
 	for i, layer := range image.Layers {
 		// only support a couple of layer types
-		if layer.MediaType != typeLayer && layer.MediaType != typeLayerGzip {
+		if !slices.Contains(typeLayer, layer.MediaType) {
 			return fmt.Errorf("unknown layer media type: %s", layer.MediaType)
 		}
 		if layer.Digest == "" {
@@ -461,7 +472,7 @@ func verifyManifestList(manifest, imageName, tag string, ver *version.Version) e
 	if ml.SchemaVersion != 2 {
 		return errors.New("manifest is not schemaVersion 2")
 	}
-	if ml.MediaType != typeManifestList {
+	if !slices.Contains(typeManifestList, ml.MediaType) {
 		return fmt.Errorf("not a manifest list: %s", ml.MediaType)
 	}
 	aList := make([]string, len(archList))
@@ -508,7 +519,7 @@ func verifyManifestList(manifest, imageName, tag string, ver *version.Version) e
 		}
 
 		// verify media type and digest.
-		if m.MediaType != typeManifest {
+		if !slices.Contains(typeManifest, m.MediaType) {
 			return fmt.Errorf("unknown media type: %s, manifest: %#v", m.MediaType, m)
 		}
 		if m.Digest == "" {
