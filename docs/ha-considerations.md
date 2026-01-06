@@ -287,7 +287,7 @@ The easiest method to generate a manifest is using the container itself, below w
 
 #### containerd
 
-`alias kube-vip="ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:$KVVERSION vip /kube-vip"`
+`alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:$KVVERSION; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:$KVVERSION vip /kube-vip"`
 
 #### Docker
 
@@ -299,14 +299,18 @@ This configuration will create a manifest that starts `kube-vip` providing **con
 
 `export INTERFACE=eth0`
 
+**Note** When running these commands on a to-be control plane node, `sudo` access may be required along with pre-creation of the `/etc/kubernetes/manifests/` directory.
+
 ```
 kube-vip manifest pod \
     --interface $INTERFACE \
-    --vip $VIP \
+    --address $VIP \
     --controlplane \
+    --services \
     --arp \
     --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml
 ```
+**Note** Since Kubernetes v1.29, the kubeadm bootstrap process has changed so that the `admin.conf` isn't usable immediately. This can be worked around by using the `super-admin.conf` for initialization and then switching to `admin.conf` when done. See this [issue](https://github.com/kube-vip/kube-vip/issues/684) for more details.
 
 #### Example manifest
 
