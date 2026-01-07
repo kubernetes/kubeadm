@@ -27,7 +27,7 @@ sub-command in the parent command MD file like so:
 	Full example:
 	* https://git.k8s.io/website/content/en/docs/reference/setup-tools/kubeadm/kubeadm-config.md
 - Please note that these files will act only as placeholders with respect to the `kubernetes/website`
-and they will later be overwritten with generated files by a [separate tool](https://github.com/kubernetes-incubator/reference-docs)
+and they will later be overwritten with generated files by a [separate tool](https://github.com/kubernetes-sigs/reference-docs)
 that also supports HTML styles. This process is managed by SIG Docs on each release.
 
 #### Example scenario: removing a sub-command
