@@ -16,11 +16,11 @@ limitations under the License.
 
 package assets
 
-// KindnetImage185 is a image for kindnet
-const KindnetImage185 = "ghcr.io/aojea/kindnetd:v1.8.5"
+// KindnetImage100 is a image for kindnet
+const KindnetImage100 = "registry.k8s.io/networking/kindnet:v1.0.0"
 
-// KindnetManifest185 holds a kindnet manifest
-const KindnetManifest185 = `
+// KindnetManifest100 holds a kindnet manifest
+const KindnetManifest100 = `
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -35,13 +35,6 @@ rules:
       - list
       - watch
       - patch
-  - apiGroups:
-      - ""
-    resources:
-      - nodes/proxy
-      - nodes/configz
-    verbs:
-      - get
   - apiGroups:
      - ""
     resources:
@@ -110,20 +103,18 @@ spec:
       serviceAccountName: kindnet
       initContainers:
       - name: install-cni-bin
-        image: ghcr.io/aojea/kindnetd:v1.8.5
+        image: registry.k8s.io/networking/kindnet:v1.0.0
         command: ['sh', '-c', 'cat /opt/cni/bin/cni-kindnet > /cni/cni-kindnet ; chmod +x /cni/cni-kindnet']
         volumeMounts:
         - name: cni-bin
           mountPath: /cni
       containers:
       - name: kindnet-cni
-        image: ghcr.io/aojea/kindnetd:v1.8.5
+        image: registry.k8s.io/networking/kindnet:v1.0.0
         command:
         - /bin/kindnetd
         - --hostname-override=$(NODE_NAME)
         - --network-policy=true
-        - --admin-network-policy=false
-        - --baseline-admin-network-policy=false
         - --masquerading=true
         - --dns-caching=true
         - --disable-cni=false
@@ -149,6 +140,11 @@ spec:
           mountPath: /etc/cni/net.d
         - name: var-lib-kindnet
           mountPath: /var/lib/cni-kindnet
+        - name: nri-plugin
+          mountPath: /var/run/nri
+        - name: netns
+          mountPath: /var/run/netns
+          mountPropagation: HostToContainer
         resources:
           requests:
             cpu: "100m"
@@ -168,5 +164,11 @@ spec:
         hostPath:
           path: /var/lib/cni-kindnet
           type: DirectoryOrCreate
+      - name: nri-plugin
+        hostPath:
+          path: /var/run/nri
+      - name: netns
+        hostPath:
+          path: /var/run/netns
 ---
 `
