@@ -203,8 +203,8 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 
 	// Apply a CNI plugin using a hardcoded manifest
 	cmd := cp1.Command("kubectl", "apply", "--kubeconfig=/etc/kubernetes/admin.conf", "-f", "-")
-	cp1.Infof("applying kindnet version 0.5.4")
-	cmd.Stdin(strings.NewReader(assets.KindnetManifest185))
+	cp1.Infof("applying kindnet manifest for image %s...", assets.KindnetImage100)
+	cmd.Stdin(strings.NewReader(assets.KindnetManifest100))
 	if err := cmd.RunWithEcho(); err != nil {
 		return err
 	}
