@@ -11,7 +11,7 @@ vars:
   upgradeVersion: v1.13.5
   controlPlaneNodes: 3
   workerNodes: 2
-  baseImage: kindest/base:v20250521-31a79fd4 # has containerd
+  baseImage: kindest/base:v20260214-ea8e5717 # has containerd
   image: kindest/node:test
   clusterName: kinder-super-admin
   kubeadmVerbosity: 6
