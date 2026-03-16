@@ -71,11 +71,11 @@ tasks:
       ${CMD} test -f /etc/kubernetes/pki/apiserver-kubelet-client.crt || exit 1
 
       # Check certificate subject for .conf files
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/super-admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = system:masters, CN = kubernetes-super-admin" || exit 1
+      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
+      ${CMD} grep 'client-certificate-data' /etc/kubernetes/super-admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout | grep "subject=O = system:masters, CN = kubernetes-super-admin" || exit 1
 
       # Check certificate subject for apiserver-kubelet-client.crt
-      ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
+      ${CMD} openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
 
       # Make sure that the check-expiration and renew commands do not return errors
       ${CMD} kubeadm certs renew admin.conf || exit 1
@@ -123,11 +123,11 @@ tasks:
       ${CMD} test -f /etc/kubernetes/super-admin.conf || exit 1
 
       # Check certificate subject for .conf files
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/super-admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = system:masters, CN = kubernetes-super-admin" || exit 1
+      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
+      ${CMD} grep 'client-certificate-data' /etc/kubernetes/super-admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout | grep "subject=O = system:masters, CN = kubernetes-super-admin" || exit 1
 
       # Check certificate subject for apiserver-kubelet-client.crt
-      ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
+      ${CMD} openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
 
       # Delete super-admin.conf, simulating the user moving the file to a safe location
       ${CMD} rm -f "/etc/kubernetes/super-admin.conf" || exit 1
@@ -164,10 +164,10 @@ tasks:
       ${CMD} test -f /etc/kubernetes/super-admin.conf && exit 1
 
       # Check certificate subject for admin.conf
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
+      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
 
       # Check certificate subject for apiserver-kubelet-client.crt
-      ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
+      ${CMD} openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
 
       # Check if 'kubeadm init' created the RBAC permissions for the admin.conf user
       ${CMD} kubectl -n kube-system --kubeconfig /etc/kubernetes/admin.conf get cm kubeadm-config || exit 1
@@ -202,10 +202,10 @@ tasks:
       ${CMD} test -f /etc/kubernetes/super-admin.conf && exit 1
 
       # Check certificate subject for admin.conf
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
+      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
 
       # Check certificate subject for apiserver-kubelet-client.crt
-      ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
+      ${CMD} openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
 
       # Check if the admin.conf user still has RBAC permissions
       ${CMD} kubectl -n kube-system --kubeconfig /etc/kubernetes/admin.conf get cm kubeadm-config || exit 1
@@ -230,10 +230,10 @@ tasks:
       ${CMD} test -f /etc/kubernetes/super-admin.conf && exit 1
 
       # Check certificate subject
-      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
+      ${CMD} grep 'client-certificate-data' /etc/kubernetes/admin.conf | awk '{print $2}' | base64 -d | openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout | grep "subject=O = kubeadm:cluster-admins, CN = kubernetes-admin" || exit 1
 
       # Check certificate subject for apiserver-kubelet-client.crt
-      ${CMD} openssl x509 -subject -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
+      ${CMD} openssl x509 -subject -nameopt sep_comma_plus_space,space_eq,sname -noout -in /etc/kubernetes/pki/apiserver-kubelet-client.crt | grep "subject=O = kubeadm:cluster-admins, CN = kube-apiserver-kubelet-client" || exit 1
 
       # Check if the admin.conf user still has the RBAC permissions
       ${CMD} kubectl -n kube-system --kubeconfig /etc/kubernetes/admin.conf get cm kubeadm-config || exit 1
