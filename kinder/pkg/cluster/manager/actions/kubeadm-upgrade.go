@@ -85,7 +85,7 @@ func KubeadmUpgrade(c *status.Cluster, upgradeVersion *version.Version, patchesD
 
 		v, err := n.KubeadmVersion()
 		if err != nil {
-			errors.Wrap(err, "could not obtain the kubeadm version before calling kubeadm reset")
+			return errors.Wrap(err, "could not obtain the kubeadm version before calling kubeadm reset")
 		}
 		kubeadmConfigVersion := kubeadm.GetKubeadmConfigVersion(v)
 
