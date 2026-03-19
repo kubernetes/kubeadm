@@ -17,6 +17,7 @@ limitations under the License.
 package actions
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -83,7 +84,7 @@ func joinControlPlanes(c *status.Cluster, usePhases bool, copyCertsMode CopyCert
 			return err
 		}
 
-		if err := waitNewControlPlaneNodeReady(c, cp2, wait); err != nil {
+		if err := waitNewControlPlaneNodeReady(context.Background(), c, cp2, wait); err != nil {
 			return err
 		}
 	}
@@ -189,7 +190,7 @@ func joinWorkers(c *status.Cluster, usePhases bool, discoveryMode DiscoveryMode,
 			return err
 		}
 
-		if err := waitNewWorkerNodeReady(c, w, wait); err != nil {
+		if err := waitNewWorkerNodeReady(context.Background(), c, w, wait); err != nil {
 			return err
 		}
 	}

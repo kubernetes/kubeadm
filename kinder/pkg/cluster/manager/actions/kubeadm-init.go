@@ -18,6 +18,7 @@ package actions
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -226,7 +227,7 @@ func postInit(c *status.Cluster, wait time.Duration) error {
 	//	return errors.Wrap(err, "failed to add default storage class")
 	//}
 
-	if err := waitNewControlPlaneNodeReady(c, cp1, wait); err != nil {
+	if err := waitNewControlPlaneNodeReady(context.Background(), c, cp1, wait); err != nil {
 		return err
 	}
 
