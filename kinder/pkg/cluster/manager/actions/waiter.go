@@ -17,6 +17,7 @@ limitations under the License.
 package actions
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -30,9 +31,9 @@ import (
 )
 
 // waitNewControlPlaneNodeReady waits for a new control plane node reaching the target state after init/join
-func waitNewControlPlaneNodeReady(c *status.Cluster, n *status.Node, wait time.Duration) error {
+func waitNewControlPlaneNodeReady(ctx context.Context, c *status.Cluster, n *status.Node, wait time.Duration) error {
 	n.Infof("waiting for Node and control-plane Pods to become Ready (timeout %s)", wait)
-	if pass := waitFor(c, n, wait,
+	if pass := waitFor(ctx, c, n, wait,
 		nodeIsReady,
 		staticPodIsReady("kube-apiserver"),
 		staticPodIsReady("kube-controller-manager"),
@@ -44,8 +45,8 @@ func waitNewControlPlaneNodeReady(c *status.Cluster, n *status.Node, wait time.D
 	return nil
 }
 
-func waitForPodsRunning(c *status.Cluster, n *status.Node, wait time.Duration, label string, replicas int) error {
-	if pass := waitFor(c, n, wait,
+func waitForPodsRunning(ctx context.Context, c *status.Cluster, n *status.Node, wait time.Duration, label string, replicas int) error {
+	if pass := waitFor(ctx, c, n, wait,
 		podsAreRunning(n, label, replicas),
 	); !pass {
 		return errors.New("timeout: Node and control-plane did not reach target state")
@@ -55,9 +56,9 @@ func waitForPodsRunning(c *status.Cluster, n *status.Node, wait time.Duration, l
 }
 
 // waitForNodePort waits for a nodePort to become ready
-func waitForNodePort(c *status.Cluster, n *status.Node, wait time.Duration, nodePort string) error {
+func waitForNodePort(ctx context.Context, c *status.Cluster, n *status.Node, wait time.Duration, nodePort string) error {
 	n.Infof("waiting for NodePort %q to become ready (timeout %s)", nodePort, wait)
-	if pass := waitFor(c, n, wait,
+	if pass := waitFor(ctx, c, n, wait,
 		nodePortIsReady(n, nodePort),
 	); !pass {
 		return errors.New("timeout: NodePort not ready")
@@ -67,9 +68,9 @@ func waitForNodePort(c *status.Cluster, n *status.Node, wait time.Duration, node
 }
 
 // waitNewWorkerNodeReady waits for a new control plane node reaching the target state after join
-func waitNewWorkerNodeReady(c *status.Cluster, n *status.Node, wait time.Duration) error {
+func waitNewWorkerNodeReady(ctx context.Context, c *status.Cluster, n *status.Node, wait time.Duration) error {
 	n.Infof("waiting for Node to become Ready (timeout %s)", wait)
-	if pass := waitFor(c, n, wait,
+	if pass := waitFor(ctx, c, n, wait,
 		nodeIsReady,
 	); !pass {
 		return errors.New("timeout: Node did not reach target state")
@@ -79,11 +80,11 @@ func waitNewWorkerNodeReady(c *status.Cluster, n *status.Node, wait time.Duratio
 }
 
 // waitControlPlaneUpgraded waits for a control plane node reaching the target state after upgrade
-func waitControlPlaneUpgraded(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
+func waitControlPlaneUpgraded(ctx context.Context, c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
 	version := kubernetesVersionToImageTag(upgradeVersion.String())
 
 	n.Infof("waiting for control-plane Pods to restart with the new version (timeout %s)", wait)
-	if pass := waitFor(c, n, wait,
+	if pass := waitFor(ctx, c, n, wait,
 		staticPodHasVersion("kube-apiserver", version),
 		staticPodHasVersion("kube-controller-manager", version),
 		staticPodHasVersion("kube-scheduler", version),
@@ -95,11 +96,11 @@ func waitControlPlaneUpgraded(c *status.Cluster, n *status.Node, upgradeVersion 
 }
 
 // waitKubeletUpgraded waits for a node reaching the target state after upgrade
-func waitKubeletUpgraded(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
+func waitKubeletUpgraded(ctx context.Context, c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
 	version := upgradeVersion.String()
 
 	n.Infof("waiting for node to restart with the new version (timeout %s)", wait)
-	if pass := waitFor(c, n, wait,
+	if pass := waitFor(ctx, c, n, wait,
 		nodeHasKubernetesVersion(version),
 	); !pass {
 		return errors.New("timeout: node did not reach target state")
@@ -111,9 +112,9 @@ func waitKubeletUpgraded(c *status.Cluster, n *status.Node, upgradeVersion *K8sV
 // waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
 // please note that this is a temporary workaround for a problem we are observing on upgrades while
 // executing node upgrades immediately after control-plane upgrade.
-func waitKubeletHasRBAC(c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
+func waitKubeletHasRBAC(ctx context.Context, c *status.Cluster, n *status.Node, upgradeVersion *K8sVersion.Version, wait time.Duration) error {
 	n.Infof("waiting for kubelet RBAC validation - workaround (timeout %s)", wait)
-	if pass := waitFor(c, n, wait,
+	if pass := waitFor(ctx, c, n, wait,
 		kubeletHasRBAC(upgradeVersion.Major(), upgradeVersion.Minor()),
 	); !pass {
 		return errors.New("timeout: Node did not reach target state")
@@ -127,18 +128,18 @@ type try func(*status.Cluster, *status.Node) bool
 
 // waitFor implements the waiter core logic that is responsible for testing all the given contitions
 // until are satisfied or a timeout are reached
-func waitFor(c *status.Cluster, n *status.Node, timeout time.Duration, conditions ...try) bool {
+func waitFor(ctx context.Context, c *status.Cluster, n *status.Node, timeout time.Duration, conditions ...try) bool {
 	// if timeout is 0 or no conditions are defined, exit fast
 	if timeout == time.Duration(0) {
 		fmt.Println("Timeout set 0, skipping wait")
 		return true
 	}
 
-	// sets the timeout timer
-	timer := time.NewTimer(timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	// runs all the conditions in parallel
-	pass := make(chan bool)
+	pass := make(chan struct{}, len(conditions))
 	for _, wc := range conditions {
 		// clone the condition func to make the closure point to right value
 		// even after the for loop moves to the next condition
@@ -147,15 +148,23 @@ func waitFor(c *status.Cluster, n *status.Node, timeout time.Duration, condition
 		// run the condition in a go routine until it pass
 		go func() {
 			// creates an arbitrary skew before starting a wait loop
-			time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Duration(rand.Intn(500)) * time.Millisecond):
+			}
 
 			for {
 				if x(c, n) {
-					<-pass
+					pass <- struct{}{}
 					break
 				}
 				// add a little delay + jitter before retry
-				time.Sleep(1*time.Second + time.Duration(rand.Intn(500))*time.Millisecond)
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(1*time.Second + time.Duration(rand.Intn(500))*time.Millisecond):
+				}
 			}
 		}()
 	}
@@ -164,14 +173,12 @@ func waitFor(c *status.Cluster, n *status.Node, timeout time.Duration, condition
 	passed := 0
 	for {
 		select {
-		case pass <- true:
+		case <-pass:
 			passed++
 			if passed == len(conditions) {
 				return true
 			}
-		case <-timer.C:
-			// close the channel if timeout occurs, this will release all the blocked receives
-			close(pass)
+		case <-ctx.Done():
 			return false
 		}
 	}

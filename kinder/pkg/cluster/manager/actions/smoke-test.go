@@ -17,6 +17,7 @@ limitations under the License.
 package actions
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func SmokeTest(c *status.Cluster, wait time.Duration) error {
 		return err
 	}
 
-	if err := waitForPodsRunning(c, cp1, wait, "nginx", 1); err != nil {
+	if err := waitForPodsRunning(context.Background(), c, cp1, wait, "nginx", 1); err != nil {
 		return err
 	}
 
@@ -67,7 +68,7 @@ func SmokeTest(c *status.Cluster, wait time.Duration) error {
 	}
 
 	for _, n := range c.K8sNodes() {
-		err = waitForNodePort(c, n, 30*time.Second, nodePort)
+		err = waitForNodePort(context.Background(), c, n, 30*time.Second, nodePort)
 		if err != nil {
 			return err
 		}
