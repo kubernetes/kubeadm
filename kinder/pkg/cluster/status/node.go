@@ -418,7 +418,7 @@ func (n *Node) WriteFile(containerPath string, contents []byte) error {
 	// Write the contents as a temporary file
 	tmpfile, err := os.CreateTemp("", fmt.Sprintf("%s-*", n.name))
 	if err != nil {
-		errors.Wrap(err, "could not create temporary file")
+		return errors.Wrap(err, "could not create temporary file")
 	}
 	tmpPath := tmpfile.Name()
 	defer os.Remove(tmpPath)
