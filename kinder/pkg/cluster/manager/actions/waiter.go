@@ -148,22 +148,32 @@ func waitFor(ctx context.Context, c *status.Cluster, n *status.Node, timeout tim
 		// run the condition in a go routine until it pass
 		go func() {
 			// creates an arbitrary skew before starting a wait loop
+			timer := time.NewTimer(time.Duration(rand.Intn(500)) * time.Millisecond)
+			defer timer.Stop()
+
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(time.Duration(rand.Intn(500)) * time.Millisecond):
+			case <-timer.C:
 			}
 
 			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
 				if x(c, n) {
 					pass <- struct{}{}
 					break
 				}
 				// add a little delay + jitter before retry
+				timer.Reset(1*time.Second + time.Duration(rand.Intn(500))*time.Millisecond)
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(1*time.Second + time.Duration(rand.Intn(500))*time.Millisecond):
+				case <-timer.C:
 				}
 			}
 		}()
