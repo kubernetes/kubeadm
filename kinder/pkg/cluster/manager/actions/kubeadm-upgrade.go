@@ -17,6 +17,7 @@ limitations under the License.
 package actions
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -220,7 +221,7 @@ func kubeadmUpgradeApply(c *status.Cluster, cp1 *status.Node, configVersion stri
 		return err
 	}
 
-	if err := waitControlPlaneUpgraded(c, cp1, upgradeVersion, wait); err != nil {
+	if err := waitControlPlaneUpgraded(context.Background(), c, cp1, upgradeVersion, wait); err != nil {
 		return err
 	}
 
@@ -231,7 +232,7 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, configVersion string,
 	// waitKubeletHasRBAC waits for the kubelet to have access to the expected config map
 	// please note that this is a temporary workaround for a problem we are observing on upgrades while
 	// executing node upgrades immediately after control-plane upgrade.
-	if err := waitKubeletHasRBAC(c, n, upgradeVersion, wait); err != nil {
+	if err := waitKubeletHasRBAC(context.Background(), c, n, upgradeVersion, wait); err != nil {
 		return err
 	}
 
@@ -255,7 +256,7 @@ func kubeadmUpgradeNode(c *status.Cluster, n *status.Node, configVersion string,
 	}
 
 	if n.IsControlPlane() {
-		if err := waitControlPlaneUpgraded(c, n, upgradeVersion, wait); err != nil {
+		if err := waitControlPlaneUpgraded(context.Background(), c, n, upgradeVersion, wait); err != nil {
 			return err
 		}
 	}
@@ -302,7 +303,7 @@ func upgradeKubeletKubectl(c *status.Cluster, n *status.Node, upgradeVersion *ve
 		return err
 	}
 
-	if err := waitKubeletUpgraded(c, n, upgradeVersion, wait); err != nil {
+	if err := waitKubeletUpgraded(context.Background(), c, n, upgradeVersion, wait); err != nil {
 		return err
 	}
 
