@@ -1,0 +1,13 @@
+version: 1
+summary: |
+  Run independent kubeadm feature and regression workflows using native Kinder workflow groups.
+  Cover functionality beyond regular upgrade and downgrade testing.
+  A failed scenario is reported without skipping the remaining scenarios.
+  See https://github.com/kubernetes/kubeadm/issues/3331.
+workflows:
+- name: upgrade-etcd-rollback
+  workflow: upgrade-etcd-rollback-{{ .KubernetesVersion }}.yaml
+  timeout: 70m
+- name: upgrade-no-addon-config-maps
+  workflow: upgrade-no-addon-config-maps-{{ .KubernetesVersion }}.yaml
+  timeout: 70m
