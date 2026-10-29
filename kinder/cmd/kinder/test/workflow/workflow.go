@@ -59,7 +59,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVar(
 		&flags.ExitOnError,
 		"exit-on-task-error", false,
-		"exit after first task failed",
+		"stop after the first failure, running forced cleanup tasks and writing reports",
 	)
 	return cmd
 }

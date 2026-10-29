@@ -55,7 +55,7 @@ func newTaskCmdBuilder(w *Workflow) (c *taskCmdBuilder, err error) {
 
 	// loads OS environment variables into the taskCmdBuilder context
 	for _, e := range os.Environ() {
-		pair := strings.Split(e, "=")
+		pair := strings.SplitN(e, "=", 2)
 		name := pair[0]
 		value := pair[1]
 		c.env[name] = value
@@ -109,6 +109,11 @@ func (c *taskCmdBuilder) expand(text string) (string, error) {
 
 // build creates a taskCmd
 func (c *taskCmdBuilder) build(t *Task, verbose bool) (tcmd *taskCmd, err error) {
+	// Do not mutate the source workflow; it may be run or dry-run more than once.
+	copyTask := *t
+	copyTask.Args = append([]string(nil), t.Args...)
+	t = &copyTask
+
 	// expand golang templates that might exists in the cmd and/or into the args
 	t.Cmd, err = c.expand(t.Cmd)
 	if err != nil {

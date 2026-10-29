@@ -17,8 +17,10 @@ limitations under the License.
 /*
 Package workflow implements a simple workflow manager aimed at automating kinder test workflows.
 
-Workflows must be defined in a yaml file containing list of tasks; each task
-can be any command, thus including also any kinder commands invoked via CLI.
+Workflows are YAML files containing either tasks or a group of child workflows.
+Each task can be any command, including kinder commands invoked via CLI.
+Child workflows execute sequentially with isolated variables and failure state;
+a failed child does not prevent its siblings from running, but cancellation does.
 
 Tasks will be executed in order; in case of errors the workflow will stop and the remaining tasks
 will be skipped with the only exception of tasks specifically marked to be executed in any case
@@ -29,7 +31,6 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -37,10 +38,11 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/yaml"
 )
 
-// Workflow represents a list of tasks to be executed during test workflow and related context
+// Workflow defines either a sequence of tasks and its context, or a group of independent workflows.
 type Workflow struct {
 	// Version of the workflow file
 	// NB. We are enforcing version to be set only for future improvements of the config API
@@ -67,6 +69,22 @@ type Workflow struct {
 
 	// Tasks defines the list of tasks to be executed during test workflow
 	Tasks Tasks
+
+	// Workflows defines a sequential group of independent scenarios, mutually
+	// exclusive with Tasks. A scenario failure does not skip its siblings.
+	Workflows []*Scenario
+}
+
+// Scenario invokes a workflow in the same process with independent variables,
+// task state and artifacts. Paths are relative to the containing workflow file.
+type Scenario struct {
+	Name     string
+	Workflow string
+	// Timeout bounds scenario execution. Forced cleanup tasks may run afterwards,
+	// each bounded by its own task timeout. Zero means no scenario deadline.
+	Timeout Duration
+
+	child *Workflow
 }
 
 // Tasks represents a list of tasks to be executed during test workflow.
@@ -142,10 +160,25 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 
 // NewWorkflow creates a new workflow as defined in a workflow file
 func NewWorkflow(file string) (*Workflow, error) {
-	// Checks if the workflow file exists
-	if _, err := os.Stat(file); err != nil {
-		return nil, errors.Errorf("invalid workflow file: %s does not exist", file)
+	return loadWorkflow(file, map[string]bool{})
+}
+
+var scenarioNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+
+func loadWorkflow(file string, active map[string]bool) (*Workflow, error) {
+	canonical, err := filepath.EvalSymlinks(file)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid workflow file %s", file)
 	}
+	canonical, err = filepath.Abs(canonical)
+	if err != nil {
+		return nil, err
+	}
+	if active[canonical] {
+		return nil, errors.Errorf("cyclic workflow reference: %s", file)
+	}
+	active[canonical] = true
+	defer delete(active, canonical)
 
 	// Loads and unmarshal it
 	data, err := os.ReadFile(file)
@@ -160,23 +193,59 @@ func NewWorkflow(file string) (*Workflow, error) {
 
 	// checks minimum requirements
 	// - version is set and well know
-	// - at least one task exists
+	// - either tasks or child workflows exist
 
 	if w.Version != 1 {
 		return nil, errors.Errorf("invalid taskfile %s: version does not contain a supported value", file)
 	}
 
-	if len(w.Tasks) == 0 {
-		return nil, errors.Errorf("invalid taskfile %s: at least one task should be defined", file)
+	if (len(w.Tasks) == 0) == (len(w.Workflows) == 0) {
+		return nil, errors.Errorf("invalid workflow %s: define either tasks or workflows", file)
+	}
+	if len(w.Workflows) > 0 {
+		if len(w.Vars) > 0 || len(w.Env) > 0 {
+			return nil, errors.Errorf("workflow group %s: define vars and env in each child workflow", file)
+		}
+		names := map[string]bool{}
+		for _, scenario := range w.Workflows {
+			if scenario == nil || !scenarioNamePattern.MatchString(scenario.Name) {
+				return nil, errors.Errorf("workflow group %s: each scenario needs a safe, nonempty name (letters, digits, '_' or '-')", file)
+			}
+			if names[scenario.Name] {
+				return nil, errors.Errorf("workflow group %s: duplicate scenario %q", file, scenario.Name)
+			}
+			names[scenario.Name] = true
+			if scenario.Workflow == "" || scenario.Timeout.Duration < 0 {
+				return nil, errors.Errorf("workflow group %s: scenario %q needs a workflow path and nonnegative timeout", file, scenario.Name)
+			}
+			childPath := scenario.Workflow
+			if !filepath.IsAbs(childPath) {
+				childPath = filepath.Join(filepath.Dir(file), childPath)
+			}
+			scenario.child, err = loadWorkflow(childPath, active)
+			if err != nil {
+				return nil, errors.Wrapf(err, "loading scenario %q", scenario.Name)
+			}
+		}
+		return &w, nil
+	}
+	if w.Vars == nil {
+		w.Vars = map[string]string{}
+	}
+	if w.Env == nil {
+		w.Env = map[string]string{}
 	}
 
 	// Detect and resolve imports by expanding imported workflows into the top level workflow
-	if err := w.expandImports(file); err != nil {
+	if err := w.expandImports(file, active); err != nil {
 		return nil, err
 	}
 
 	// For each task
 	for i, t := range w.Tasks {
+		if t == nil {
+			return nil, errors.Errorf("workflow %s: task #%d is null", file, i+1)
+		}
 		// if a task name is not defined, assign a default task name
 		// otherwise prepend a prefix in order to get task logs ordered
 		if t.Name == "" {
@@ -191,6 +260,10 @@ func NewWorkflow(file string) (*Workflow, error) {
 			t.Timeout.Duration = time.Duration(5 * time.Minute)
 		}
 
+		if t.Timeout.Duration < 0 {
+			return nil, errors.Errorf("task %q has a negative timeout", t.Name)
+		}
+
 		// check if the task defines a cmd
 		if t.Cmd == "" {
 			return nil, errors.Errorf("invalid taskfile %s: task %q does not define a cmd", file, t.Name)
@@ -201,10 +274,13 @@ func NewWorkflow(file string) (*Workflow, error) {
 }
 
 // expandImports imports a secondary workflow into the top level Workflow
-func (w *Workflow) expandImports(file string) error {
+func (w *Workflow) expandImports(file string, active map[string]bool) error {
 	tasks := w.Tasks
 	w.Tasks = Tasks{}
 	for i, t := range tasks {
+		if t == nil {
+			return errors.Errorf("workflow %s: task #%d is null", file, i+1)
+		}
 		// check if the task does not defines an import, preserve it as it is
 		if t.Import == "" {
 			w.Tasks = append(w.Tasks, t)
@@ -234,15 +310,18 @@ func (w *Workflow) expandImports(file string) error {
 
 		// reads the Import file
 		// if path are relative, consider as a base path the folder where the importing file is located.
-		// TODO: implement a check for avoiding circular imports
 		path := t.Import
 		if !filepath.IsAbs(path) {
 			base := filepath.Dir(file)
 			path = filepath.Join(base, path)
 		}
-		wx, err := NewWorkflow(path)
+		wx, err := loadWorkflow(path, active)
 		if err != nil {
 			return errors.Wrapf(err, "error importing workflow file %s", path)
+		}
+
+		if len(wx.Workflows) > 0 {
+			return errors.Errorf("cannot import workflow group %s into tasks; use workflows instead", path)
 		}
 
 		// merge the vars from the import file into the parent file
@@ -273,109 +352,5 @@ func (w *Workflow) expandImports(file string) error {
 		}
 	}
 
-	return nil
-}
-
-// Run executes a workflow
-func (w *Workflow) Run(out io.Writer, dryRun, verbose, exitOnError bool, artifacts string) (err error) {
-
-	// get a new taskCmdBuilder, responsible for creating taskCmd commands
-	taskCmdBuilder, err := newTaskCmdBuilder(w)
-	if err != nil {
-		return err
-	}
-
-	// if artifact folder is not provided as input argument check
-	// 1. ARTIFACTS env var from the workflow file
-	// 2. ARTIFACTS OS env var
-	// Otherwise generate an artifact folder (or dummy placeholder in case of dry running)
-
-	if artifacts == "" {
-		artifacts = taskCmdBuilder.env["ARTIFACTS"]
-	}
-
-	if artifacts == "" {
-		artifacts = os.Getenv("ARTIFACTS")
-	}
-
-	if artifacts == "" {
-		if !dryRun {
-			dir, err := os.Getwd()
-			if err != nil {
-				return errors.Wrapf(err, "error getting current directory")
-			}
-
-			artifacts, err = os.MkdirTemp(dir, "kinder-test-workflow")
-			if err != nil {
-				return errors.Wrapf(err, "error creating artifact folder")
-			}
-		} else {
-			artifacts = "<tmp-folder>"
-		}
-	}
-
-	//TODO: ensure artifact folder exist and can be written
-
-	// adds a new env variable indicating where test artifacts should be stored
-	// to make this value available for cmd and args expansion
-	taskCmdBuilder.env["ARTIFACTS"] = artifacts
-
-	// Gets a taskCmdRunner, responsible for executing taskCmd,
-	// handling failure, cancellation, timeouts and for generating or collecting
-	// all the workflow artifacts (junit_runner.xml, task logs, etc)
-	taskCmdRunner := newTaskCmdRunner()
-
-	// Process all tasks, exploding golang templates for cmd and args
-	// and create the corresponding taskCmd
-	// Nb. we are splitting this step from actual execution of task for ensuring
-	// that all the formal error are detected before starting any real activity
-	var tcmds []*taskCmd
-	for _, t := range w.Tasks {
-
-		tcmd, err := taskCmdBuilder.build(t, verbose)
-		if err != nil {
-			return err
-		}
-
-		tcmds = append(tcmds, tcmd)
-	}
-
-	foundError := false
-	// Executes taskCmds
-	for _, tcmd := range tcmds {
-		fmt.Fprintf(out, "# %s\n", tcmd.Name)
-		fmt.Fprintf(out, "%s\n\n", tcmd.CmdText)
-
-		if !dryRun {
-			err := taskCmdRunner.Run(tcmd, artifacts, verbose)
-			if err != nil {
-				foundError = true
-				fmt.Fprintf(out, " %v\n\n", err)
-
-				if exitOnError {
-					return err
-				}
-
-				continue
-			}
-
-			fmt.Fprintf(out, " completed!\n\n")
-		}
-	}
-
-	// If not dry running, prints task summary and dumps the junit_runner.xml file
-	if !dryRun {
-		taskCmdRunner.ReportSummary()
-
-		if err := taskCmdRunner.DumpJUnitRunner(artifacts); err != nil {
-			fmt.Fprintf(out, "%v\n", err)
-			return err
-		}
-		fmt.Fprintf(out, "see junit-runner.xml and task logs files for more details\n\n")
-	}
-
-	if foundError {
-		return errors.New("failed executing the workflow")
-	}
 	return nil
 }
