@@ -10,6 +10,16 @@
 # DO NOT REPORT SECURITY VULNERABILITIES DIRECTLY TO THESE NAMES, FOLLOW THE
 # INSTRUCTIONS AT https://kubernetes.io/security/
 
-luxas
-timothysc
+# kubeadm approvers (primary contacts)
+
+neolit123
+SataQiu
+pacoxu
+carlory
+HirazawaUi
+
+# SIG Cluster Lifecycle leads (additional contacts)
 fabriziopandini
+hakman
+justinsb
+sbueringer
