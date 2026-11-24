@@ -171,6 +171,18 @@ jobGroups:
   jobs:
   - kubernetesVersion: latest
 
+- name: upgrade-etcd-rollback
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-upgrade-etcd-rollback.yaml
+    template: ./templates/testinfra/kubeadm-kinder-upgrade-etcd-rollback.yaml
+  kinderWorkflowSpec:
+    targetFile: upgrade-etcd-rollback-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/upgrade-etcd-rollback.yaml
+    additionalFiles:
+    - ./templates/workflows/upgrade-etcd-rollback-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+
 - name: rootless
   testInfraJobSpec:
     targetFile: kubeadm-kinder-rootless.yaml
@@ -224,5 +236,15 @@ jobGroups:
     template: ./templates/workflows/encryption-algorithm.yaml
     additionalFiles:
     - ./templates/workflows/encryption-algorithm-tasks.yaml
+  jobs:
+  - kubernetesVersion: latest
+
+- name: extended
+  testInfraJobSpec:
+    targetFile: kubeadm-kinder-extended.yaml
+    template: ./templates/testinfra/kubeadm-kinder-extended.yaml
+  kinderWorkflowSpec:
+    targetFile: extended-{{ .KubernetesVersion }}.yaml
+    template: ./templates/workflows/extended.yaml
   jobs:
   - kubernetesVersion: latest

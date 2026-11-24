@@ -17,12 +17,12 @@ limitations under the License.
 package workflow
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -44,11 +44,12 @@ type taskCmdRunner struct {
 
 // junitTestSuite implements junit TestSuite standard object
 type junitTestSuite struct {
-	XMLName  xml.Name `xml:"testsuite"`
-	Failures int      `xml:"failures,attr"`
-	Tests    int      `xml:"tests,attr"`
-	Time     float64  `xml:"time,attr"`
-	Cases    []junitTestCase
+	Name     string          `xml:"name,attr"`
+	XMLName  xml.Name        `xml:"testsuite"`
+	Failures int             `xml:"failures,attr"`
+	Tests    int             `xml:"tests,attr"`
+	Time     float64         `xml:"time,attr"`
+	Cases    []junitTestCase `xml:"testcase"`
 }
 
 // junitTestCase implements junit TestCase standard object
@@ -65,13 +66,20 @@ type junitTestCase struct {
 func newTaskCmdRunner() *taskCmdRunner {
 	return &taskCmdRunner{
 		start: time.Now(),
-		suite: junitTestSuite{},
+		suite: junitTestSuite{Name: "kinder.test.workflow"},
 	}
 }
 
 // Run a taskCmd
-func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
+func (c *taskCmdRunner) Run(ctx context.Context, t *taskCmd, artifacts string, verbose bool) error {
 	start := time.Now()
+	if ctx.Err() != nil {
+		c.canceled = true
+		if t.Force {
+			// Cleanup still has the task's own timeout; ignore the expired parent.
+			ctx = context.WithoutCancel(ctx)
+		}
+	}
 
 	// unless the cmd execution is forced, check if the taskCmd should be skipped because one of
 	// the previous taskCmd failed, timedOut or was canceled.
@@ -84,13 +92,9 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 			return c.registerTestCase(t.Name, withSkipped("skipping because a predecessor task timed-out"))
 		}
 		if c.canceled {
-			return c.registerTestCase(t.Name, withSkipped("skipping because task workflow was canceled by the user"))
+			return c.registerTestCase(t.Name, withSkipped("skipping because workflow was canceled or its deadline expired"))
 		}
 	}
-
-	// creates a channel for handling command cancellation
-	cancel := make(chan os.Signal, 1)
-	signal.Notify(cancel, syscall.SIGINT, syscall.SIGTERM)
 
 	// sets Stdout and Stderr for the command.
 	// please note that the command output will go on files by default,
@@ -98,8 +102,10 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 	taskLog := filepath.Join(artifacts, fmt.Sprintf("%s-log.txt", t.Name))
 	writer, err := os.Create(taskLog)
 	if err != nil {
-		return errors.Wrapf(err, "error creating %q log file", taskLog)
+		c.failed = true
+		return c.registerTestCase(t.Name, withFailure(errors.Wrapf(err, "error creating %q log file", taskLog).Error()))
 	}
+	defer writer.Close()
 
 	t.Cmd.Stdout = writer
 	t.Cmd.Stderr = writer
@@ -135,6 +141,9 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 		result <- t.Cmd.Wait()
 	}()
 
+	timer := time.NewTimer(t.Timeout.Duration)
+	defer timer.Stop()
+
 	// Wait for one of:
 	// - the command completes
 	// - the command is canceled
@@ -160,25 +169,27 @@ func (c *taskCmdRunner) Run(t *taskCmd, artifacts string, verbose bool) error {
 			withDuration(time.Since(start)),
 		)
 
-	case <-cancel:
+	case <-ctx.Done():
 		// keeps track of this failure type to block execution of following TestCmd
 		c.canceled = true
 
 		// cleanup command process and its child, if any
 		cleanup(t.Cmd)
+		<-result
 
 		// record test case cancellation and exits with error
 		return c.registerTestCase(t.Name,
-			withFailure("task was canceled by the user"),
+			withFailure(ctx.Err().Error()),
 			withDuration(time.Since(start)),
 		)
 
-	case <-time.After(t.Timeout.Duration):
+	case <-timer.C:
 		// keeps track of this failure type to block execution of following TestCmd
 		c.timedOut = true
 
 		// cleanup command process and its child, if any
 		cleanup(t.Cmd)
+		<-result
 
 		// record test case timeout and exits with error
 		return c.registerTestCase(t.Name,
@@ -202,7 +213,7 @@ func (c *taskCmdRunner) ReportSummary() {
 	passed := run - failures
 
 	fmt.Printf("Ran %d of %d tasks in %.3f seconds\n", run, total, c.suite.Time)
-	if failures > 0 {
+	if failures > 0 || skipped > 0 {
 		fmt.Printf("FAIL! -- %d tasks Passed | %d Failed | %d Skipped\n\n", passed, failures, skipped)
 		return
 	}
@@ -257,7 +268,7 @@ func withSkipped(message string) testCaseOption {
 // registerTestCase register task output as a test case result
 func (c *taskCmdRunner) registerTestCase(name string, options ...testCaseOption) error {
 	tc := &junitTestCase{
-		ClassName: "kinder.test.workflow",
+		ClassName: c.suite.Name,
 		Name:      name,
 	}
 
@@ -279,37 +290,14 @@ func (c *taskCmdRunner) registerTestCase(name string, options ...testCaseOption)
 	return nil
 }
 
-// cleanup tries to ensure a cmdtask is properly closed
+// cleanup kills the process group created by taskCmdBuilder, including children
+// remaining after the group leader exits. Tasks must not detach from this group.
 func cleanup(cmd *exec.Cmd) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		}
-	}()
-
-	// if the process doesn't exist we can skip the cleanup
-	// https://man7.org/linux/man-pages/man2/kill.2.html
-	if err := syscall.Kill(cmd.Process.Pid, syscall.Signal(0)); err != nil {
+	if cmd.Process == nil {
 		return
 	}
-
-	// obtain the process ground ID
-	pgid, err := syscall.Getpgid(cmd.Process.Pid)
-	if err != nil {
-		fmt.Printf("error: failed obtaining the pgid for pid: %v, %v\n", cmd.Process.Pid, err)
-		goto kill_process
-	}
-
-	// kill all processes in the process group
-	if err := syscall.Kill(-pgid, syscall.SIGKILL); err != nil {
-		fmt.Printf("error: failed to kill pgid: %v, %v\n", pgid, err)
-		goto kill_process
-	}
-	return
-
-kill_process:
-	fmt.Println("falling back to killing the parent process only...")
-	if err := cmd.Process.Kill(); err != nil {
-		fmt.Printf("error: failed killing process with pid: %v, %v\n", cmd.Process.Pid, err)
+	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil && err != syscall.ESRCH {
+		fmt.Printf("error: failed killing task process group %d: %v\n", cmd.Process.Pid, err)
+		_ = cmd.Process.Kill()
 	}
 }

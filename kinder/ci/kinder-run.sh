@@ -45,7 +45,7 @@ popd
 
 # add the kinder ROOT directory to PATH
 # this is needed so that the workflow runner can easy call "kinder ..." commands.
-export PATH="${PATH}:${ROOT_PATH}"
+export PATH="${ROOT_PATH}:${PATH}"
 
 # set an optional default name for the cluster created by kinder
 export KINDER_CLUSTER_NAME="kinder-test"
